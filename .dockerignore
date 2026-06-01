@@ -1,0 +1,28 @@
+# Ignorar dependencias locales
+node_modules
+/node_modules
+
+# Ignorar builds locales
+.next
+/out
+/build
+
+# Ignorar archivos locales de entorno
+.env*.local
+
+# Ignorar logs y debugs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Ignorar configuración de Git y Docker
+.git
+.gitignore
+Dockerfile
+.dockerignore
+
+# Ignorar documentación no necesaria para producción
+README.md
+AGENTS.md
+CLAUDE.md
