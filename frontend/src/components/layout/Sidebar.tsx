@@ -16,15 +16,15 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside 
+    <aside
       className={`bg-[#2B405B] text-white flex flex-col transition-all duration-300 rounded-r-3xl h-screen ${isCollapsed ? 'w-24' : 'w-72'}`}
     >
       {/* Logo Area */}
       <div className="p-6 flex items-center justify-start cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
-        <img 
-          src="/GEMA%20Logo%20Perlado.png" 
-          alt="GEMA Logo Perlado" 
-          className={`w-auto object-contain transition-all duration-300 ${isCollapsed ? 'h-10' : 'h-16'}`} 
+        <img
+          src="/GEMA%20Logo%20Perlado.png"
+          alt="GEMA Logo Perlado"
+          className={`w-auto object-contain transition-all duration-300 ${isCollapsed ? 'h-10' : 'h-16'}`}
         />
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
+import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -14,6 +14,8 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -299,12 +301,24 @@ export default function RegisterPage() {
                   style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <input
-                  id="register-password" type="password" name="password"
+                  id="register-password" type={showPassword ? 'text' : 'password'} name="password"
                   value={formData.password} onChange={handleInputChange}
-                  placeholder="Pedro123" required style={inputStyle}
+                  placeholder="Pedro123" required style={{ ...inputStyle, paddingRight: '44px' }}
                   onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
                   onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  style={{
+                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    color: '#9CA3AF', display: 'flex', alignItems: 'center'
+                  }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -317,13 +331,25 @@ export default function RegisterPage() {
                   style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <input
-                  id="register-confirm-password" type="password" name="confirmPassword"
+                  id="register-confirm-password" type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword"
                   value={formData.confirmPassword} onChange={handleInputChange}
                   placeholder="Pedro123" required
-                  style={{ ...inputStyle }}
+                  style={{ ...inputStyle, paddingRight: '44px' }}
                   onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
                   onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                  style={{
+                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                    color: '#9CA3AF', display: 'flex', alignItems: 'center'
+                  }}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
