@@ -3,12 +3,14 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, Box, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
+  const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', active: true },
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
     { icon: Box, label: 'Activos', href: '/activos' },
     { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
     { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
@@ -32,9 +34,10 @@ export default function Sidebar() {
       <nav className="flex-1 px-4 py-8 space-y-2">
         {menuItems.map((item, index) => {
           const Icon = item.icon;
+          const isActive = pathname?.startsWith(item.href) ?? false;
           return (
             <Link key={index} href={item.href}>
-              <div className={`flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors ${item.active ? 'bg-[#ECA03C] text-gray-900 font-semibold' : 'text-[#ECA03C] hover:bg-[#3F546D]'}`}>
+              <div className={`flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors ${isActive ? 'bg-[#ECA03C] text-gray-900 font-semibold' : 'text-[#ECA03C] hover:bg-[#3F546D]'}`}>
                 <Icon className="w-6 h-6" strokeWidth={1.5} />
                 {!isCollapsed && <span className="ml-4">{item.label}</span>}
               </div>

@@ -13,8 +13,80 @@
 
   body {
     background-color: #ECEAE6;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    /* Roboto por defecto para cuerpo y datos dinámicos */
+    font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* Fuentes y utilidades tipográficas específicas para GEMA */
+
+/* Tusker Grotesk - archivos locales esperados en /public/fonts/ */
+@font-face {
+  font-family: 'Tusker Grotesk 8700';
+  src: url('/fonts/TuskerGrotesk-Semibold-8700.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tusker Grotesk 7600';
+  src: url('/fonts/TuskerGrotesk-Semibold-7600.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Tusker Grotesk 3600';
+  src: url('/fonts/TuskerGrotesk-Semibold-3600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-tusker-8700: 'Tusker Grotesk 8700', 'Tusker Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-tusker-7600: 'Tusker Grotesk 7600', 'Tusker Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-tusker-3600: 'Tusker Grotesk 3600', 'Tusker Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-montserrat: 'Montserrat', sans-serif;
+  --font-roboto: 'Roboto', sans-serif;
+}
+
+@layer utilities {
+  /* Clases utilitarias para aplicar familias (no modifica JSX existente) */
+  .font-tusker-8700 { font-family: var(--font-tusker-8700) !important; }
+  .font-tusker-7600 { font-family: var(--font-tusker-7600) !important; }
+  .font-tusker-3600 { font-family: var(--font-tusker-3600) !important; }
+  .font-montserrat { font-family: var(--font-montserrat) !important; }
+  .font-roboto { font-family: var(--font-roboto) !important; }
+}
+
+/* Asignaciones semánticas para la jerarquía solicitada (aplican sin editar JSX)
+   - h1: Título principal (Tusker 8700)
+   - Contenedores de cabecera de módulo con fondo azul exacto #2E4365: Tusker 7600
+   - Etiquetas pequeñas y campos (text-sm.font-semibold): Montserrat
+   - Cuerpo y valores dinámicos: Roboto (ya por defecto en body)
+*/
+
+h1 {
+  font-family: var(--font-tusker-8700);
+}
+
+/* Target a los encabezados de módulo que usan exactamente la clase de fondo de Tailwind */
+.bg-\[\#2E4365\] {
+  font-family: var(--font-tusker-7600);
+}
+
+/* Etiquetas secundarias pequeñas */
+.text-sm.font-semibold,
+label,
+label span {
+  font-family: var(--font-montserrat);
+}
+
+/* Asegurar que textos corridos y valores sigan usando Roboto */
+p, .text-base, .text-justify, .text-2xl, .font-black {
+  font-family: var(--font-roboto);
+}
+

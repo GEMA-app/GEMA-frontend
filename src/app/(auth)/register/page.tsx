@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { persistAuthToken } from '../../../lib/gemaApi';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({

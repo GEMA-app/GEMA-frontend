@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Mail, KeyRound, Eye, EyeOff, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { persistAuthToken } from '../../../lib/gemaApi';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -25,6 +26,7 @@ export default function LoginPage() {
             );
             const result = await response.json();
             if (response.ok && result.estado === 'exito') {
+                persistAuthToken(result);
                 window.location.href = '/dashboard';
             } else {
                 alert(result.mensaje || 'Error al iniciar sesión');
