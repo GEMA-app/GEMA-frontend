@@ -1,0 +1,305 @@
+'use client';
+
+import React, { useMemo, useState } from 'react';
+import {
+  Search,
+  Bell,
+  User,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+} from 'lucide-react';
+
+type Vista = 'ordenes' | 'calendario';
+type EstadoOrden = 'Pendiente' | 'En progreso' | 'Completado' | 'Cancelado';
+type TipoEvento = 'preventivo' | 'correctivo' | 'cancelado';
+
+interface OrdenTrabajo {
+  id: string;
+  activo: string;
+  fecha: string;
+  estado: EstadoOrden;
+}
+
+interface EventoCalendario {
+  dia: number;
+  titulo: string;
+  tipo: TipoEvento;
+}
+
+const ORDENES: OrdenTrabajo[] = [
+  { id: 'OT-104', activo: 'Compresor industrial', fecha: '25-03-2026', estado: 'En progreso' },
+  { id: 'OT-098', activo: 'Bomba centrífuga', fecha: '20-03-2026', estado: 'Pendiente' },
+  { id: 'OT-087', activo: 'Motor eléctrico', fecha: '10-03-2026', estado: 'Completado' },
+  { id: 'OT-076', activo: 'Panel de control', fecha: '05-03-2026', estado: 'Cancelado' },
+];
+
+const EVENTOS_MARZO_2026: EventoCalendario[] = [
+  { dia: 5, titulo: 'Preventivo — Compresor', tipo: 'preventivo' },
+  { dia: 12, titulo: 'Correctivo — Bomba', tipo: 'correctivo' },
+  { dia: 18, titulo: 'Preventivo — Motor', tipo: 'preventivo' },
+  { dia: 20, titulo: 'OT-098 Pendiente', tipo: 'correctivo' },
+  { dia: 25, titulo: 'OT-104 En progreso', tipo: 'preventivo' },
+  { dia: 28, titulo: 'Cancelado — Panel', tipo: 'cancelado' },
+];
+
+const RESUMEN = [
+  { label: 'Pendientes', count: 1, bg: 'bg-[#FFEBEE]', text: 'text-[#C62828]' },
+  { label: 'En progreso', count: 1, bg: 'bg-[#FFF3E0]', text: 'text-[#E65100]' },
+  { label: 'Completados', count: 3, bg: 'bg-[#E3F2FD]', text: 'text-[#1565C0]' },
+  { label: 'Cancelados', count: 1, bg: 'bg-[#E8F5E9]', text: 'text-[#2E7D32]' },
+];
+
+const DIAS_SEMANA = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+
+const ESTADO_STYLES: Record<EstadoOrden, string> = {
+  Pendiente: 'bg-[#FFF3E0] text-[#E65100]',
+  'En progreso': 'bg-[#E3F2FD] text-[#1565C0]',
+  Completado: 'bg-[#E8F5E9] text-[#2E7D32]',
+  Cancelado: 'bg-[#F5F5F5] text-[#757575]',
+};
+
+const EVENTO_STYLES: Record<TipoEvento, string> = {
+  preventivo: 'bg-[#E3F2FD] text-[#1565C0] border-l-[#1565C0]',
+  correctivo: 'bg-[#FFF3E0] text-[#E65100] border-l-[#E65100]',
+  cancelado: 'bg-[#F5F5F5] text-[#757575] border-l-[#9E9E9E]',
+};
+
+function PageHeader() {
+  return (
+    <div className="flex items-center space-x-4">
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar orden..."
+          className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm w-64 focus:ring-2 focus:ring-[#ECA03C] outline-none"
+        />
+      </div>
+      <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
+        <Bell className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
+      </button>
+      <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
+        <User className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+}
+
+function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => void }) {
+  return (
+    <div className="flex gap-2 mb-6">
+      <button
+        onClick={() => onChange('ordenes')}
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+          vista === 'ordenes'
+            ? 'bg-[#2B405B] text-white'
+            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+        }`}
+      >
+        Órdenes de trabajo
+      </button>
+      <button
+        onClick={() => onChange('calendario')}
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+          vista === 'calendario'
+            ? 'bg-[#2B405B] text-white'
+            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+        }`}
+      >
+        Calendario
+      </button>
+    </div>
+  );
+}
+
+function OrdenesView() {
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {RESUMEN.map((item) => (
+          <div
+            key={item.label}
+            className={`${item.bg} rounded-2xl p-5 flex flex-col items-center justify-center`}
+          >
+            <span className={`text-3xl font-bold ${item.text}`}>{item.count}</span>
+            <span className={`text-sm font-medium mt-1 ${item.text}`}>{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Ordenes de trabajo</h2>
+          <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nueva orden
+          </button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Orden</th>
+                <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Activo</th>
+                <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Fecha</th>
+                <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Estado</th>
+                <th className="pb-4 text-sm font-semibold text-gray-900 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ORDENES.map((orden) => (
+                <tr key={orden.id} className="border-b border-gray-100 last:border-0">
+                  <td className="py-5 pr-6 font-semibold text-gray-900">{orden.id}</td>
+                  <td className="py-5 pr-6 text-gray-700">{orden.activo}</td>
+                  <td className="py-5 pr-6 text-gray-700">{orden.fecha}</td>
+                  <td className="py-5 pr-6">
+                    <span
+                      className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${ESTADO_STYLES[orden.estado]}`}
+                    >
+                      {orden.estado}
+                    </span>
+                  </td>
+                  <td className="py-5 text-right">
+                    <button
+                      className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label={`Opciones de ${orden.id}`}
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function CalendarioView() {
+  const celdas = useMemo(() => {
+    const year = 2026;
+    const month = 2; // marzo (0-indexed)
+    const firstDay = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startOffset = (firstDay.getDay() + 6) % 7; // lunes = 0
+
+    const cells: Array<{ dia: number | null; eventos: EventoCalendario[] }> = [];
+
+    for (let i = 0; i < startOffset; i++) {
+      cells.push({ dia: null, eventos: [] });
+    }
+    for (let dia = 1; dia <= daysInMonth; dia++) {
+      cells.push({
+        dia,
+        eventos: EVENTOS_MARZO_2026.filter((e) => e.dia === dia),
+      });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({ dia: null, eventos: [] });
+    }
+    return cells;
+  }, []);
+
+  return (
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Calendario de mantenimientos</h2>
+        <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Agregar Mantenimiento
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between mb-6">
+        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Mes anterior">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h3 className="text-lg font-bold text-gray-900">Marzo 2026</h3>
+        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Mes siguiente">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+        {DIAS_SEMANA.map((dia) => (
+          <div
+            key={dia}
+            className="bg-[#F9FAFB] py-3 text-center text-xs font-bold text-gray-500"
+          >
+            {dia}
+          </div>
+        ))}
+
+        {celdas.map((celda, index) => (
+          <div
+            key={index}
+            className={`bg-white min-h-[100px] p-2 ${celda.dia ? '' : 'bg-gray-50'}`}
+          >
+            {celda.dia && (
+              <>
+                <span className="text-sm font-semibold text-gray-700">{celda.dia}</span>
+                <div className="mt-1 space-y-1">
+                  {celda.eventos.map((evento, i) => (
+                    <div
+                      key={i}
+                      className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${EVENTO_STYLES[evento.tipo]}`}
+                      title={evento.titulo}
+                    >
+                      {evento.titulo}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-4 mt-6 text-xs text-gray-600">
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#1565C0]" />
+          Preventivo
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#E65100]" />
+          Correctivo
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#9E9E9E]" />
+          Cancelado
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function MantenimientoPage() {
+  const [vista, setVista] = useState<Vista>('ordenes');
+
+  return (
+    <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
+      <header className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-1">Mantenimiento</h1>
+          <p className="text-gray-500 text-sm">
+            {vista === 'ordenes'
+              ? 'Gestión de órdenes de trabajo y mantenimientos'
+              : 'Programación y seguimiento de mantenimientos'}
+          </p>
+        </div>
+        <PageHeader />
+      </header>
+
+      <VistaTabs vista={vista} onChange={setVista} />
+
+      {vista === 'ordenes' ? <OrdenesView /> : <CalendarioView />}
+    </div>
+  );
+}
