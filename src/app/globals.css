@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
-@layer base {
+@theme {
+  --color-azul-gema: #2E4365;
+  --color-naranja-gema: #E59D2C;
+  --color-icono-gema: #F3D58D;
+  }
+
+ @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -17,4 +23,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-}
+ /* Capa oscura para imágenes de fondo */
+ bg-overlay {
+  background: rgba(46, 67, 101, 0.6); /* Azul-gema con opacidad */
+ } 
+ }
