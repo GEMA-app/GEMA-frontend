@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
 import {
   Search,
@@ -134,10 +135,6 @@ function OrdenesView() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">Ordenes de trabajo</h2>
-          <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Nueva orden
-          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -211,10 +208,10 @@ function CalendarioView() {
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-gray-900">Calendario de mantenimientos</h2>
-        <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+        <Link href="/mantenimiento/calendario" className="inline-flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           Agregar Mantenimiento
-        </button>
+        </Link>
       </div>
 
       <div className="flex items-center justify-between mb-6">
