@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-azul-gema: #2E4365;
+  --color-naranja-gema: #E59D2C;
+  --color-icono-gema: #F3D58D;
+  }
+
+ @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    background-color: #ECEAE6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+ /* Capa oscura para imágenes de fondo */
+ bg-overlay {
+  background: rgba(46, 67, 101, 0.6); /* Azul-gema con opacidad */
+ } 
+ }
