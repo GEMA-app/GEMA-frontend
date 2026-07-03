@@ -96,21 +96,19 @@ function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => 
     <div className="flex gap-2 mb-6">
       <button
         onClick={() => onChange('ordenes')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-          vista === 'ordenes'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'ordenes'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Órdenes de trabajo
       </button>
       <button
         onClick={() => onChange('calendario')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-          vista === 'calendario'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'calendario'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Calendario
       </button>
@@ -181,7 +179,7 @@ function OrdenesView() {
 }
 
 function CalendarioView() {
- const router = useRouter();
+  const router = useRouter();
   const hoy = new Date();
 
   // Estado con el mes/año actual (inicia en el mes actual)
@@ -201,7 +199,7 @@ function CalendarioView() {
       fechaActual.getMonth(),
       dia
     );
-    const fechaStr = fechaSeleccionada.toISOString().split('T')[0]; 
+    const fechaStr = fechaSeleccionada.toISOString().split('T')[0];
     router.push(`/mantenimiento/calendario?fecha=${fechaStr}`);
   };
 
@@ -237,8 +235,8 @@ function CalendarioView() {
   }, [fechaActual]);
 
   const mes = fechaActual.toLocaleString('es', { month: 'long' });
-const año = fechaActual.getFullYear();
-const tituloMes = `${mes} ${año}`;
+  const año = fechaActual.getFullYear();
+  const tituloMes = `${mes} ${año}`;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
@@ -290,63 +288,62 @@ const tituloMes = `${mes} ${año}`;
         ))}
 
         {/* Celdas de días */}
-        {celdas.map((celda, index) => {
-          // Determinar si este día es hoy
-          const esHoy =
-            celda.dia !== null &&
-            fechaActual.getFullYear() === hoy.getFullYear() &&
-            fechaActual.getMonth() === hoy.getMonth() &&
-            celda.dia === hoy.getDate();
+        {
+          celdas.map((celda, index) => {
+            // Determinar si este día es hoy
+            const esHoy =
+              celda.dia !== null &&
+              fechaActual.getFullYear() === hoy.getFullYear() &&
+              fechaActual.getMonth() === hoy.getMonth() &&
+              celda.dia === hoy.getDate();
 
-          return (
-            <div
-              key={index}
-              className={`bg-white min-h-[100px] p-2 ${
-                celda.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
-              }`}
-              onClick={() => celda.dia && handleClickDia(celda.dia)}
-            >
-              {celda.dia && (
-                <>
-                  {/* Número del día con círculo naranja si es hoy */}
-                  <div className="relative inline-block">
-                    <span
-                      className={`text-sm font-semibold ${
-                        esHoy ? 'text-white' : 'text-gray-700'
-                      } relative z-10`}
-                    >
-                      {celda.dia}
-                    </span>
-                    {esHoy && (
+            return (
+              <div
+                key={index}
+                className={`bg-white min-h-[100px] p-2 ${celda.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
+                  }`}
+                onClick={() => celda.dia && handleClickDia(celda.dia)}
+              >
+                {celda.dia && (
+                  <>
+                    {/* Número del día con círculo naranja si es hoy */}
+                    <div className="relative inline-block">
                       <span
-                        className="absolute inset-0 -m-1 rounded-full bg-[#ECA03C] z-0"
-                        style={{
-                          width: 'calc(100% + 12px)',
-                          height: 'calc(90% + 12px)',
-                        }}
-                      />
-                    )}
-                  </div>
-
-                  {/* Eventos del día */}
-                  <div className="mt-1 space-y-1">
-                    {celda.eventos.map((evento, i) => (
-                      <div
-                        key={i}
-                        className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${
-                          EVENTO_STYLES[evento.tipo]
-                        }`}
-                        title={evento.titulo}
+                        className={`text-sm font-semibold ${esHoy ? 'text-white' : 'text-gray-700'
+                          } relative z-10`}
                       >
-                        {evento.titulo}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          );
-        })}
+                        {celda.dia}
+                      </span>
+                      {esHoy && (
+                        <span
+                          className="absolute inset-0 -m-1 rounded-full bg-[#ECA03C] z-0"
+                          style={{
+                            width: 'calc(100% + 12px)',
+                            height: 'calc(90% + 12px)',
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Eventos del día */}
+                    <div className="mt-1 space-y-1">
+                      {celda.eventos.map((evento, i) => (
+                        <div
+                          key={i}
+                          className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${EVENTO_STYLES[evento.tipo]
+                            }`}
+                          title={evento.titulo}
+                        >
+                          {evento.titulo}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })
+        }
       </div>
 
       {/* Leyenda de colores */}
@@ -367,7 +364,6 @@ const tituloMes = `${mes} ${año}`;
     </div>
   );
 }
-
 
 export default function MantenimientoPage() {
   const [vista, setVista] = useState<Vista>('ordenes');
