@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   Bell,
@@ -94,21 +96,19 @@ function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => 
     <div className="flex gap-2 mb-6">
       <button
         onClick={() => onChange('ordenes')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-          vista === 'ordenes'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'ordenes'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Órdenes de trabajo
       </button>
       <button
         onClick={() => onChange('calendario')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-          vista === 'calendario'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'calendario'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-        }`}
+          }`}
       >
         Calendario
       </button>
@@ -134,10 +134,6 @@ function OrdenesView() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">Ordenes de trabajo</h2>
-          <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Nueva orden
-          </button>
         </div>
 
         <div className="overflow-x-auto">
@@ -183,51 +179,105 @@ function OrdenesView() {
 }
 
 function CalendarioView() {
+  const router = useRouter();
+  const hoy = new Date();
+
+  // Estado con el mes/año actual (inicia en el mes actual)
+  const [fechaActual, setFechaActual] = useState(new Date());
+
+  // Cambiar mes (incremento: -1 o +1)
+  const cambiarMes = (incremento: number) => {
+    const nuevaFecha = new Date(fechaActual);
+    nuevaFecha.setMonth(nuevaFecha.getMonth() + incremento);
+    setFechaActual(nuevaFecha);
+  };
+
+  // Redirigir al hacer clic en un día
+  const handleClickDia = (dia: number) => {
+    const fechaSeleccionada = new Date(
+      fechaActual.getFullYear(),
+      fechaActual.getMonth(),
+      dia
+    );
+    const fechaStr = fechaSeleccionada.toISOString().split('T')[0];
+    router.push(`/mantenimiento/calendario?fecha=${fechaStr}`);
+  };
+
+  // Generar las celdas del calendario (depende de fechaActual)
   const celdas = useMemo(() => {
-    const year = 2026;
-    const month = 2; // marzo (0-indexed)
+    const year = fechaActual.getFullYear();
+    const month = fechaActual.getMonth();
     const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startOffset = (firstDay.getDay() + 6) % 7; // lunes = 0
 
-    const cells: Array<{ dia: number | null; eventos: EventoCalendario[] }> = [];
+    const cells = [];
 
+    // Celdas vacías antes del primer día
     for (let i = 0; i < startOffset; i++) {
       cells.push({ dia: null, eventos: [] });
     }
+
+    // Días del mes
     for (let dia = 1; dia <= daysInMonth; dia++) {
       cells.push({
         dia,
         eventos: EVENTOS_MARZO_2026.filter((e) => e.dia === dia),
       });
     }
+
+    // Completar última semana
     while (cells.length % 7 !== 0) {
       cells.push({ dia: null, eventos: [] });
     }
+
     return cells;
-  }, []);
+  }, [fechaActual]);
+
+  const mes = fechaActual.toLocaleString('es', { month: 'long' });
+  const año = fechaActual.getFullYear();
+  const tituloMes = `${mes} ${año}`;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+      {/* Cabecera con botón "Agregar Mantenimiento" */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Calendario de mantenimientos</h2>
-        <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+        <h2 className="text-xl font-bold text-gray-900">
+          Calendario de mantenimientos
+        </h2>
+        <Link
+          href="/mantenimiento/calendario"
+          className="inline-flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           Agregar Mantenimiento
-        </button>
+        </Link>
       </div>
 
+      {/* Navegación de meses */}
       <div className="flex items-center justify-between mb-6">
-        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Mes anterior">
+        <button
+          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+          aria-label="Mes anterior"
+          onClick={() => cambiarMes(-1)}
+        >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-bold text-gray-900">Marzo 2026</h3>
-        <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Mes siguiente">
+        <h3 className="text-lg font-bold text-gray-900 capitalize">
+          {tituloMes}
+        </h3>
+        <button
+          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+          aria-label="Mes siguiente"
+          onClick={() => cambiarMes(1)}
+        >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Grid del calendario */}
       <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+        {/* Días de la semana */}
         {DIAS_SEMANA.map((dia) => (
           <div
             key={dia}
@@ -237,31 +287,66 @@ function CalendarioView() {
           </div>
         ))}
 
-        {celdas.map((celda, index) => (
-          <div
-            key={index}
-            className={`bg-white min-h-[100px] p-2 ${celda.dia ? '' : 'bg-gray-50'}`}
-          >
-            {celda.dia && (
-              <>
-                <span className="text-sm font-semibold text-gray-700">{celda.dia}</span>
-                <div className="mt-1 space-y-1">
-                  {celda.eventos.map((evento, i) => (
-                    <div
-                      key={i}
-                      className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${EVENTO_STYLES[evento.tipo]}`}
-                      title={evento.titulo}
-                    >
-                      {evento.titulo}
+        {/* Celdas de días */}
+        {
+          celdas.map((celda, index) => {
+            // Determinar si este día es hoy
+            const esHoy =
+              celda.dia !== null &&
+              fechaActual.getFullYear() === hoy.getFullYear() &&
+              fechaActual.getMonth() === hoy.getMonth() &&
+              celda.dia === hoy.getDate();
+
+            return (
+              <div
+                key={index}
+                className={`bg-white min-h-[100px] p-2 ${celda.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
+                  }`}
+                onClick={() => celda.dia && handleClickDia(celda.dia)}
+              >
+                {celda.dia && (
+                  <>
+                    {/* Número del día con círculo naranja si es hoy */}
+                    <div className="relative inline-block">
+                      <span
+                        className={`text-sm font-semibold ${esHoy ? 'text-white' : 'text-gray-700'
+                          } relative z-10`}
+                      >
+                        {celda.dia}
+                      </span>
+                      {esHoy && (
+                        <span
+                          className="absolute inset-0 -m-1 rounded-full bg-[#ECA03C] z-0"
+                          style={{
+                            width: 'calc(100% + 12px)',
+                            height: 'calc(90% + 12px)',
+                          }}
+                        />
+                      )}
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+
+                    {/* Eventos del día */}
+                    <div className="mt-1 space-y-1">
+                      {celda.eventos.map((evento, i) => (
+                        <div
+                          key={i}
+                          className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${EVENTO_STYLES[evento.tipo]
+                            }`}
+                          title={evento.titulo}
+                        >
+                          {evento.titulo}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })
+        }
       </div>
 
+      {/* Leyenda de colores */}
       <div className="flex flex-wrap gap-4 mt-6 text-xs text-gray-600">
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded bg-[#1565C0]" />
