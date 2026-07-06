@@ -16,7 +16,7 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             const response = await fetch(
-                'http://localhost:8000/api/autenticacion/iniciar-sesion',
+                `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
