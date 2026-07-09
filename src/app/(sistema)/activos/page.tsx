@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { Search, Bell, User, Plus, Eye, Wrench, Trash } from 'lucide-react';
+import { Search, Bell, User, Plus, Eye, Wrench } from 'lucide-react';
 
 type Estado = 'Operativo' | 'En mantenimiento';
 
@@ -89,11 +88,12 @@ export default function ActivosPage() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">Inventario de activos</h2>
-          <Link href="/activos/registrar_nuevo_activo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <button className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             Agregar activo
-          </Link>
+          </button>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -133,25 +133,17 @@ export default function ActivosPage() {
                   </td>
                   <td className="py-5">
                     <div className="flex items-center justify-end gap-3">
-                      <Link
-                        href="/activos/ficha_de_activo"
+                      <button
                         className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                         aria-label={`Ver ${activo.nombre}`}
                       >
                         <Eye className="w-5 h-5" strokeWidth={1.5} />
-                      </Link>
+                      </button>
                       <button
                         className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                         aria-label={`Mantenimiento de ${activo.nombre}`}
                       >
                         <Wrench className="w-5 h-5" strokeWidth={1.5} />
-                      </button>
-                      <button
-                        type="button"
-                        className="p-2 bg-gray-100 text-[#E63946] hover:bg-[#FCE8EA] rounded-xl transition-colors"
-                        aria-label={`Eliminar ${activo.nombre}`}
-                      >
-                        <Trash className="w-5 h-5" strokeWidth={1.5} />
                       </button>
                     </div>
                   </td>
