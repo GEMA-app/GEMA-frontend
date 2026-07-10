@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import { Search, Bell, User, ArrowLeft, Shield, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Pencil, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfigBackLink } from '@/components/configuracion/ConfigBackLink';
 
 interface Usuario {
   id: number;
@@ -56,44 +57,12 @@ const mockUsuarios: Usuario[] = [
 export default function GestionUsuariosPage() {
   return (
     <div className="flex-1 bg-white p-8 overflow-y-auto">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-            Configuración / Usuario
-          </h1>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Buscar" 
-              className="pl-10 pr-4 py-2 bg-[#F8F6F4] border-none rounded-xl text-sm w-64 focus:ring-2 focus:ring-[#ECA03C] outline-none text-gray-700"
-            />
-          </div>
-          <button className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm bg-white cursor-pointer transition-colors">
-            <Bell className="w-6 h-6 text-[#8B5E3C]" strokeWidth={1.5} />
-          </button>
-          <button className="p-2.5 border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm bg-white cursor-pointer transition-colors">
-            <User className="w-6 h-6 text-[#8B5E3C]" strokeWidth={1.5} />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Configuración / Usuarios"
+        searchLabel="Buscar usuarios"
+      />
 
-      {/* Back Link */}
-      <div className="mb-6">
-        <Link 
-          href="/configuracion" 
-          className="inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors text-sm font-semibold gap-2 cursor-pointer"
-        >
-          <ArrowLeft size={16} strokeWidth={2.5} />
-          Volver a configuración
-        </Link>
-      </div>
+      <ConfigBackLink />
 
       {/* Main Container */}
       <div className="bg-[#F7F4EF] rounded-[2rem] p-8 shadow-sm border border-[#EBE2D5]">

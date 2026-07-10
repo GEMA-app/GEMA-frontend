@@ -31,14 +31,20 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-8 space-y-2">
-        {menuItems.map((item, index) => {
+      <nav className="flex-1 px-4 py-8 space-y-2" aria-label="Navegación principal">
+        {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
-            <Link key={index} href={item.href}>
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={isCollapsed ? item.label : undefined}
+              title={isCollapsed ? item.label : undefined}
+            >
               <div className={`flex items-center px-4 py-3 rounded-xl cursor-pointer transition-colors ${isActive ? 'bg-[#ECA03C] text-gray-900 font-semibold' : 'text-[#ECA03C] hover:bg-[#3F546D]'}`}>
-                <Icon className="w-6 h-6" strokeWidth={1.5} />
+                <Icon className="w-6 h-6" strokeWidth={1.5} aria-hidden />
                 {!isCollapsed && <span className="ml-4">{item.label}</span>}
               </div>
             </Link>
