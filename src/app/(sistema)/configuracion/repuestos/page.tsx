@@ -42,8 +42,8 @@ const MOCK: Repuesto[] = [
 
 export default function RepuestosPage() {
   return (
-    <div className="min-h-screen bg-white p-8">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="h-screen overflow-y-auto bg-white p-8">
+      <div className="mx-auto max-w-[1400px] space-y-6 pb-8">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-5xl font-bold">Configuración / Repuestos</h1>
