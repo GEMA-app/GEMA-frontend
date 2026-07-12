@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 export default function Page() {
 	return (
@@ -7,15 +8,23 @@ export default function Page() {
 			<section className="w-full max-w-[1260px] bg-white p-6 rounded-1">
 				<div className="flex flex-col gap-4 h-full overflow-y-auto">
 					<div className="flex items-center gap-3">
-							<div className="flex items-center justify-center w-16 h-16 rounded-[20px] bg-white border" style={{ borderWidth: 2, borderColor: '#FF0000' }}>
-								<img src="/cubo.svg" alt="Icono cubo" className="w-8 h-8" />
-							</div>
+						<div className="flex items-center justify-center w-16 h-16 rounded-[20px] bg-white border" style={{ borderWidth: 2, borderColor: '#FF0000' }}>
+							<img src="/cubo.svg" alt="Icono cubo" className="w-8 h-8" />
+						</div>
 
 						<div>
 							<h1 className="text-[36px] font-black text-[#000000] leading-none">RepuestoX</h1>
 							<p className="text-gray-600 mt-2">ID:</p>
 						</div>
 					</div>
+
+					<Link href="/configuracion/repuestos" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 transition hover:text-gray-900">
+						<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+							<path d="M19 12H5" />
+							<path d="M12 19l-7-7 7-7" />
+						</svg>
+						<span>Volver </span>
+					</Link>
 
 					<div className="border-b border-gray-200" />
 

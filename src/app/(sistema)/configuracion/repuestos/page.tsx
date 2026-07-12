@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import React from 'react';
-import { Search, Plus, Pencil, Trash2, Bell, User, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Eye, Pencil, Trash2, Bell, User, ArrowLeft } from 'lucide-react';
 
 interface Repuesto {
   id: string;
@@ -46,7 +46,7 @@ export default function RepuestosPage() {
       <div className="mx-auto max-w-[1400px] space-y-6 pb-8">
         <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-5xl font-bold">Configuración / Repuestos</h1>
+            <h1 className="text-5xl font-bold text-black">Configuración / Repuestos</h1>
             <p className="text-sm text-gray-600 mt-2">Control de stock, partes y consumibles</p>
           </div>
 
@@ -79,14 +79,14 @@ export default function RepuestosPage() {
         <main className="card-large overflow-hidden">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold">Gestión de repuestos</h2>
+              <h2 className="text-2xl font-bold text-black">Gestión de repuestos</h2>
               <p className="text-sm text-gray-600 mt-1">Control de stock, partes y consumibles</p>
             </div>
 
-            <button className="btn-nuevo-repuesto inline-flex items-center gap-2 shadow-sm transition hover:brightness-95">
+            <Link href="/configuracion/agg_editar_repuesto" className="btn-nuevo-repuesto inline-flex items-center gap-2 shadow-sm transition hover:brightness-95">
               <Plus className="w-5 h-5" />
               <span>Nuevo repuesto</span>
-            </button>
+            </Link>
           </div>
 
           <div className="table-header-box mb-4">
@@ -112,9 +112,12 @@ export default function RepuestosPage() {
                   <div className="text-gray-700">{r.ubicacion}</div>
                   <div className="text-lg font-semibold text-gray-900">{r.stock}</div>
                   <div className="flex items-center gap-3 justify-end">
-                    <button aria-label="editar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#0A8E71] hover:bg-[#F2F7F3]">
+                    <Link href="/configuracion/info_repuesto" aria-label="ver" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#2E4365] hover:bg-[#F2F7F3]">
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                    <Link href="/configuracion/agg_editar_repuesto" aria-label="editar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#0A8E71] hover:bg-[#F2F7F3]">
                       <Pencil className="w-4 h-4" />
-                    </button>
+                    </Link>
                     <button aria-label="eliminar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#FF0000] hover:bg-[#FDECEF]">
                       <Trash2 className="w-4 h-4" />
                     </button>
