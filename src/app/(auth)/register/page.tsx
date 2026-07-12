@@ -8,6 +8,7 @@ import Link from 'next/link';
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     fullName: '',
+    companyName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -45,7 +46,7 @@ export default function RegisterPage() {
               email: formData.email,
               password: formData.password,
               nombre: formData.fullName,
-              company_name: "",
+              company_name: formData.companyName,
               telefono: ""
             }
           }
@@ -55,7 +56,8 @@ export default function RegisterPage() {
       if (response.ok) {
         window.location.href = '/login';
       } else {
-        setError(result.mensaje || 'Error al registrarse');
+        const errorMsg = result.errors?.[0]?.detail || 'Error al registrarse';
+        setError(errorMsg);
       }
     } catch {
       setError('No se pudo conectar con el servidor');
@@ -274,6 +276,24 @@ export default function RegisterPage() {
                   id="register-fullname" type="text" name="fullName"
                   value={formData.fullName} onChange={handleInputChange}
                   placeholder="Pedro Perez" required style={inputStyle}
+                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
+                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
+            </div>
+
+            {/* Nombre de la empresa */}
+            <div>
+              <label style={labelStyle}>Nombre de la empresa*</label>
+              <div style={{ position: 'relative' }}>
+                <Building2
+                  size={18} color="#9CA3AF"
+                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <input
+                  id="register-company" type="text" name="companyName"
+                  value={formData.companyName} onChange={handleInputChange}
+                  placeholder="Mi Empresa S.A." required style={inputStyle}
                   onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
                   onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                 />
