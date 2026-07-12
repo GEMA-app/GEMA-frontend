@@ -19,8 +19,19 @@ export default function LoginPage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                    body: JSON.stringify({ email, password }),
+                    headers: {
+                        'Content-Type': 'application/vnd.api+json',
+                        'Accept': 'application/vnd.api+json'
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "tokens",
+                            attributes: {
+                                email: email,
+                                password: password
+                            }
+                        }
+                    }),
                 }
             );
             const result = await response.json();
