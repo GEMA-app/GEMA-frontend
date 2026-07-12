@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Search, Bell, User, Plus, Eye, Wrench, Trash } from 'lucide-react';
 
 type Estado = 'Operativo' | 'En mantenimiento';
@@ -15,32 +16,7 @@ interface Activo {
   estado: Estado;
 }
 
-const ACTIVOS: Activo[] = [
-  {
-    id: '1',
-    nombre: 'Compresor industrial',
-    serial: 'SN-213-45X',
-    ubicacion: 'Área producción',
-    criticidad: 'Media',
-    estado: 'Operativo',
-  },
-  {
-    id: '2',
-    nombre: 'Bomba centrífuga',
-    serial: 'SN-441-06A',
-    ubicacion: 'Sistema hidráulico',
-    criticidad: 'Alta',
-    estado: 'En mantenimiento',
-  },
-  {
-    id: '3',
-    nombre: 'Motor eléctrico',
-    serial: 'SN-550-12M',
-    ubicacion: 'Línea 2',
-    criticidad: 'Baja',
-    estado: 'Operativo',
-  },
-];
+
 
 function EstadoBadge({ estado }: { estado: Estado }) {
   const styles =
@@ -56,6 +32,45 @@ function EstadoBadge({ estado }: { estado: Estado }) {
 }
 
 export default function ActivosPage() {
+  const [activos, setActivos] = useState<Activo[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const empresaId = localStorage.getItem('empresa_id');
+
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (empresaId) {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/activos`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/vnd.api+json'
+        }
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result && result.data) {
+          const mappedActivos = result.data.map((item: any) => ({
+            id: item.id || '',
+            nombre: item.attributes?.nombre || 'Sin nombre',
+            serial: item.attributes?.serial || item.attributes?.codigo || 'N/A',
+            ubicacion: item.attributes?.ubicacion || 'N/A',
+            criticidad: item.attributes?.criticidad || 'Media',
+            estado: item.attributes?.estado || 'Operativo',
+          }));
+          setActivos(mappedActivos);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching activos:', error);
+      });
+    }
+  }, [router]);
+
   return (
     <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
       <header className="flex justify-between items-start mb-8">
@@ -113,7 +128,7 @@ export default function ActivosPage() {
               </tr>
             </thead>
             <tbody>
-              {ACTIVOS.map((activo) => (
+              {activos.map((activo) => (
                 <tr key={activo.id} className="border-b border-gray-100 last:border-0">
                   <td className="py-5 pr-4">
                     <input

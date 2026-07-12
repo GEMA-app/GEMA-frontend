@@ -24,7 +24,11 @@ export default function LoginPage() {
                 }
             );
             const result = await response.json();
-            if (response.ok && result.estado === 'exito') {
+            if (response.ok) {
+                const token = result.data?.attributes?.access_token;
+                const empresaId = result.data?.attributes?.empresa_id;
+                if (token) localStorage.setItem('token', token);
+                if (empresaId) localStorage.setItem('empresa_id', empresaId);
                 window.location.href = '/dashboard';
             } else {
                 alert(result.mensaje || 'Error al iniciar sesión');
