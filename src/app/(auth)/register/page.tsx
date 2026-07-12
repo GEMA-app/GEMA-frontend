@@ -37,12 +37,18 @@ export default function RegisterPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/registrar`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/vnd.api+json', Accept: 'application/json' },
         body: JSON.stringify({
-          name: formData.fullName,
-          email: formData.email,
-          password: formData.password,
-          password_confirmation: formData.confirmPassword,
+          data: {
+            type: "tokens",
+            attributes: {
+              email: formData.email,
+              password: formData.password,
+              nombre: formData.fullName,
+              company_name: "",
+              telefono: ""
+            }
+          }
         }),
       });
       const result = await response.json();
