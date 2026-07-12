@@ -17,11 +17,18 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
+    if (name === 'confirmPassword') {
+      setPasswordMismatch(value !== formData.password);
+    }
+    if (name === 'password') {
+      setPasswordMismatch(formData.confirmPassword !== '' && formData.confirmPassword !== value);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -30,8 +37,20 @@ export default function RegisterPage() {
       setError('Las contraseñas no coinciden');
       return;
     }
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos una letra mayúscula');
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un número');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un carácter especial (!@#$%^&*...)');
       return;
     }
     setIsLoading(true);
@@ -360,8 +379,12 @@ export default function RegisterPage() {
                   id="register-confirm-password" type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword"
                   value={formData.confirmPassword} onChange={handleInputChange}
                   placeholder="Pedro123" required
-                  style={{ ...inputStyle, paddingRight: '44px' }}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
+                  style={{
+                    ...inputStyle,
+                    paddingRight: '44px',
+                    border: passwordMismatch ? '1.5px solid #EF4444' : 'none',
+                  }}
+                  onFocus={(e) => { e.target.style.boxShadow = passwordMismatch ? '0 0 0 3px rgba(239,68,68,0.2)' : '0 0 0 3px rgba(30,58,95,0.2)'; }}
                   onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                 />
                 <button
@@ -377,6 +400,9 @@ export default function RegisterPage() {
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordMismatch && (
+                <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '6px' }}>Las contraseñas no coinciden</p>
+              )}
             </div>
 
             {/* Fila inferior */}
