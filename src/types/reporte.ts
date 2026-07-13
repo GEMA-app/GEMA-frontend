@@ -44,6 +44,7 @@ export interface ReportesResponse {
 export interface NuevoReporteInput {
   titulo: string;
   descripcion: string;
+  ubicacion?: string;
   tipo: ReporteTipo;
   prioridad: ReportePrioridad;
   asignado: string;
