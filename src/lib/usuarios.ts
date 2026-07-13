@@ -1,5 +1,5 @@
 import type { Usuario, UsuariosMeta, UsuarioDetalle } from '@/types/usuario';
-import { buildPermisosFromRol } from '@/lib/permisos';
+import { buildPermisosFromRol, rolSlugFromLabel } from '@/lib/permisos';
 
 const ROL_LABELS: Record<string, string> = {
   admin: 'Administrador',
@@ -109,7 +109,7 @@ export function mapUsuarioDetalleFromApi(payload: unknown): UsuarioDetalle | nul
   const nombre = String(attrs.nombre ?? '');
   const roles: string[] = Array.isArray(attrs.roles) ? attrs.roles.map(String) : [];
   const rolRaw = roles.length > 0 ? roles[0] : 'sin rol';
-  const rolSlug = rolRaw.trim().toLowerCase();
+  const rolSlug = rolSlugFromLabel(rolRaw);
 
   return {
     id: resource.id,
