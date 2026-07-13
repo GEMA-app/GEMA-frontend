@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Search, Bell, User, ArrowLeft, FileText, MapPin, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, MapPin, Calendar } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 const activo = {
   nombre: 'SERVIDOR X',
@@ -23,31 +24,12 @@ const activo = {
 export default function FichaDeActivoPage() {
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-[#F3F4F6] p-8 w-full font-sans">
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Gestión de activos</h1>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar activo..."
-              className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-64 outline-none border border-transparent focus:border-[#E59D12] transition-colors"
-              style={{ backgroundColor: 'rgba(46, 67, 101, 0.05)' }}
-            />
-          </div>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm">
-            <Bell className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm">
-            <User className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Activos / Ficha de activo"
+        variant="activos"
+        searchPlaceholder="Buscar activo..."
+        searchLabel="Buscar activos"
+      />
 
       <div className="mb-6">
         <Link href="/activos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
