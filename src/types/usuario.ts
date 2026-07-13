@@ -38,6 +38,7 @@ export interface UsuarioDetalle {
   codigo: string;
   sede: string;
   email: string;
+  activo: boolean;
   rol: string;
   rolSlug: string;
   cargo: string;

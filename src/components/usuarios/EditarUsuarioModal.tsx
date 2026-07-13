@@ -36,6 +36,7 @@ export function EditarUsuarioModal({
     setNombre(usuario.nombre);
     setEmail(usuario.email);
     setCargo(usuario.cargo);
+    setActivo(usuario.activo);
     setError(null);
 
     const fetchRoles = async () => {

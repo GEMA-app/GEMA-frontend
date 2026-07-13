@@ -118,6 +118,7 @@ export function mapUsuarioDetalleFromApi(payload: unknown): UsuarioDetalle | nul
     codigo: padCodigo(resource.id),
     sede: 'N/A',
     email: String(attrs.email ?? ''),
+    activo: attrs.activo === true,
     rol: formatRol(rolRaw).toUpperCase(),
     rolSlug,
     cargo: formatRol(rolRaw),

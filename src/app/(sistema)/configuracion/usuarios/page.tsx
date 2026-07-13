@@ -44,7 +44,13 @@ export default function GestionUsuariosPage() {
       if (!confirmed) {
         return;
       }
-      await eliminarUsuario(id);
+      try {
+        await eliminarUsuario(id);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'No se pudo eliminar el usuario.';
+        window.alert(message);
+      }
     },
     [eliminarUsuario, usuarios],
   );

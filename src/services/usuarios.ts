@@ -102,11 +102,32 @@ export async function updateUsuario(id: string, input: ActualizarUsuarioInput): 
   if (!usuario) throw new Error('No se pudo interpretar la respuesta del usuario actualizado.');
 
   const rolesBase = await rolesUrl();
-  await fetchWithAuth(`${rolesBase}/${input.rol}/asignar`, {
-    method: 'POST',
-    contentType: 'json-api',
-    json: { data: { type: 'roles', attributes: { usuario_id: id } } },
-  });
+  const allRoles = await getRoles();
+
+  const raw = payload as { data?: { attributes?: { roles?: string[] } } };
+  const currentRoleNames: string[] = raw?.data?.attributes?.roles ?? [];
+  const currentRoleIds = allRoles
+    .filter((r) => currentRoleNames.some((cr) => cr.toLowerCase() === r.nombre.toLowerCase()))
+    .map((r) => r.id);
+
+  const newRoleId = input.rol;
+  const toRevoke = currentRoleIds.filter((rid) => rid !== newRoleId);
+
+  if (toRevoke.length > 0) {
+    await Promise.all(
+      toRevoke.map((rid) =>
+        fetchWithAuth(`${rolesBase}/${rid}/revocar?usuario_id=${id}`, { method: 'DELETE' }),
+      ),
+    );
+  }
+
+  if (!currentRoleIds.includes(newRoleId)) {
+    await fetchWithAuth(`${rolesBase}/${newRoleId}/asignar`, {
+      method: 'POST',
+      contentType: 'json-api',
+      json: { data: { type: 'roles', attributes: { usuario_id: id } } },
+    });
+  }
 
   return input.cargo ? { ...usuario, cargo: input.cargo } : usuario;
 }
