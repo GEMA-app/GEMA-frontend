@@ -7,12 +7,11 @@ FROM node:20-alpine AS base
 WORKDIR /app
 # Se requiere libc6-compat en imágenes alpine para que dependencias nativas funcionen correctamente.
 RUN apk add --no-cache libc6-compat
-RUN npm install -g pnpm
 
 # --- Etapa 1: Instalación de todas las dependencias (desarrollo + producción) ---
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # --- Etapa 2: Construcción de la aplicación (Build) ---
 FROM base AS builder
@@ -20,12 +19,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Deshabilitar la telemetría de Next.js durante el build.
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+RUN npm run build
 
 # --- Etapa 3: Instalación de dependencias de producción únicamente ---
 FROM base AS prod-deps
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
 # --- Etapa 4: Imagen de producción final ---
 FROM base AS runner
