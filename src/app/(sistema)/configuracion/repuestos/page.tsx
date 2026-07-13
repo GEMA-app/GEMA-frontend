@@ -1,133 +1,182 @@
 'use client';
 
-import Link from 'next/link';
-import React from 'react';
-import { Search, Plus, Eye, Pencil, Trash2, Bell, User, ArrowLeft } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { ConfigBackLink } from '@/components/configuracion/ConfigBackLink';
+import { RequestState } from '@/components/ui/RequestState';
+import { EditarRepuestoModal } from '@/components/repuestos/EditarRepuestoModal';
+import { NuevoRepuestoModal } from '@/components/repuestos/NuevoRepuestoModal';
+import { RepuestosTable } from '@/components/repuestos/RepuestosTable';
+import { useRepuestos } from '@/hooks/useRepuestos';
+import type { ActualizarRepuestoInput, NuevoRepuestoInput, Repuesto } from '@/types/repuesto';
 
-interface Repuesto {
-  id: string;
-  codigo: string;
-  descripcion: string;
-  categoria: string;
-  ubicacion: string;
-  stock: number;
-}
-
-const MOCK: Repuesto[] = [
-  {
-    id: '1',
-    codigo: 'LC-001',
-    descripcion: 'Memoria RAM\n16GB DDR4',
-    categoria: 'Cómputo',
-    ubicacion: 'Almacén',
-    stock: 15,
-  },
-  {
-    id: '2',
-    codigo: 'LC-002',
-    descripcion: 'Disco SSD 500GB',
-    categoria: 'Cómputo',
-    ubicacion: 'Almacén',
-    stock: 8,
-  },
-  {
-    id: '3',
-    codigo: 'LC-003',
-    descripcion: 'Fuente 500W',
-    categoria: 'Eléctrico',
-    ubicacion: 'Almacén',
-    stock: 5,
-  },
-];
+const PER_PAGE = 15;
 
 export default function RepuestosPage() {
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [nuevoModalOpen, setNuevoModalOpen] = useState(false);
+  const [editando, setEditando] = useState<Repuesto | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { repuestos, meta, loading, error, empty, crearRepuesto, editarRepuesto, eliminarRepuesto } =
+    useRepuestos({
+      page,
+      perPage: PER_PAGE,
+      search: debouncedSearch,
+    });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const handleDelete = useCallback(
+    async (id: string) => {
+      const repuesto = repuestos.find((r) => r.id === id);
+      const ref = repuesto?.articuloId ?? 'este repuesto';
+      const confirmed = window.confirm(
+        `¿Eliminar el repuesto "${ref}"? Esta acción no se puede deshacer.`,
+      );
+      if (!confirmed) return;
+      await eliminarRepuesto(id);
+    },
+    [eliminarRepuesto, repuestos],
+  );
+
+  const handleCreate = useCallback(
+    async (input: NuevoRepuestoInput) => {
+      setSaving(true);
+      try {
+        await crearRepuesto(input);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [crearRepuesto],
+  );
+
+  const handleEdit = useCallback(
+    async (id: string, input: ActualizarRepuestoInput) => {
+      setSaving(true);
+      try {
+        await editarRepuesto(id, input);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editarRepuesto],
+  );
+
+  const emptyMessage = debouncedSearch
+    ? `No se encontraron repuestos para "${debouncedSearch}".`
+    : 'No hay repuestos registrados.';
+
   return (
-    <div className="h-screen overflow-y-auto bg-white p-8">
-      <div className="mx-auto max-w-[1400px] space-y-6 pb-8">
-        <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex-1 bg-white p-6 sm:p-8 overflow-y-auto">
+      <PageHeader
+        title="Configuración / Repuestos"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar repuestos"
+        searchLabel="Buscar repuestos"
+      />
+
+      <ConfigBackLink />
+
+      <div className="bg-[#F7F4EF] rounded-[2rem] p-6 sm:p-8 shadow-sm border border-[#EBE2D5]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-8">
           <div>
-            <h1 className="text-5xl font-bold text-black">Configuración / Repuestos</h1>
-            <p className="text-sm text-gray-600 mt-2">Control de stock, partes y consumibles</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Gestión de repuestos</h2>
+            <p className="text-gray-500 text-sm mt-1">Control de stock, partes y consumibles</p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="search-bar flex items-center gap-2 px-4 py-3 rounded-full shadow-sm min-w-[280px]">
-              <Search className="w-5 h-5 text-gray-600" />
-              <input
-                className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-500 outline-none"
-                placeholder="Buscar"
-              />
-            </div>
-
-            <button aria-label="notificaciones" className="grid place-items-center rounded-2xl bg-white p-3 shadow-sm hover:bg-gray-100">
-              <Bell className="w-5 h-5 text-gray-700" />
-            </button>
-
-            <button aria-label="usuario" className="grid place-items-center rounded-2xl bg-white p-3 shadow-sm hover:bg-gray-100">
-              <User className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
-        </header>
-
-        <div className="flex justify-between items-center">
-          <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 transition hover:text-gray-900">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Volver a configuración</span>
-          </Link>
+          <button
+            type="button"
+            onClick={() => setNuevoModalOpen(true)}
+            className="bg-[#E5A93D] hover:bg-[#d19730] text-black font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer transition-colors text-sm w-full sm:w-auto"
+          >
+            + Nuevo repuesto
+          </button>
         </div>
 
-        <main className="card-large overflow-hidden">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-black">Gestión de repuestos</h2>
-              <p className="text-sm text-gray-600 mt-1">Control de stock, partes y consumibles</p>
+        {error && !empty && (
+          <div
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
+        <RequestState
+          loading={loading}
+          error={empty ? error : null}
+          empty={empty}
+          loadingMessage="Cargando repuestos…"
+          emptyMessage={emptyMessage}
+        >
+          <RepuestosTable
+            repuestos={repuestos}
+            loading={false}
+            error={null}
+            empty={false}
+            searchQuery=""
+            onSearchChange={() => {}}
+            onNew={() => setNuevoModalOpen(true)}
+            onEdit={setEditando}
+            onDelete={handleDelete}
+          />
+        </RequestState>
+
+        {!loading && !empty && meta.lastPage > 1 && (
+          <nav
+            className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600"
+            aria-label="Paginación de repuestos"
+          >
+            <p>
+              Página {meta.page} de {meta.lastPage} · {meta.total} repuestos
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={meta.page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="rounded-xl border border-[#DED4C7] bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={meta.page >= meta.lastPage}
+                onClick={() => setPage((current) => current + 1)}
+                className="rounded-xl border border-[#DED4C7] bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
             </div>
-
-            <Link href="/configuracion/agg_editar_repuesto" className="btn-nuevo-repuesto inline-flex items-center gap-2 shadow-sm transition hover:brightness-95">
-              <Plus className="w-5 h-5" />
-              <span>Nuevo repuesto</span>
-            </Link>
-          </div>
-
-          <div className="table-header-box mb-4">
-            <div className="grid grid-cols-7 gap-4 text-sm font-semibold text-gray-700">
-              <div className="text-left">CÓDIGO</div>
-              <div className="col-span-2 text-left">DESCRIPCIÓN</div>
-              <div className="text-left">CATEGORÍA</div>
-              <div className="text-left">UBICACIÓN</div>
-              <div className="text-left">STOCK</div>
-              <div className="text-left">ACCIONES</div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {MOCK.map((r) => (
-              <div key={r.id} className="rounded-[1.5rem] bg-white p-4 shadow-sm">
-                <div className="grid grid-cols-7 gap-4 items-center text-sm">
-                  <div className="text-gray-700">{r.codigo}</div>
-                  <div className="col-span-2 text-gray-900 whitespace-pre-line font-semibold">{r.descripcion}</div>
-                  <div>
-                    <span className="badge-categoria">{r.categoria}</span>
-                  </div>
-                  <div className="text-gray-700">{r.ubicacion}</div>
-                  <div className="text-lg font-semibold text-gray-900">{r.stock}</div>
-                  <div className="flex items-center gap-3 justify-end">
-                    <Link href="/configuracion/info_repuesto" aria-label="ver" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#2E4365] hover:bg-[#F2F7F3]">
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                    <Link href="/configuracion/agg_editar_repuesto" aria-label="editar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#0A8E71] hover:bg-[#F2F7F3]">
-                      <Pencil className="w-4 h-4" />
-                    </Link>
-                    <button aria-label="eliminar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#FF0000] hover:bg-[#FDECEF]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </main>
+          </nav>
+        )}
       </div>
+
+      <NuevoRepuestoModal
+        isOpen={nuevoModalOpen}
+        onClose={() => setNuevoModalOpen(false)}
+        onSave={handleCreate}
+        saving={saving}
+      />
+
+      <EditarRepuestoModal
+        isOpen={editando !== null}
+        repuesto={editando}
+        onClose={() => setEditando(null)}
+        onSave={handleEdit}
+        saving={saving}
+      />
     </div>
   );
 }
