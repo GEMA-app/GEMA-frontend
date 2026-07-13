@@ -116,12 +116,14 @@ export function setSession(loginResponse: SessionPayload): void {
   }
 
   const data = asRecord(loginResponse.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(loginResponse.usuario) ?? asRecord(data?.usuario);
   const token = pickString(
     loginResponse.token,
     loginResponse.access_token,
     data?.token,
     data?.access_token,
+    attributes?.access_token,
     usuario?.token,
   );
 
@@ -130,6 +132,8 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.empresaId,
     data?.empresa_id,
     data?.empresaId,
+    attributes?.empresa_id,
+    attributes?.empresaId,
     usuario?.empresa_id,
     usuario?.empresaId,
   );
@@ -152,6 +156,7 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.usuario,
     usuario?.name,
     usuario?.nombre,
+    attributes?.nombre,
   );
   if (userName) {
     localStorage.setItem(USER_NAME_KEY, userName);
@@ -179,7 +184,7 @@ export async function ensureSessionRoles(): Promise<string[]> {
   }
 
   const { fetchWithAuth } = await import('@/lib/api');
-  const profile = await fetchWithAuth<unknown>('/autenticacion/perfil');
+  const profile = await fetchWithAuth<unknown>('/v1/auth/yo');
   const roles = extractRolesFromPayload(profile);
 
   if (roles.length > 0) {

@@ -12,6 +12,7 @@ interface RequestStateProps {
   emptyMessage?: string;
   errorMessage?: string;
   variant?: RequestStateVariant;
+  onRetry?: () => void;
   children: ReactNode;
 }
 
@@ -28,6 +29,7 @@ export function RequestState({
   emptyMessage = 'No hay datos para mostrar.',
   errorMessage,
   variant = 'default',
+  onRetry,
   children,
 }: RequestStateProps) {
   const shell = `${VARIANT_CLASSES[variant]} px-6 py-12 sm:py-16 text-center text-sm`;
@@ -63,11 +65,24 @@ export function RequestState({
 
   if (error) {
     return (
-      <div
-        className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-        role="alert"
-      >
-        {errorMessage ?? error}
+      <div className="space-y-3">
+        <div
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          role="alert"
+        >
+          {errorMessage ?? error}
+        </div>
+        {onRetry && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={onRetry}
+              className="rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-50 transition-colors cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
       </div>
     );
   }

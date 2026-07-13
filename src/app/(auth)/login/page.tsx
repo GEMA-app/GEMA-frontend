@@ -17,7 +17,7 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/autenticacion/iniciar-sesion`,
+                `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
                 {
                     method: 'POST',
                     headers: {
@@ -36,11 +36,12 @@ export default function LoginPage() {
                 }
             );
             const result = await response.json();
-            if (response.ok && result.estado === 'exito') {
+            if (response.ok) {
                 setSession(result);
                 window.location.href = '/dashboard';
             } else {
-                alert(result.mensaje || 'Error al iniciar sesión');
+                const errorMsg = result.errors?.[0]?.detail || 'Error al iniciar sesión';
+                alert(errorMsg);
             }
         } catch (error) {
             console.error('Error de conexión:', error);
