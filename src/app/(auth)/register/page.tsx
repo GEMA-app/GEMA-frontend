@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -73,6 +74,13 @@ export default function RegisterPage() {
       });
       const result = await response.json();
       if (response.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Cuenta creada!',
+          text: 'Tu empresa y usuario fueron registrados exitosamente.',
+          confirmButtonText: 'Ir al login',
+          confirmButtonColor: '#1F4E79'
+        });
         window.location.href = '/login';
       } else {
         const errorMsg = result.errors?.[0]?.detail || 'Error al registrarse';

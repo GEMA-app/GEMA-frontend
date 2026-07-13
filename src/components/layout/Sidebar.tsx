@@ -17,6 +17,26 @@ export default function Sidebar() {
     { icon: Settings, label: 'Configuración', href: '/configuracion' },
   ];
 
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/cerrar-sesion`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json'
+          }
+        });
+      } catch (e) {
+        console.error('Error al cerrar sesión', e);
+      }
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('empresa_id');
+    window.location.href = '/login';
+  };
+
   return (
     <aside
       className={`bg-[#2B405B] text-white flex flex-col transition-all duration-300 rounded-r-3xl h-screen ${isCollapsed ? 'w-24' : 'w-72'}`}
@@ -48,7 +68,7 @@ export default function Sidebar() {
 
       {/* Footer / Logout */}
       <div className="p-6">
-        <button className="flex items-center text-gray-400 hover:text-white transition-colors w-full">
+        <button onClick={handleLogout} className="flex items-center text-gray-400 hover:text-white transition-colors w-full">
           <LogOut className="w-5 h-5" strokeWidth={1.5} />
           {!isCollapsed && <span className="ml-3 text-sm underline decoration-gray-500 underline-offset-4">Cerrar sesión</span>}
         </button>
