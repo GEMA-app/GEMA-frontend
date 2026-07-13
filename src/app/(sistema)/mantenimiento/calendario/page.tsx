@@ -429,8 +429,9 @@ export default function CalendarPage() {
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <button
               type="button"
-             onClick={() => window.location.href = '/mantenimiento'}
-               className="rounded-full bg-[#F3D58D] px-8 py-3.5 text-base font-semibold text-[#000000] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:brightness-90 transition duration-200"            >
+              onClick={handleCancel}
+              className="rounded-full bg-[#F3D58D] px-8 py-3.5 text-base font-semibold text-[#000000] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:brightness-90 transition duration-200"
+            >
               Cancelar
             </button>
             <button
