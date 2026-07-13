@@ -1,10 +1,7 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { 
-  Search, 
-  Bell, 
-  User, 
   ArrowLeft, 
   FileText, 
   MapPin, 
@@ -12,6 +9,9 @@ import {
   Save 
 } from 'lucide-react';
 import Link from 'next/link';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { useUbicaciones } from '@/hooks/useUbicaciones';
+import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 
 const initialFormState = {
   nombre: '',
@@ -27,13 +27,19 @@ const initialFormState = {
 };
 
 export default function RegistrarActivoPage() {
+  const { ubicaciones, loading: loadingUbicaciones, error: ubicacionesError } = useUbicaciones();
+  const ubicacionOptions = useMemo(
+    () => flattenUbicacionesForSelect(ubicaciones),
+    [ubicaciones],
+  );
+
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const fechaCompraRef = useRef<HTMLInputElement | null>(null);
   const garantiaRef = useRef<HTMLInputElement | null>(null);
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
@@ -93,36 +99,12 @@ export default function RegistrarActivoPage() {
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      
-      {/* 1. HEADER SUPERIOR */}
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Gestión de activos</h1>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Barra de búsqueda (#EBDC5A al 35% de opacidad de fondo) */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar activo..."
-              className="pl-10 pr-4 py-2.5 rounded-xl text-sm w-64 outline-none border border-transparent focus:border-[#E59D12] transition-colors"
-              style={{ backgroundColor: 'rgba(46, 67, 101, 0.05)' }}
-            />
-          </div>
-          
-          {/* Notificaciones y Perfil */}
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm">
-            <Bell className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 shadow-sm">
-            <User className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Activos / Registrar nuevo activo"
+        variant="activos"
+        searchPlaceholder="Buscar activo..."
+        searchLabel="Buscar activos"
+      />
 
       {/* Botón Volver apuntando a la lista de activos */}
       <div className="mb-6">
@@ -234,14 +216,26 @@ export default function RegistrarActivoPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="ubicacion">Ubicación Física</label>
-                  <input
+                  <select
                     id="ubicacion"
                     name="ubicacion"
-                    type="text"
                     value={formData.ubicacion}
                     onChange={handleInputChange}
+                    disabled={loadingUbicaciones}
                     className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.ubicacion ? 'border-red-500' : 'border-gray-400'}`}
-                  />
+                  >
+                    <option value="">
+                      {loadingUbicaciones ? 'Cargando ubicaciones...' : 'Seleccione una ubicación'}
+                    </option>
+                    {ubicacionOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {ubicacionesError && (
+                    <p className="text-xs text-amber-700 mt-1">{ubicacionesError}</p>
+                  )}
                   {errors.ubicacion && <p className="text-xs text-red-600 mt-1">{errors.ubicacion}</p>}
                 </div>
                 <div>

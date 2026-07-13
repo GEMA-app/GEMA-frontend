@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Mail, KeyRound, Eye, EyeOff, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { setSession } from '@/lib/auth';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
+                `${process.env.NEXT_PUBLIC_API_URL}/autenticacion/iniciar-sesion`,
                 {
                     method: 'POST',
                     headers: {
@@ -35,11 +36,8 @@ export default function LoginPage() {
                 }
             );
             const result = await response.json();
-            if (response.ok) {
-                const token = result.data?.attributes?.access_token;
-                const empresaId = result.data?.attributes?.empresa_id;
-                if (token) localStorage.setItem('token', token);
-                if (empresaId) localStorage.setItem('empresa_id', empresaId);
+            if (response.ok && result.estado === 'exito') {
+                setSession(result);
                 window.location.href = '/dashboard';
             } else {
                 alert(result.mensaje || 'Error al iniciar sesión');

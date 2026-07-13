@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, User, Plus, Eye, Wrench } from 'lucide-react';
+import { Plus, Eye, Wrench } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 type Estado = 'Operativo' | 'En mantenimiento';
 
@@ -72,33 +73,14 @@ export default function ActivosPage() {
 
   return (
     <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
-      <header className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-1">Gestión de activos</h1>
-          <p className="text-gray-500 text-sm">
-            Inventario y seguimiento de equipos críticos
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar activo..."
-              className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm w-64 focus:ring-2 focus:ring-[#ECA03C] outline-none"
-            />
-          </div>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
-            <Bell className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
-          </button>
-          <button className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50">
-            <User className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Activos"
+        subtitle="Inventario y seguimiento de equipos críticos"
+        variant="activos"
+        searchPlaceholder="Buscar activo..."
+        searchLabel="Buscar activos"
+        className="mb-8"
+      />
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
