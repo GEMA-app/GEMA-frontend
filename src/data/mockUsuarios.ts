@@ -8,7 +8,7 @@ export const MOCK_USUARIOS: Usuario[] = [
     email: 'cesartorres@gmail.com',
     rol: 'Administrador',
     departamento: 'Infraestructura',
-    estado: 'Activo',
+    activo: true,
   },
   {
     id: '2',
@@ -17,7 +17,7 @@ export const MOCK_USUARIOS: Usuario[] = [
     email: 'juanmora@gmail.com',
     rol: 'Técnico',
     departamento: 'Laboratorios',
-    estado: 'Activo',
+    activo: true,
   },
   {
     id: '3',
@@ -26,7 +26,7 @@ export const MOCK_USUARIOS: Usuario[] = [
     email: 'juanperez@gmail.com',
     rol: 'Supervisor',
     departamento: 'Mantenimiento',
-    estado: 'Activo',
+    activo: true,
   },
   {
     id: '4',
@@ -35,7 +35,7 @@ export const MOCK_USUARIOS: Usuario[] = [
     email: 'marialopez@gmail.com',
     rol: 'Técnico',
     departamento: 'Laboratorios',
-    estado: 'Inactivo',
+    activo: false,
   },
 ];
 

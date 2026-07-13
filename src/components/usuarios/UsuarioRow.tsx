@@ -38,7 +38,7 @@ export function UsuarioRow({ usuario, onDelete }: UsuarioRowProps) {
               <p className="font-bold text-gray-800 text-base leading-tight">{usuario.nombre}</p>
               <p className="text-xs text-gray-500 mt-0.5 truncate">{usuario.email}</p>
             </div>
-            <UsuarioEstadoBadge estado={usuario.estado} />
+            <UsuarioEstadoBadge activo={usuario.activo} />
           </div>
         </button>
 
@@ -121,7 +121,7 @@ export function UsuarioRow({ usuario, onDelete }: UsuarioRowProps) {
         </div>
 
         <div className="col-span-1">
-          <UsuarioEstadoBadge estado={usuario.estado} />
+          <UsuarioEstadoBadge activo={usuario.activo} />
         </div>
 
         <div

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { rolSlugFromLabel } from '@/lib/permisos';
-import type { ActualizarUsuarioInput, UsuarioDetalle, UsuarioEstado } from '@/types/usuario';
+import type { ActualizarUsuarioInput, UsuarioDetalle } from '@/types/usuario';
 
 interface EditarUsuarioModalProps {
   isOpen: boolean;
@@ -20,8 +20,6 @@ const ROLES = [
   { value: 'reporter', label: 'Reporter' },
 ];
 
-const ESTADOS: UsuarioEstado[] = ['activo', 'inactivo', 'suspendido'];
-
 export function EditarUsuarioModal({
   isOpen,
   usuario,
@@ -33,7 +31,7 @@ export function EditarUsuarioModal({
   const [email, setEmail] = useState('');
   const [rol, setRol] = useState('tecnico');
   const [cargo, setCargo] = useState('');
-  const [estado, setEstado] = useState<UsuarioEstado>('activo');
+  const [activo, setActivo] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -45,7 +43,6 @@ export function EditarUsuarioModal({
     setEmail(usuario.email);
     setRol(usuario.rolSlug || rolSlugFromLabel(usuario.rol));
     setCargo(usuario.cargo);
-    setEstado('activo');
     setError(null);
   }, [isOpen, usuario]);
 
@@ -62,7 +59,7 @@ export function EditarUsuarioModal({
         nombre,
         email,
         rol,
-        estado,
+        activo,
         cargo,
       });
       onClose();
@@ -161,23 +158,15 @@ export function EditarUsuarioModal({
             />
           </div>
 
-          <div>
-            <label htmlFor="editar-estado" className="mb-1 block text-sm font-semibold text-gray-700">
-              Estado
-            </label>
-            <select
-              id="editar-estado"
-              value={estado}
-              onChange={(event) => setEstado(event.target.value as UsuarioEstado)}
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-            >
-              {ESTADOS.map((option) => (
-                <option key={option} value={option}>
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <label className="flex items-center gap-3 rounded-xl border border-[#DED4C7] bg-white px-4 py-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={activo}
+              onChange={(event) => setActivo(event.target.checked)}
+              className="h-4 w-4 accent-[#E5A93D]"
+            />
+            <span className="text-sm font-semibold text-gray-700">Usuario activo</span>
+          </label>
 
           <div className="flex justify-end gap-3 pt-2">
             <button

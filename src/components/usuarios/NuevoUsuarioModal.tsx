@@ -28,6 +28,7 @@ export function NuevoUsuarioModal({
 }: NuevoUsuarioModalProps) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rol, setRol] = useState('admin');
   const [estado, setEstado] = useState<UsuarioEstado>('activo');
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function NuevoUsuarioModal({
     }
     setNombre('');
     setEmail('');
+    setPassword('');
     setRol('admin');
     setEstado('activo');
     setError(null);
@@ -52,7 +54,7 @@ export function NuevoUsuarioModal({
     setError(null);
 
     try {
-      await onSave({ nombre, email, rol, estado });
+      await onSave({ nombre, email, password, rol, estado });
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo crear el usuario.';
@@ -113,6 +115,21 @@ export function NuevoUsuarioModal({
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
+              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="usuario-password" className="mb-1 block text-sm font-semibold text-gray-700">
+              Contraseña
+            </label>
+            <input
+              id="usuario-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={6}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             />
           </div>

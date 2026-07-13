@@ -7,7 +7,7 @@ export interface Usuario {
   email: string;
   rol: string;
   departamento: string;
-  estado: string;
+  activo: boolean;
 }
 
 export interface UsuariosMeta {
@@ -20,6 +20,7 @@ export interface UsuariosMeta {
 export interface NuevoUsuarioInput {
   nombre: string;
   email: string;
+  password: string;
   rol: string;
   estado: UsuarioEstado;
 }
@@ -49,6 +50,6 @@ export interface ActualizarUsuarioInput {
   nombre: string;
   email: string;
   rol: string;
-  estado: UsuarioEstado;
+  activo: boolean;
   cargo?: string;
 }

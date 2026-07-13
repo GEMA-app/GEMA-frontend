@@ -92,7 +92,7 @@ export function useUsuarios({ page = 1, perPage = 15, search = '' }: UseUsuarios
           email: input.email,
           rol: formatRol(input.rol),
           departamento: 'N/A',
-          estado: formatEstado(input.estado),
+          activo: input.estado === 'activo',
         };
         setUsuarios((current) => [nuevo, ...current]);
         setMeta((current) => ({
