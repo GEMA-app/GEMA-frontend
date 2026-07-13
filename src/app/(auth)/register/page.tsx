@@ -4,10 +4,12 @@ import React, { useState } from 'react';
 import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     fullName: '',
+    companyName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -16,11 +18,18 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
+    if (name === 'confirmPassword') {
+      setPasswordMismatch(value !== formData.password);
+    }
+    if (name === 'password') {
+      setPasswordMismatch(formData.confirmPassword !== '' && formData.confirmPassword !== value);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -29,27 +38,53 @@ export default function RegisterPage() {
       setError('Las contraseñas no coinciden');
       return;
     }
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos una letra mayúscula');
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un número');
+      return;
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+      setError('La contraseña debe contener al menos un carácter especial (!@#$%^&*...)');
       return;
     }
     setIsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/autenticacion/registrar`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/vnd.api+json', Accept: 'application/json' },
         body: JSON.stringify({
-          name: formData.fullName,
-          email: formData.email,
-          password: formData.password,
-          password_confirmation: formData.confirmPassword,
+          data: {
+            type: "tokens",
+            attributes: {
+              email: formData.email,
+              password: formData.password,
+              nombre: formData.fullName,
+              company_name: formData.companyName,
+              telefono: ""
+            }
+          }
         }),
       });
       const result = await response.json();
       if (response.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Cuenta creada!',
+          text: 'Tu empresa y usuario fueron registrados exitosamente.',
+          confirmButtonText: 'Ir al login',
+          confirmButtonColor: '#1F4E79'
+        });
         window.location.href = '/login';
       } else {
-        setError(result.mensaje || 'Error al registrarse');
+        const errorMsg = result.errors?.[0]?.detail || 'Error al registrarse';
+        setError(errorMsg);
       }
     } catch {
       setError('No se pudo conectar con el servidor');
@@ -274,6 +309,24 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Nombre de la empresa */}
+            <div>
+              <label style={labelStyle}>Nombre de la empresa*</label>
+              <div style={{ position: 'relative' }}>
+                <Building2
+                  size={18} color="#9CA3AF"
+                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
+                />
+                <input
+                  id="register-company" type="text" name="companyName"
+                  value={formData.companyName} onChange={handleInputChange}
+                  placeholder="Mi Empresa S.A." required style={inputStyle}
+                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
+                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
+                />
+              </div>
+            </div>
+
             {/* Correo electrónico */}
             <div>
               <label style={labelStyle}>Correo electrónico*</label>
@@ -334,8 +387,12 @@ export default function RegisterPage() {
                   id="register-confirm-password" type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword"
                   value={formData.confirmPassword} onChange={handleInputChange}
                   placeholder="Pedro123" required
-                  style={{ ...inputStyle, paddingRight: '44px' }}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
+                  style={{
+                    ...inputStyle,
+                    paddingRight: '44px',
+                    border: passwordMismatch ? '1.5px solid #EF4444' : 'none',
+                  }}
+                  onFocus={(e) => { e.target.style.boxShadow = passwordMismatch ? '0 0 0 3px rgba(239,68,68,0.2)' : '0 0 0 3px rgba(30,58,95,0.2)'; }}
                   onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
                 />
                 <button
@@ -351,6 +408,9 @@ export default function RegisterPage() {
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              {passwordMismatch && (
+                <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '6px' }}>Las contraseñas no coinciden</p>
+              )}
             </div>
 
             {/* Fila inferior */}

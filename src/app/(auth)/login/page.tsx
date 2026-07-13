@@ -20,13 +20,27 @@ export default function LoginPage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/autenticacion/iniciar-sesion`,
                 {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                    body: JSON.stringify({ email, password }),
+                    headers: {
+                        'Content-Type': 'application/vnd.api+json',
+                        'Accept': 'application/vnd.api+json'
+                    },
+                    body: JSON.stringify({
+                        data: {
+                            type: "tokens",
+                            attributes: {
+                                email: email,
+                                password: password
+                            }
+                        }
+                    }),
                 }
             );
             const result = await response.json();
-            if (response.ok && result.estado === 'exito') {
-                setSession(result);
+            if (response.ok) {
+                const token = result.data?.attributes?.access_token;
+                const empresaId = result.data?.attributes?.empresa_id;
+                if (token) localStorage.setItem('token', token);
+                if (empresaId) localStorage.setItem('empresa_id', empresaId);
                 window.location.href = '/dashboard';
             } else {
                 alert(result.mensaje || 'Error al iniciar sesión');

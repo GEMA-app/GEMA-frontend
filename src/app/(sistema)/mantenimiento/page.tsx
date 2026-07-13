@@ -96,19 +96,21 @@ function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => 
     <div className="flex gap-2 mb-6">
       <button
         onClick={() => onChange('ordenes')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'ordenes'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+          vista === 'ordenes'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-          }`}
+        }`}
       >
         Órdenes de trabajo
       </button>
       <button
         onClick={() => onChange('calendario')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${vista === 'calendario'
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+          vista === 'calendario'
             ? 'bg-[#2B405B] text-white'
             : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-          }`}
+        }`}
       >
         Calendario
       </button>
@@ -300,8 +302,9 @@ function CalendarioView() {
             return (
               <div
                 key={index}
-                className={`bg-white min-h-[100px] p-2 ${celda.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
-                  }`}
+                className={`bg-white min-h-[100px] p-2 ${
+                  celda.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
+                }`}
                 onClick={() => celda.dia && handleClickDia(celda.dia)}
               >
                 {celda.dia && (
@@ -309,8 +312,9 @@ function CalendarioView() {
                     {/* Número del día con círculo naranja si es hoy */}
                     <div className="relative inline-block">
                       <span
-                        className={`text-sm font-semibold ${esHoy ? 'text-white' : 'text-gray-700'
-                          } relative z-10`}
+                        className={`text-sm font-semibold ${
+                          esHoy ? 'text-white' : 'text-gray-700'
+                        } relative z-10`}
                       >
                         {celda.dia}
                       </span>
@@ -330,8 +334,9 @@ function CalendarioView() {
                       {celda.eventos.map((evento, i) => (
                         <div
                           key={i}
-                          className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${EVENTO_STYLES[evento.tipo]
-                            }`}
+                          className={`text-[10px] leading-tight px-1.5 py-1 rounded border-l-2 truncate ${
+                            EVENTO_STYLES[evento.tipo]
+                          }`}
                           title={evento.titulo}
                         >
                           {evento.titulo}

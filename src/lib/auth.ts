@@ -1,5 +1,7 @@
 const TOKEN_KEY = 'token';
 const EMPRESA_ID_KEY = 'empresaId';
+const ROLES_KEY = 'roles';
+const USER_NAME_KEY = 'userName';
 
 type SessionPayload = Record<string, unknown>;
 
@@ -17,6 +19,81 @@ function pickString(...values: unknown[]): string | null {
     }
   }
   return null;
+}
+
+function normalizeRoles(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((role) => {
+      if (typeof role === 'string') {
+        return role.trim().toLowerCase();
+      }
+      if (role && typeof role === 'object' && 'name' in role) {
+        const name = (role as { name?: unknown }).name;
+        return typeof name === 'string' ? name.trim().toLowerCase() : '';
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
+export function extractRolesFromPayload(payload: unknown): string[] {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+
+  const record = payload as Record<string, unknown>;
+  const data = asRecord(record.data);
+  const usuario = asRecord(record.usuario) ?? asRecord(data?.usuario);
+
+  return normalizeRoles(
+    record.roles ??
+      record.roles_asignados ??
+      data?.roles ??
+      data?.roles_asignados ??
+      usuario?.roles ??
+      usuario?.roles_asignados,
+  );
+}
+
+export function setRoles(roles: string[]): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  localStorage.setItem(ROLES_KEY, JSON.stringify(normalizeRoles(roles)));
+}
+
+export function getRoles(): string[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  const raw = localStorage.getItem(ROLES_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    return normalizeRoles(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+export function hasAnyRole(requiredRoles: string[]): boolean {
+  const userRoles = getRoles();
+  const normalized = requiredRoles.map((role) => role.trim().toLowerCase());
+  return normalized.some((role) => userRoles.includes(role));
+}
+
+export function getUserName(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return localStorage.getItem(USER_NAME_KEY);
 }
 
 export function getToken(): string | null {
@@ -64,6 +141,21 @@ export function setSession(loginResponse: SessionPayload): void {
   if (empresaId) {
     localStorage.setItem(EMPRESA_ID_KEY, empresaId);
   }
+
+  const roles = extractRolesFromPayload(loginResponse);
+  if (roles.length > 0) {
+    setRoles(roles);
+  }
+
+  const userName = pickString(
+    data?.usuario,
+    loginResponse.usuario,
+    usuario?.name,
+    usuario?.nombre,
+  );
+  if (userName) {
+    localStorage.setItem(USER_NAME_KEY, userName);
+  }
 }
 
 export function clearSession(): void {
@@ -72,6 +164,29 @@ export function clearSession(): void {
   }
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(EMPRESA_ID_KEY);
+  localStorage.removeItem(ROLES_KEY);
+  localStorage.removeItem(USER_NAME_KEY);
+}
+
+export async function ensureSessionRoles(): Promise<string[]> {
+  const existing = getRoles();
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  if (!getToken()) {
+    throw new Error('No hay sesión activa');
+  }
+
+  const { fetchWithAuth } = await import('@/lib/api');
+  const profile = await fetchWithAuth<unknown>('/autenticacion/perfil');
+  const roles = extractRolesFromPayload(profile);
+
+  if (roles.length > 0) {
+    setRoles(roles);
+  }
+
+  return roles;
 }
 
 export function isAuthenticated(): boolean {
