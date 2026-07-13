@@ -9,6 +9,7 @@ import { clearSession, ensureSessionRoles, hasAnyRole } from '@/lib/auth';
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [canAccessConfig, setCanAccessConfig] = useState(false);
+  const [canAccessReportes, setCanAccessReportes] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -19,11 +20,13 @@ export default function Sidebar() {
       .then(() => {
         if (!cancelled) {
           setCanAccessConfig(hasAnyRole(['admin']));
+          setCanAccessReportes(hasAnyRole(['admin', 'supervisor', 'reporter']));
         }
       })
       .catch(() => {
         if (!cancelled) {
           setCanAccessConfig(false);
+          setCanAccessReportes(false);
         }
       });
 
@@ -38,10 +41,18 @@ export default function Sidebar() {
         { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
         { icon: Box, label: 'Activos', href: '/activos' },
         { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
-        { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
+        {
+          icon: ClipboardList,
+          label: 'Reportes',
+          href: '/reportes',
+          reportsOnly: true,
+        },
         { icon: Settings, label: 'Configuración', href: '/configuracion', adminOnly: true },
-      ].filter((item) => !item.adminOnly || canAccessConfig),
-    [canAccessConfig],
+      ].filter(
+        (item) =>
+          (!item.adminOnly || canAccessConfig) && (!item.reportsOnly || canAccessReportes),
+      ),
+    [canAccessConfig, canAccessReportes],
   );
 
   const handleLogout = () => {

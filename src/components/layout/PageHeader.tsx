@@ -15,6 +15,7 @@ interface PageHeaderProps {
   searchLabel?: string;
   showSearch?: boolean;
   className?: string;
+  subtitleClassName?: string;
 }
 
 const VARIANT_STYLES: Record<
@@ -43,6 +44,7 @@ export function PageHeader({
   searchLabel = 'Buscar en la página',
   showSearch = true,
   className = 'mb-6',
+  subtitleClassName = '',
 }: PageHeaderProps) {
   const searchId = useId();
   const styles = VARIANT_STYLES[variant];
@@ -52,7 +54,9 @@ export function PageHeader({
     <header className={`flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-start ${className}`}>
       <div>
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">{title}</h1>
-        {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
+        {subtitle && (
+          <p className={`text-gray-500 text-sm mt-1 ${subtitleClassName}`}>{subtitle}</p>
+        )}
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
