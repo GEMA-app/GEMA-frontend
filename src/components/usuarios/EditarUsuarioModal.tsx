@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { rolSlugFromLabel } from '@/lib/permisos';
+import { getRoles } from '@/services/usuarios';
+import type { DropdownOption } from '@/types/repuesto';
 import type { ActualizarUsuarioInput, UsuarioDetalle } from '@/types/usuario';
 
 interface EditarUsuarioModalProps {
@@ -13,13 +14,6 @@ interface EditarUsuarioModalProps {
   saving?: boolean;
 }
 
-const ROLES = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'tecnico', label: 'Técnico' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'reporter', label: 'Reporter' },
-];
-
 export function EditarUsuarioModal({
   isOpen,
   usuario,
@@ -27,28 +21,41 @@ export function EditarUsuarioModal({
   onSave,
   saving = false,
 }: EditarUsuarioModalProps) {
+  const [roles, setRoles] = useState<DropdownOption[]>([]);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
-  const [rol, setRol] = useState('tecnico');
+  const [rolId, setRolId] = useState('');
   const [cargo, setCargo] = useState('');
   const [activo, setActivo] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !usuario) {
-      return;
-    }
+    if (!isOpen || !usuario) return;
 
     setNombre(usuario.nombre);
     setEmail(usuario.email);
-    setRol(usuario.rolSlug || rolSlugFromLabel(usuario.rol));
     setCargo(usuario.cargo);
     setError(null);
+
+    const fetchRoles = async () => {
+      setLoadingRoles(true);
+      try {
+        const data = await getRoles();
+        setRoles(data);
+        const match = data.find((r) => r.nombre.toLowerCase() === usuario.rol.trim().toLowerCase());
+        setRolId(match?.id ?? data[0]?.id ?? '');
+      } catch {
+        setError('No se pudieron cargar los roles.');
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    void fetchRoles();
   }, [isOpen, usuario]);
 
-  if (!isOpen || !usuario) {
-    return null;
-  }
+  if (!isOpen || !usuario) return null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,7 +65,7 @@ export function EditarUsuarioModal({
       await onSave({
         nombre,
         email,
-        rol,
+        rol: rolId,
         activo,
         cargo,
       });
@@ -133,13 +140,18 @@ export function EditarUsuarioModal({
             </label>
             <select
               id="editar-rol"
-              value={rol}
-              onChange={(event) => setRol(event.target.value)}
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+              value={rolId}
+              onChange={(event) => setRolId(event.target.value)}
+              required
+              disabled={loadingRoles}
+              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] disabled:opacity-60"
             >
-              {ROLES.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              <option value="">
+                {loadingRoles ? 'Cargando…' : 'Seleccionar rol'}
+              </option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nombre}
                 </option>
               ))}
             </select>
@@ -178,7 +190,7 @@ export function EditarUsuarioModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || loadingRoles}
               className="rounded-xl bg-[#E5A93D] px-4 py-2 text-sm font-semibold text-black hover:bg-[#d19730] disabled:opacity-60 cursor-pointer"
             >
               {saving ? 'Guardando…' : 'Guardar cambios'}

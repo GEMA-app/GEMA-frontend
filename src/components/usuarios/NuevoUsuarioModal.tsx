@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
+import { getRoles } from '@/services/usuarios';
+import type { DropdownOption } from '@/types/repuesto';
 import type { NuevoUsuarioInput, UsuarioEstado } from '@/types/usuario';
 
 interface NuevoUsuarioModalProps {
@@ -11,13 +13,6 @@ interface NuevoUsuarioModalProps {
   saving?: boolean;
 }
 
-const ROLES = [
-  { value: 'admin', label: 'Administrador' },
-  { value: 'tecnico', label: 'Técnico' },
-  { value: 'supervisor', label: 'Supervisor' },
-  { value: 'reporter', label: 'Reporter' },
-];
-
 const ESTADOS: UsuarioEstado[] = ['activo', 'inactivo', 'suspendido'];
 
 export function NuevoUsuarioModal({
@@ -26,35 +21,49 @@ export function NuevoUsuarioModal({
   onSave,
   saving = false,
 }: NuevoUsuarioModalProps) {
+  const [roles, setRoles] = useState<DropdownOption[]>([]);
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('admin');
+  const [rolId, setRolId] = useState('');
   const [estado, setEstado] = useState<UsuarioEstado>('activo');
   const [error, setError] = useState<string | null>(null);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+    if (!isOpen) return;
     setNombre('');
     setEmail('');
     setPassword('');
-    setRol('admin');
+    setRolId('');
     setEstado('activo');
     setError(null);
+    setRoles([]);
+
+    const fetchRoles = async () => {
+      setLoadingRoles(true);
+      try {
+        const data = await getRoles();
+        setRoles(data);
+        if (data.length > 0) setRolId(data[0].id);
+      } catch {
+        setError('No se pudieron cargar los roles.');
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    void fetchRoles();
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
     try {
-      await onSave({ nombre, email, password, rol, estado });
+      await onSave({ nombre, email, password, rol: rolId, estado });
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo crear el usuario.';
@@ -140,13 +149,18 @@ export function NuevoUsuarioModal({
             </label>
             <select
               id="usuario-rol"
-              value={rol}
-              onChange={(event) => setRol(event.target.value)}
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+              value={rolId}
+              onChange={(event) => setRolId(event.target.value)}
+              required
+              disabled={loadingRoles}
+              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] disabled:opacity-60"
             >
-              {ROLES.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              <option value="">
+                {loadingRoles ? 'Cargando…' : 'Seleccionar rol'}
+              </option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nombre}
                 </option>
               ))}
             </select>
@@ -180,7 +194,7 @@ export function NuevoUsuarioModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || loadingRoles}
               className="rounded-xl bg-[#E5A93D] px-4 py-2 text-sm font-semibold text-black hover:bg-[#d19730] disabled:opacity-60 cursor-pointer"
             >
               {saving ? 'Guardando…' : 'Guardar'}

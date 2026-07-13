@@ -4,6 +4,7 @@ import {
   extractUsuariosMeta,
   mapUsuarioDetalleFromApi,
 } from '@/lib/usuarios';
+import type { DropdownOption } from '@/types/repuesto';
 import type {
   ActualizarUsuarioInput,
   NuevoUsuarioInput,
@@ -11,13 +12,6 @@ import type {
   UsuarioDetalle,
   UsuariosMeta,
 } from '@/types/usuario';
-
-const ROLE_NAME_MAP: Record<string, string> = {
-  admin: 'Administrador',
-  supervisor: 'Supervisor de Activos',
-  tecnico: 'Técnico de Mantenimiento',
-  reporter: 'Reporter',
-};
 
 export interface UsuariosQuery {
   page?: number;
@@ -40,13 +34,10 @@ async function rolesUrl(): Promise<string> {
   return `/v1/empresas/${empresaId}/roles`;
 }
 
-async function findRoleId(rolSlug: string): Promise<string> {
-  const roleName = ROLE_NAME_MAP[rolSlug] || rolSlug;
+export async function getRoles(): Promise<DropdownOption[]> {
   const url = await rolesUrl();
   const res = await fetchWithAuth<{ data: Array<{ id: string; attributes: { nombre: string } }> }>(url);
-  const found = (res.data ?? []).find((r) => r.attributes.nombre === roleName);
-  if (!found) throw new Error(`Rol "${roleName}" no encontrado en la empresa.`);
-  return found.id;
+  return (res.data ?? []).map((r) => ({ id: r.id, nombre: r.attributes.nombre }));
 }
 
 function buildUsuariosQuery(params: UsuariosQuery): string {
@@ -110,9 +101,8 @@ export async function updateUsuario(id: string, input: ActualizarUsuarioInput): 
   const usuario = mapUsuarioDetalleFromApi(payload);
   if (!usuario) throw new Error('No se pudo interpretar la respuesta del usuario actualizado.');
 
-  const rolId = await findRoleId(input.rol);
   const rolesBase = await rolesUrl();
-  await fetchWithAuth(`${rolesBase}/${rolId}/asignar`, {
+  await fetchWithAuth(`${rolesBase}/${input.rol}/asignar`, {
     method: 'POST',
     contentType: 'json-api',
     json: { data: { type: 'roles', attributes: { usuario_id: id } } },
@@ -140,9 +130,8 @@ export async function createUsuario(input: NuevoUsuarioInput): Promise<Usuario> 
   });
 
   const userId = payload.data.id;
-  const rolId = await findRoleId(input.rol);
   const rolesBase = await rolesUrl();
-  await fetchWithAuth(`${rolesBase}/${rolId}/asignar`, {
+  await fetchWithAuth(`${rolesBase}/${input.rol}/asignar`, {
     method: 'POST',
     contentType: 'json-api',
     json: { data: { type: 'roles', attributes: { usuario_id: userId } } },
