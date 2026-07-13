@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { LayoutDashboard, Box, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Box, Wrench, ClipboardList, Settings, Users, Package, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearSession, ensureSessionRoles, hasAnyRole } from '@/lib/auth';
@@ -27,6 +27,8 @@ export default function Sidebar() {
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: null as string[] | null },
       { icon: Box, label: 'Activos', href: '/activos', roles: ['admin', 'supervisor', 'tecnico'] },
       { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento', roles: ['admin', 'supervisor', 'tecnico'] },
+      { icon: Package, label: 'Repuestos', href: '/configuracion/repuestos', roles: ['admin', 'supervisor', 'tecnico'] },
+      { icon: Users, label: 'Usuarios', href: '/configuracion/usuarios', roles: ['admin'] },
       { icon: ClipboardList, label: 'Reportes', href: '/reportes', roles: ['admin', 'supervisor', 'reporter'] },
       { icon: Settings, label: 'Configuración', href: '/configuracion', roles: ['admin'] },
     ];
