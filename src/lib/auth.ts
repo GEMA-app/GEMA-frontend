@@ -21,6 +21,16 @@ function pickString(...values: unknown[]): string | null {
   return null;
 }
 
+const ROLE_SLUG_MAP: Record<string, string> = {
+  administrador: 'admin',
+  'supervisor de activos': 'supervisor',
+  'supervisor de operaciones': 'supervisor',
+  'técnico de mantenimiento': 'tecnico',
+  almacenista: 'tecnico',
+  reporter: 'reporter',
+  consultor: 'consultor',
+};
+
 function normalizeRoles(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -37,7 +47,8 @@ function normalizeRoles(value: unknown): string[] {
       }
       return '';
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((r) => ROLE_SLUG_MAP[r] || r);
 }
 
 export function extractRolesFromPayload(payload: unknown): string[] {
@@ -47,6 +58,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
 
   const record = payload as Record<string, unknown>;
   const data = asRecord(record.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(record.usuario) ?? asRecord(data?.usuario);
 
   return normalizeRoles(
@@ -54,6 +66,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
       record.roles_asignados ??
       data?.roles ??
       data?.roles_asignados ??
+      attributes?.roles ??
       usuario?.roles ??
       usuario?.roles_asignados,
   );

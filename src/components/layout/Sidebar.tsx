@@ -8,8 +8,7 @@ import { clearSession, ensureSessionRoles, hasAnyRole } from '@/lib/auth';
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [canAccessConfig, setCanAccessConfig] = useState(false);
-  const [canAccessReportes, setCanAccessReportes] = useState(false);
+  const [rolesReady, setRolesReady] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -17,43 +16,24 @@ export default function Sidebar() {
     let cancelled = false;
 
     void ensureSessionRoles()
-      .then(() => {
-        if (!cancelled) {
-          setCanAccessConfig(hasAnyRole(['admin']));
-          setCanAccessReportes(hasAnyRole(['admin', 'supervisor', 'reporter']));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCanAccessConfig(false);
-          setCanAccessReportes(false);
-        }
-      });
+      .then(() => { if (!cancelled) setRolesReady(true); })
+      .catch(() => { if (!cancelled) setRolesReady(true); });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  const menuItems = useMemo(
-    () =>
-      [
-        { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-        { icon: Box, label: 'Activos', href: '/activos' },
-        { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
-        {
-          icon: ClipboardList,
-          label: 'Reportes',
-          href: '/reportes',
-          reportsOnly: true,
-        },
-        { icon: Settings, label: 'Configuración', href: '/configuracion', adminOnly: true },
-      ].filter(
-        (item) =>
-          (!item.adminOnly || canAccessConfig) && (!item.reportsOnly || canAccessReportes),
-      ),
-    [canAccessConfig, canAccessReportes],
-  );
+  const menuItems = useMemo(() => {
+    const items = [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: null as string[] | null },
+      { icon: Box, label: 'Activos', href: '/activos', roles: ['admin', 'supervisor', 'tecnico'] },
+      { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento', roles: ['admin', 'supervisor', 'tecnico'] },
+      { icon: ClipboardList, label: 'Reportes', href: '/reportes', roles: ['admin', 'supervisor', 'reporter'] },
+      { icon: Settings, label: 'Configuración', href: '/configuracion', roles: ['admin'] },
+    ];
+
+    if (!rolesReady) return items;
+    return items.filter((item) => !item.roles || hasAnyRole(item.roles));
+  }, [rolesReady]);
 
   const handleLogout = () => {
     clearSession();
