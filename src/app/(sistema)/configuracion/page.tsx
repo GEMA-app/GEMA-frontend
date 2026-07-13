@@ -28,7 +28,7 @@ const CARDS: ConfigCard[] = [
     title: 'Gestión de repuestos',
     description: 'Administrar materiales y herramientas',
     icon: Hammer,
-    href: '#',
+    href: '/configuracion/repuestos',
   },
   {
     title: 'Ubicaciones',
