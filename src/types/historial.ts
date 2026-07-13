@@ -1,10 +1,8 @@
-export type RolUsuario = 'Administrador' | 'Supervisor' | 'Técnico';
-
 export interface HistorialEntry {
   id: string;
   usuario: {
     nombre: string;
-    rol: RolUsuario;
+    rol: string;
   };
   accion: string;
   descripcion: string;

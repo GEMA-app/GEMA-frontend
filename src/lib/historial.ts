@@ -1,4 +1,4 @@
-import type { RolUsuario, HistorialEntry } from '@/types/historial';
+import type { HistorialEntry } from '@/types/historial';
 
 type ApiRecord = Record<string, unknown>;
 
@@ -16,16 +16,15 @@ function asString(value: unknown, fallback = ''): string {
   return fallback;
 }
 
-function normalizeRol(value: unknown): RolUsuario {
-  const rol = asString(value, 'Técnico').toLowerCase();
+function normalizeRol(value: unknown): string {
+  const rol = asString(value, 'Técnico');
 
-  if (rol.includes('admin')) {
-    return 'Administrador';
-  }
-  if (rol.includes('super')) {
-    return 'Supervisor';
-  }
-  return 'Técnico';
+  if (rol.toLowerCase().includes('admin')) return 'Administrador';
+  if (rol.toLowerCase().includes('técnico') || rol.toLowerCase().includes('tecnico')) return 'Técnico de Mantenimiento';
+  if (rol.toLowerCase().includes('almacen')) return 'Almacenista';
+  if (rol.toLowerCase().includes('consult')) return 'Consultor';
+
+  return rol;
 }
 
 export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {

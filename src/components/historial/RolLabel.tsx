@@ -1,18 +1,24 @@
-import type { RolUsuario } from '@/types/historial';
-
-const ROL_STYLES: Record<RolUsuario, string> = {
+const ROL_STYLES: Record<string, string> = {
   Administrador: 'text-[#C62828]',
+  'Supervisor de Activos': 'text-[#BF360C]',
+  'Supervisor de Operaciones': 'text-[#E65100]',
   Supervisor: 'text-[#E65100]',
-  Técnico: 'text-[#2E7D32]',
+  'Técnico de Mantenimiento': 'text-[#1B5E20]',
+  Técnico: 'text-[#1B5E20]',
+  Almacenista: 'text-[#1565C0]',
+  Consultor: 'text-[#6A1B9A]',
 };
 
+const DEFAULT_STYLE = 'text-gray-700';
+
 interface RolLabelProps {
-  rol: RolUsuario;
+  rol: string;
 }
 
 export function RolLabel({ rol }: RolLabelProps) {
+  const style = ROL_STYLES[rol] ?? DEFAULT_STYLE;
   return (
-    <span className={`text-sm font-semibold ${ROL_STYLES[rol]}`}>
+    <span className={`text-sm font-semibold ${style}`}>
       {rol}
     </span>
   );
