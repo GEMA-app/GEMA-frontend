@@ -1,52 +1,83 @@
+'use client';
+
 import type { ReactNode } from 'react';
 
+type RequestStateVariant = 'default' | 'detail';
+
 interface RequestStateProps {
-  loading: boolean;
-  error: string | null;
-  empty: boolean;
+  loading?: boolean;
+  error?: string | null;
+  empty?: boolean;
   loadingMessage?: string;
   emptyMessage?: string;
-  onRetry?: () => void;
+  errorMessage?: string;
+  variant?: RequestStateVariant;
   children: ReactNode;
 }
 
+const VARIANT_CLASSES: Record<RequestStateVariant, string> = {
+  default: 'rounded-xl',
+  detail: 'rounded-[2rem] border border-[#EBE2D5] bg-[#F7F4EF]',
+};
+
 export function RequestState({
-  loading,
-  error,
-  empty,
-  loadingMessage = 'Cargando...',
+  loading = false,
+  error = null,
+  empty = false,
+  loadingMessage = 'Cargando…',
   emptyMessage = 'No hay datos para mostrar.',
-  onRetry,
+  errorMessage,
+  variant = 'default',
   children,
 }: RequestStateProps) {
+  const shell = `${VARIANT_CLASSES[variant]} px-6 py-12 sm:py-16 text-center text-sm`;
+
   if (loading) {
     return (
-      <div className="bg-[#EBE2D5] rounded-xl px-6 py-10 text-center text-gray-600 text-sm border border-[#DED4C7]/50">
+      <div
+        className={`${shell} bg-[#EBE2D5]/60 text-gray-600`}
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
         {loadingMessage}
+      </div>
+    );
+  }
+
+  if (error && empty) {
+    return (
+      <div className="space-y-4">
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          role="alert"
+        >
+          {errorMessage ?? error}
+        </div>
+        <div className={`${shell} border border-dashed border-[#DED4C7] bg-white/50 text-gray-500`}>
+          {emptyMessage}
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-[#FDE8E8] rounded-xl px-6 py-8 text-center border border-[#EF9A9A]/60">
-        <p className="text-sm text-[#C62828] font-medium">{error}</p>
-        {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="mt-4 px-4 py-2 rounded-xl bg-white border border-[#EF9A9A] text-sm font-semibold text-[#C62828] hover:bg-[#FFF5F5] transition-colors cursor-pointer"
-          >
-            Reintentar
-          </button>
-        )}
+      <div
+        className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        role="alert"
+      >
+        {errorMessage ?? error}
       </div>
     );
   }
 
   if (empty) {
     return (
-      <div className="bg-[#EBE2D5] rounded-xl px-6 py-10 text-center text-gray-600 text-sm border border-[#DED4C7]/50">
+      <div
+        className={`${shell} border border-dashed border-[#DED4C7] bg-white/50 text-gray-500`}
+        role="status"
+      >
         {emptyMessage}
       </div>
     );

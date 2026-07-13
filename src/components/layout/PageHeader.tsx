@@ -57,7 +57,11 @@ export function PageHeader({
 
       <div className="flex items-center gap-3 sm:gap-4 w-full lg:w-auto">
         {showSearch && (
-          <div className="relative flex-1 lg:flex-none lg:min-w-[16rem]">
+          <div
+            className="relative flex-1 lg:flex-none lg:min-w-[16rem]"
+            role="search"
+            aria-label={searchLabel}
+          >
             <label htmlFor={searchId} className="sr-only">
               {searchLabel}
             </label>
@@ -67,9 +71,11 @@ export function PageHeader({
             <input
               id={searchId}
               type="search"
+              name="search"
               value={isControlled ? searchValue : undefined}
               onChange={isControlled ? (event) => onSearchChange(event.target.value) : undefined}
               placeholder={searchPlaceholder}
+              autoComplete="off"
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm focus:ring-2 focus:ring-[#ECA03C] outline-none ${styles.input}`}
             />
           </div>
