@@ -1,30 +1,26 @@
 @import "tailwindcss";
 
-@theme {
-  --color-azul-gema: #2E4365;
-  --color-naranja-gema: #E59D2C;
-  --color-icono-gema: #F3D58D;
-  }
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
 
- @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
 
-  html, body {
-    height: 100%;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
   }
+}
 
-  body {
-    background-color: #ECEAE6;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
- /* Capa oscura para imágenes de fondo */
- bg-overlay {
-  background: rgba(46, 67, 101, 0.6); /* Azul-gema con opacidad */
- } 
- }
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
