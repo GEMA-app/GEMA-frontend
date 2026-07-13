@@ -123,13 +123,16 @@ export default function GestionUsuariosPage() {
 
         {/* User Rows */}
         <div className="space-y-3">
-          {mockUsuarios.map((usuario, index) => (
+          {mockUsuarios.map((usuario) => (
             <div
-              key={index}
+              key={usuario.id}
               className="bg-[#EBE2D5] rounded-xl px-6 py-4 grid grid-cols-12 gap-4 items-center shadow-sm border border-[#DED4C7]/50 hover:shadow-md transition-shadow"
             >
               {/* Usuario column */}
-              <div className="col-span-4 flex items-center space-x-4">
+              <Link
+                href={`/configuracion/usuarios/${usuario.id}`}
+                className="col-span-4 flex items-center space-x-4 hover:opacity-80 transition-opacity"
+              >
                 <div className="bg-[#EED586] text-gray-800 font-bold rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0">
                   {usuario.initials}
                 </div>
@@ -141,7 +144,7 @@ export default function GestionUsuariosPage() {
                     {usuario.email}
                   </div>
                 </div>
-              </div>
+              </Link>
 
               {/* Rol column */}
               <div className="col-span-3 flex items-center space-x-2 text-gray-700">
