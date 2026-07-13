@@ -2,11 +2,18 @@ import type { UsuarioPermiso } from '@/types/usuario';
 
 export const PERMISOS_UI = [
   { id: 'dashboard', nombre: 'Acceso dashboard' },
+  { id: 'activos', nombre: 'Gestión de activos' },
   { id: 'inventario', nombre: 'Gestión de inventario' },
+  { id: 'mantenimiento', nombre: 'Gestión de mantenimiento' },
+  { id: 'reportes', nombre: 'Gestión de reportes' },
+  { id: 'preferencias', nombre: 'Preferencias' },
+  { id: 'administracion', nombre: 'Administración del sistema' },
   { id: 'configuracion', nombre: 'Edición de configuración' },
 ] as const;
 
-const INVENTARIO_ROLES = new Set(['admin', 'supervisor', 'tecnico']);
+const FULL_ACCESS = new Set(['admin']);
+const OPERATIONAL = new Set(['admin', 'supervisor', 'tecnico']);
+const READ_REPORTS = new Set(['admin', 'supervisor', 'reporter']);
 
 export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
   const normalized = rolSlug.trim().toLowerCase();
@@ -16,10 +23,20 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
 
     if (permiso.id === 'dashboard') {
       activo = true;
+    } else if (permiso.id === 'activos') {
+      activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'inventario') {
-      activo = INVENTARIO_ROLES.has(normalized);
+      activo = OPERATIONAL.has(normalized);
+    } else if (permiso.id === 'mantenimiento') {
+      activo = OPERATIONAL.has(normalized);
+    } else if (permiso.id === 'reportes') {
+      activo = READ_REPORTS.has(normalized);
+    } else if (permiso.id === 'preferencias') {
+      activo = FULL_ACCESS.has(normalized);
+    } else if (permiso.id === 'administracion') {
+      activo = FULL_ACCESS.has(normalized);
     } else if (permiso.id === 'configuracion') {
-      activo = normalized === 'admin';
+      activo = FULL_ACCESS.has(normalized);
     }
 
     return {
