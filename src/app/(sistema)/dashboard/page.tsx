@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Search, Bell, User, TrendingUp, Clock, Monitor, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Bell, User, TrendingUp, Clock, Monitor, AlertCircle, ClipboardList } from 'lucide-react';
 
 export default function DashboardPage() {
   return (
@@ -79,11 +80,20 @@ export default function DashboardPage() {
       <div className="flex flex-col space-y-6 pb-8">
         
         <div className="bg-white border border-[#EAE1D0] rounded-[2rem] p-8 shadow-sm">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="text-blue-600">
-              <Clock className="w-7 h-7" strokeWidth="{2}"/>
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="text-blue-600">
+                <Clock className="w-7 h-7" strokeWidth="{2}"/>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Próximos mantenimientos preventivos</h3>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Próximos mantenimientos preventivos</h3>
+            <Link
+              href="/reportes"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#8B5E3C] hover:text-[#6d4a2f] transition-colors whitespace-nowrap"
+            >
+              <ClipboardList className="w-4 h-4" aria-hidden />
+              Ver reportes
+            </Link>
           </div>
           
           <div className="bg-[#EAE1D0]/40 rounded-2xl p-4 flex items-center justify-between">
