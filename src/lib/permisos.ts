@@ -12,6 +12,7 @@ export const PERMISOS_UI = [
 ] as const;
 
 const FULL_ACCESS = new Set(['admin']);
+const ALL_USERS = new Set(['admin', 'supervisor', 'tecnico', 'reporter']);
 const OPERATIONAL = new Set(['admin', 'supervisor', 'tecnico']);
 const READ_REPORTS = new Set(['admin', 'supervisor', 'reporter']);
 
@@ -32,7 +33,7 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
     } else if (permiso.id === 'reportes') {
       activo = READ_REPORTS.has(normalized);
     } else if (permiso.id === 'preferencias') {
-      activo = FULL_ACCESS.has(normalized);
+      activo = ALL_USERS.has(normalized);
     } else if (permiso.id === 'administracion') {
       activo = FULL_ACCESS.has(normalized);
     } else if (permiso.id === 'configuracion') {
