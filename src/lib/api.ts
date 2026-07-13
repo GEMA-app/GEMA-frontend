@@ -120,12 +120,15 @@ export async function requireEmpresaId(): Promise<string> {
 
   const profile = await fetchWithAuth<Record<string, unknown>>('/v1/auth/yo');
   const data = profile.data as Record<string, unknown> | undefined;
+  const attributes = data?.attributes as Record<string, unknown> | undefined;
   const usuario = profile.usuario as Record<string, unknown> | undefined;
   const resolved =
     (typeof profile.empresa_id === 'string' && profile.empresa_id) ||
     (typeof profile.empresaId === 'string' && profile.empresaId) ||
     (typeof data?.empresa_id === 'string' && data.empresa_id) ||
     (typeof data?.empresaId === 'string' && data.empresaId) ||
+    (typeof attributes?.empresa_id === 'string' && attributes.empresa_id) ||
+    (typeof attributes?.empresaId === 'string' && attributes.empresaId) ||
     (typeof usuario?.empresa_id === 'string' && usuario.empresa_id) ||
     (typeof usuario?.empresaId === 'string' && usuario.empresaId) ||
     null;
