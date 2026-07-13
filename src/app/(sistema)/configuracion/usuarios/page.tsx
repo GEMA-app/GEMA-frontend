@@ -18,7 +18,7 @@ export default function GestionUsuariosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { usuarios, meta, loading, error, empty, crearUsuario, eliminarUsuario, isMock } =
+  const { usuarios, meta, loading, error, empty, crearUsuario, eliminarUsuario } =
     useUsuarios({
       page,
       perPage: PER_PAGE,
@@ -98,7 +98,6 @@ export default function GestionUsuariosPage() {
             role="alert"
           >
             {error}
-            {isMock ? ' (modo mock activo)' : ' — mostrando datos de respaldo.'}
           </div>
         )}
 

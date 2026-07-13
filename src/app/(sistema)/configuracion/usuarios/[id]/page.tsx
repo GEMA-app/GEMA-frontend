@@ -23,7 +23,7 @@ export default function UsuarioDetallePage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const { usuario, loading, error, isMock, actualizarUsuario, eliminarUsuario } =
+  const { usuario, loading, error, actualizarUsuario, eliminarUsuario } =
     useUsuarioDetalle(id);
 
   const handleSave = useCallback(
@@ -75,7 +75,6 @@ export default function UsuarioDetallePage() {
           role="alert"
         >
           {error}
-          {isMock ? ' (modo mock activo)' : ' — mostrando datos de respaldo.'}
         </div>
       )}
 

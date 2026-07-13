@@ -3,14 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import { computeReportesStats } from '@/lib/reportes';
-import { mockFetchReportes, mockFetchReportesResumen } from '@/data/mockReportesApi';
-import { MOCK_REPORTES } from '@/data/mockReportes';
-import {
-  createReporte,
-  getReportes,
-  getReportesResumen,
-  isReportesMockMode,
-} from '@/services/reportes';
+import { createReporte, getReportes } from '@/services/reportes';
 import type {
   NuevoReporteInput,
   Reporte,
@@ -41,7 +34,6 @@ const DEFAULT_META: ReportesMeta = {
 
 export function useReportes({
   search = '',
-  tipo = 'todos',
   page = 1,
   perPage = 15,
 }: UseReportesOptions = {}) {
@@ -50,40 +42,28 @@ export function useReportes({
   const [stats, setStats] = useState<ReportesResumen>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMock, setIsMock] = useState(isReportesMockMode);
 
   const fetchReportes = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const query = { page, perPage, search, tipo };
+    const query = { page, perPage, search };
 
     try {
-      const [lista, resumen] = await Promise.all([
-        getReportes(query),
-        getReportesResumen(),
-      ]);
-
+      const lista = await getReportes(query);
       setReportes(lista.reportes);
       setMeta(lista.meta);
-      setStats(resumen);
-      setIsMock(isReportesMockMode);
+      setStats(computeReportesStats(lista.reportes));
     } catch (err) {
-      const message =
+      setError(
         err instanceof ApiError
           ? err.message
-          : 'No se pudieron cargar los reportes de mantenimiento.';
-
-      const fallbackLista = mockFetchReportes(query);
-      setReportes(fallbackLista.reportes);
-      setMeta(fallbackLista.meta);
-      setStats(mockFetchReportesResumen());
-      setIsMock(true);
-      setError(message);
+          : 'No se pudieron cargar los reportes de mantenimiento.',
+      );
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, search, tipo]);
+  }, [page, perPage, search]);
 
   useEffect(() => {
     void fetchReportes();
@@ -95,11 +75,11 @@ export function useReportes({
 
   const crearReporte = useCallback(
     async (input: NuevoReporteInput) => {
-      const nuevo = await createReporte(input, meta.total + 1);
+      const nuevo = await createReporte(input);
       await refetch();
       return nuevo;
     },
-    [meta.total, refetch],
+    [refetch],
   );
 
   return {
@@ -108,7 +88,6 @@ export function useReportes({
     stats,
     loading,
     error,
-    isMock,
     empty: !loading && reportes.length === 0,
     refetch,
     crearReporte,

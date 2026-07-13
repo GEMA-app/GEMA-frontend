@@ -18,7 +18,7 @@ export default function ReportesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { reportes, stats, meta, loading, error, isMock, empty, crearReporte } = useReportes({
+  const { reportes, stats, meta, loading, error, empty, crearReporte } = useReportes({
     search: debouncedSearch,
     tipo: filtroTipo,
   });
@@ -81,7 +81,6 @@ export default function ReportesPage() {
           role="alert"
         >
           {error}
-          {isMock ? ' (modo mock activo)' : ' — mostrando datos de respaldo.'}
         </div>
       )}
 
