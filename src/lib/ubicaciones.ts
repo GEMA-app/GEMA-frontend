@@ -39,6 +39,32 @@ function normalizeEstado(value: unknown): EstadoUbicacion {
   return 'pendiente';
 }
 
+export function flattenBackendTree(payload: Record<string, unknown>, parentId?: string): Record<string, unknown>[] {
+  const data = payload.data;
+  if (!Array.isArray(data)) return [];
+
+  const results: Record<string, unknown>[] = [];
+  for (const item of data) {
+    const record = item as Record<string, unknown>;
+    const attrs = (record.attributes as Record<string, unknown>) ?? {};
+    const children = attrs.children;
+    const flatItem = {
+      ...record,
+      attributes: { ...attrs, parent_id: parentId },
+    };
+    delete (flatItem.attributes as Record<string, unknown>).children;
+    results.push(flatItem);
+    if (Array.isArray(children)) {
+      const sub = flattenBackendTree(
+        { data: children } as Record<string, unknown>,
+        record.id as string,
+      );
+      results.push(...sub);
+    }
+  }
+  return results;
+}
+
 export function mapApiUbicacionToUi(raw: unknown): Ubicacion | null {
   const record = asRecord(raw);
   if (!record) {
@@ -46,27 +72,20 @@ export function mapApiUbicacionToUi(raw: unknown): Ubicacion | null {
   }
 
   const attributes = asRecord(record.attributes) ?? record;
-  const direccion = asRecord(attributes.direccion);
-
   const id = asString(record.id ?? attributes.id);
   if (!id) {
     return null;
   }
 
-  const edificio = asString(attributes.edificio);
-  const piso = asString(attributes.piso);
-  const salon = asString(attributes.salon);
-  const jerarquiaParts = [edificio, piso, salon].filter(Boolean);
-
   return {
     id,
-    nombre: asString(attributes.nombre, salon || edificio || `Ubicación ${id}`),
-    jerarquia: asString(attributes.jerarquia, jerarquiaParts.join(' / ') || 'Sin jerarquía'),
-    tipo: asString(attributes.tipo, asString(direccion?.nombre, 'Sin tipo')),
-    proceso: normalizeProceso(attributes.proceso ?? attributes.prioridad),
-    estado: normalizeEstado(attributes.estado),
+    nombre: asString(attributes.nombre, `Ubicación ${id}`),
+    jerarquia: asString(attributes.descripcion, asString(attributes.nombre, '')),
+    tipo: asString(attributes.tipo, 'area'),
+    proceso: normalizeProceso(attributes.proceso ?? 'media'),
+    estado: normalizeEstado(attributes.estado ?? 'completado'),
     parentId: asString(
-      attributes.parent_id ?? attributes.parentId ?? attributes.ubicacion_padre_id,
+      attributes.parent_id ?? attributes.parentId,
       undefined,
     ) || undefined,
   };

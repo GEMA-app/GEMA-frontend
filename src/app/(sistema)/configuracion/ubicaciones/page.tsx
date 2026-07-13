@@ -67,13 +67,18 @@ export default function GestionUbicacionesPage() {
   };
 
   const handleCreateUbicacion = async (data: NuevaUbicacionForm) => {
-    await createUbicacion(data);
+    try {
+      await createUbicacion(data);
 
-    if (data.parentId) {
-      setExpandedIds((current) => new Set([...current, data.parentId!]));
+      if (data.parentId) {
+        setExpandedIds((current) => new Set([...current, data.parentId!]));
+      }
+
+      setIsModalOpen(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al crear la ubicación';
+      alert(message);
     }
-
-    setIsModalOpen(false);
   };
 
   const showSearchEmpty = !loading && !error && !empty && visibleRows.length === 0;
