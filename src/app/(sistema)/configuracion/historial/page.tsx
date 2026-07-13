@@ -49,7 +49,7 @@ export default function HistorialUsuariosPage() {
             Historial de usuarios
           </h2>
           <p className="text-sm text-gray-700 mt-1">
-            Auditoría y trazabilidad GIMA
+            Auditoría y trazabilidad en GEMA
           </p>
         </div>
 
