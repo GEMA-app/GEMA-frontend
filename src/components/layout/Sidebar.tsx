@@ -1,64 +1,21 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { LayoutDashboard, Box, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { clearSession, ensureSessionRoles, hasAnyRole } from '@/lib/auth';
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [canAccessConfig, setCanAccessConfig] = useState(false);
-  const [canAccessReportes, setCanAccessReportes] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
-  useEffect(() => {
-    let cancelled = false;
-
-    void ensureSessionRoles()
-      .then(() => {
-        if (!cancelled) {
-          setCanAccessConfig(hasAnyRole(['admin']));
-          setCanAccessReportes(hasAnyRole(['admin', 'supervisor', 'reporter']));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCanAccessConfig(false);
-          setCanAccessReportes(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const menuItems = useMemo(
-    () =>
-      [
-        { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-        { icon: Box, label: 'Activos', href: '/activos' },
-        { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
-        {
-          icon: ClipboardList,
-          label: 'Reportes',
-          href: '/reportes',
-          reportsOnly: true,
-        },
-        { icon: Settings, label: 'Configuración', href: '/configuracion', adminOnly: true },
-      ].filter(
-        (item) =>
-          (!item.adminOnly || canAccessConfig) && (!item.reportsOnly || canAccessReportes),
-      ),
-    [canAccessConfig, canAccessReportes],
-  );
-
-  const handleLogout = () => {
-    clearSession();
-    router.push('/login');
-  };
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+    { icon: Box, label: 'Activos', href: '/activos' },
+    { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
+    { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
+    { icon: Settings, label: 'Configuración', href: '/configuracion' },
+  ];
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
