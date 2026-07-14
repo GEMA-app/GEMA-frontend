@@ -6,6 +6,6 @@ export default function ReportesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard roleRequired={['admin', 'supervisor', 'reporter']}>{children}</AuthGuard>
+    <AuthGuard roleRequired={['administrador', 'supervisor de activos', 'supervisor de operaciones']}>{children}</AuthGuard>
   );
 }
