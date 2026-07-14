@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, MapPin, Pencil } from 'lucide-react';
@@ -20,7 +20,7 @@ function normalizeEstadoDisplay(estado: string): string {
   return map[estado] || estado;
 }
 
-export default function FichaDeActivoPage() {
+function FichaDeActivoContent() {
   const searchParams = useSearchParams();
   const activoId = searchParams.get('id');
   const { ubicaciones } = useUbicaciones();
@@ -159,5 +159,13 @@ export default function FichaDeActivoPage() {
         </div>
       </RequestState>
     </div>
+  );
+}
+
+export default function FichaDeActivoPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-[#F3F4F6] p-8"><p className="text-gray-500">Cargando...</p></div>}>
+      <FichaDeActivoContent />
+    </Suspense>
   );
 }
