@@ -3,8 +3,8 @@ import {
   extractResource,
   type JsonApiResource,
 } from '@/lib/jsonapi';
-import type { Rol, PermisoGranular, AccionRBAC } from '@/types/rol';
-import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC } from '@/lib/permisos';
+import type { Rol, PermisoGranular } from '@/types/rol';
+import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos';
 
 const MODULO_VALUES = Object.values(MODULOS_RBAC) as ModuloRBAC[];
 const ACCION_VALUES = [...ACCIONES_RBAC] as AccionRBAC[];
