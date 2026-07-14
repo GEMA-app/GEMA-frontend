@@ -12,6 +12,7 @@ interface RequestStateProps {
   emptyMessage?: string;
   errorMessage?: string;
   variant?: RequestStateVariant;
+  onRetry?: () => void;
   children: ReactNode;
 }
 
@@ -28,6 +29,7 @@ export function RequestState({
   emptyMessage = 'No hay datos para mostrar.',
   errorMessage,
   variant = 'default',
+  onRetry,
   children,
 }: RequestStateProps) {
   const shell = `${VARIANT_CLASSES[variant]} px-6 py-12 sm:py-16 text-center text-sm`;
@@ -53,6 +55,15 @@ export function RequestState({
           role="alert"
         >
           {errorMessage ?? error}
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="ml-3 underline underline-offset-2 hover:no-underline"
+            >
+              Reintentar
+            </button>
+          )}
         </div>
         <div className={`${shell} border border-dashed border-[#DED4C7] bg-white/50 text-gray-500`}>
           {emptyMessage}
@@ -68,6 +79,15 @@ export function RequestState({
         role="alert"
       >
         {errorMessage ?? error}
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-3 underline underline-offset-2 hover:no-underline"
+          >
+            Reintentar
+          </button>
+        )}
       </div>
     );
   }
