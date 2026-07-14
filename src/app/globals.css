@@ -21,14 +21,18 @@
   --color-azul-gema: #2E4365;
   --color-naranja-gema: #E59D2C;
   --color-icono-gema: #F3D58D;
-  }
+  --color-beige-gema: #EBDDC5;
+  --color-beige-gema-35: rgba(235, 221, 197, 0.35);
+  --icon-edit: #0A8E71;
+  --icon-delete: #FF0000;
+}
 
- @layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,7 @@
   html, body {
     height: 100%;
   }
+}
 
   body {
     background-color: #ECEAE6;
