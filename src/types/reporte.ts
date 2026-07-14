@@ -49,3 +49,12 @@ export interface NuevoReporteInput {
   prioridad: ReportePrioridad;
   asignado: string;
 }
+
+export interface ActualizarReporteInput {
+  titulo?: string;
+  descripcion?: string;
+  ubicacion?: string;
+  prioridad?: ReportePrioridad;
+  estado?: ReporteEstado;
+  version: number;
+}

@@ -68,3 +68,41 @@ export async function createReporte(input: NuevoReporteInput): Promise<Reporte> 
 
   return mapReporteResponse(payload) ?? buildReporteFromInput(input, Date.now());
 }
+
+import type { ActualizarReporteInput } from '@/types/reporte';
+
+export async function getReporteById(id: string): Promise<Reporte | null> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/reportes-fallas/${id}`,
+  );
+  return mapReporteResponse(payload);
+}
+
+export async function updateReporte(id: string, input: ActualizarReporteInput): Promise<Reporte | null> {
+  const empresaId = await requireEmpresaId();
+  const attributes: Record<string, unknown> = { version: input.version };
+
+  if (input.titulo !== undefined) attributes.title = input.titulo;
+  if (input.descripcion !== undefined) attributes.description = input.descripcion;
+  if (input.ubicacion !== undefined) attributes.location = input.ubicacion;
+  if (input.prioridad !== undefined) attributes.priority = input.prioridad;
+  if (input.estado !== undefined) attributes.status = input.estado;
+
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/reportes-fallas/${id}`,
+    {
+      method: 'PATCH',
+      contentType: 'json-api',
+      json: { data: { type: 'failure-reports', attributes } },
+    },
+  );
+  return mapReporteResponse(payload);
+}
+
+export async function deleteReporte(id: string): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  await fetchWithAuth(`/v1/empresas/${empresaId}/reportes-fallas/${id}`, {
+    method: 'DELETE',
+  });
+}

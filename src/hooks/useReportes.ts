@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import { computeReportesStats } from '@/lib/reportes';
-import { createReporte, getReportes } from '@/services/reportes';
+import { createReporte, getReportes, updateReporte, deleteReporte } from '@/services/reportes';
 import type {
+  ActualizarReporteInput,
   NuevoReporteInput,
   Reporte,
   ReporteFiltroTipo,
@@ -82,6 +83,22 @@ export function useReportes({
     [refetch],
   );
 
+  const editarReporte = useCallback(
+    async (id: string, input: ActualizarReporteInput) => {
+      await updateReporte(id, input);
+      await refetch();
+    },
+    [refetch],
+  );
+
+  const eliminarReporte = useCallback(
+    async (id: string) => {
+      await deleteReporte(id);
+      await refetch();
+    },
+    [refetch],
+  );
+
   return {
     reportes,
     meta,
@@ -91,5 +108,7 @@ export function useReportes({
     empty: !loading && reportes.length === 0,
     refetch,
     crearReporte,
+    editarReporte,
+    eliminarReporte,
   };
 }
