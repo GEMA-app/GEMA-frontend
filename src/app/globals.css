@@ -114,3 +114,15 @@
 .bg-overlay {
   background: rgba(46, 67, 101, 0.6);
 }
+
+/* Ocultar el picker nativo de fecha para usar el estilo custom */
+input.date-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+input.date-input::-webkit-inner-spin-button,
+input.date-input::-webkit-clear-button {
+  display: none;
+}
+input.date-input::-moz-focus-inner {
+  border: 0;
+}

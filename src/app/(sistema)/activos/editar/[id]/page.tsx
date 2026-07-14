@@ -162,8 +162,7 @@ export default function EditarActivoPage() {
     );
   }
 
-  // ── Render principal ─────────────────────────────────────────────────────
-
+  // Render principal
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
       <PageHeader title="Activos / Editar activo" variant="activos" />
