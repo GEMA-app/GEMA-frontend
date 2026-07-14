@@ -179,7 +179,7 @@ export async function ensureSessionRoles(): Promise<string[]> {
   }
 
   const { fetchWithAuth } = await import('@/lib/api');
-  const profile = await fetchWithAuth<unknown>('/autenticacion/perfil');
+  const profile = await fetchWithAuth<unknown>('/v1/auth/me');
   const roles = extractRolesFromPayload(profile);
 
   if (roles.length > 0) {

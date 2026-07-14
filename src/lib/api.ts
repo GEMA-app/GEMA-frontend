@@ -118,7 +118,7 @@ export async function requireEmpresaId(): Promise<string> {
     return empresaId;
   }
 
-  const profile = await fetchWithAuth<Record<string, unknown>>('/autenticacion/perfil');
+  const profile = await fetchWithAuth<Record<string, unknown>>('/v1/auth/me');
   const data = profile.data as Record<string, unknown> | undefined;
   const usuario = profile.usuario as Record<string, unknown> | undefined;
   const resolved =
