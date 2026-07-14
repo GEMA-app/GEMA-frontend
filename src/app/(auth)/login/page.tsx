@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { Mail, KeyRound, Eye, EyeOff, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { setSession } from '@/lib/auth';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,7 +16,7 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/autenticacion/iniciar-sesion`,
+                `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
                 {
                     method: 'POST',
                     headers: {
