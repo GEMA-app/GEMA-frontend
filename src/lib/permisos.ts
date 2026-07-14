@@ -56,3 +56,21 @@ export function rolSlugFromLabel(rol: string): string {
   if (normalized.includes('reporter')) return 'reporter';
   return normalized;
 }
+
+// ── Constantes RBAC (alineadas con PermissionModule del backend) ──
+// Estos módulos corresponden 1:1 con los PermissionModule del backend.
+// Usar en PermissionGuard y en hasPermission() cuando se implemente en Fase 8.
+
+export const MODULOS_RBAC = {
+  ACTIVOS: 'activos',
+  MANTENIMIENTO: 'mantenimiento',
+  INVENTARIO: 'inventario',
+  REPORTES: 'reportes',
+  ADMINISTRACION: 'administracion',
+  PREFERENCIAS: 'preferencias',
+} as const;
+
+export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
+
+export type ModuloRBAC = (typeof MODULOS_RBAC)[keyof typeof MODULOS_RBAC];
+export type AccionRBAC = (typeof ACCIONES_RBAC)[number];
