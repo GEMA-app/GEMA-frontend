@@ -1,4 +1,30 @@
+import { buildOffsetQuery } from '@/lib/pagination';
+import { extractActivosFromResponse, extractActivosMeta } from '@/lib/activos';
+import type { ActivosQuery, ActivosResponse } from '@/types/activo';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+
+export async function getActivos(params: ActivosQuery = {}): Promise<ActivosResponse> {
+  const empresaId = await requireEmpresaId();
+  const page = params.page ?? 1;
+  const perPage = params.perPage ?? 15;
+
+  const query = buildOffsetQuery({
+    page,
+    perPage,
+    search: params.search,
+    estado: params.estado,
+    ubicacion_id: params.ubicacionId,
+  });
+
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/activos${query}`,
+  );
+
+  return {
+    activos: extractActivosFromResponse(payload),
+    meta: extractActivosMeta(payload, page, perPage),
+  };
+}
 
 function normalizeAssetStatus(raw: string): string {
   const map: Record<string, string> = {
