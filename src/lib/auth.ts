@@ -1,5 +1,5 @@
 const TOKEN_KEY = 'token';
-const EMPRESA_ID_KEY = 'empresaId';
+const EMPRESA_ID_KEY = 'empresa_id';
 const ROLES_KEY = 'roles';
 const USER_NAME_KEY = 'userName';
 
@@ -174,13 +174,27 @@ export async function ensureSessionRoles(): Promise<string[]> {
     return existing;
   }
 
-  if (!getToken()) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) {
     throw new Error('No hay sesión activa');
   }
 
-  const { fetchWithAuth } = await import('@/lib/api');
-  const profile = await fetchWithAuth<unknown>('/v1/auth/me');
-  const roles = extractRolesFromPayload(profile);
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.api+json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener perfil: ${response.status}`);
+  }
+
+  const result = await response.json();
+  const roles: string[] = result.data?.attributes?.roles ?? [];
 
   if (roles.length > 0) {
     setRoles(roles);

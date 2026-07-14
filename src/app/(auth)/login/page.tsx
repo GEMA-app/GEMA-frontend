@@ -38,8 +38,10 @@ export default function LoginPage() {
             if (response.ok) {
                 const token = result.data?.attributes?.access_token;
                 const empresaId = result.data?.attributes?.empresa_id;
+                const roles: string[] = result.data?.attributes?.roles ?? [];
                 if (token) localStorage.setItem('token', token);
                 if (empresaId) localStorage.setItem('empresa_id', empresaId);
+                if (roles.length > 0) localStorage.setItem('roles', JSON.stringify(roles));
                 window.location.href = '/dashboard';
             } else {
                 alert(result.mensaje || 'Error al iniciar sesión');
