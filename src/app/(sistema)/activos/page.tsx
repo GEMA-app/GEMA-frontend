@@ -8,6 +8,7 @@ import { Search, Bell, User, Plus, Eye, Wrench, Trash } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 
+
 type Estado = 'Operativo' | 'En mantenimiento';
 
 interface Activo {
