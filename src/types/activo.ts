@@ -1,13 +1,11 @@
 import type { PaginationMeta } from '@/types/common';
 
-// ── Estados (alineados con AssetStatus del backend) ──
 export type ActivoEstado =
   | 'operativo'
   | 'en_mantenimiento'
   | 'fuera_de_servicio'
   | 'dado_de_baja';
 
-// ── Interfaces de UI ──
 export interface Activo {
   id: string;
   nombre: string;
@@ -16,17 +14,6 @@ export interface Activo {
   estado: ActivoEstado;
 }
 
-export interface ActivoDetalle extends Activo {
-  ubicacionId: string | null;
-  codigoActivo: string;
-  articuloId: string;
-  fechaAdquisicion: string | null;
-  valorMonetario: number | null;
-  moneda: string;
-  version: number;
-}
-
-// ── Query y Meta ──
 export interface ActivosQuery {
   page?: number;
   perPage?: number;
@@ -40,8 +27,7 @@ export interface ActivosResponse {
   meta: PaginationMeta;
 }
 
-// ── Inputs ──
-export interface NuevoActivoInput {
+export interface CreateActivoForm {
   nombre: string;
   codigo: string;
   marca: string;
@@ -49,14 +35,25 @@ export interface NuevoActivoInput {
   fechaCompra: string;
   valorMonetario: string;
   moneda: string;
-  estadoInicial: ActivoEstado | string;
+  estadoInicial: string;
 }
 
-export interface ActualizarActivoInput {
-  nombre?: string;
-  codigo?: string;
-  ubicacion?: string;
-  fechaCompra?: string;
-  estadoInicial?: ActivoEstado | string;
+export interface ActivoResponse {
+  id: string;
+  serial_interno: string;
+  codigo_activo: string;
+  estado: string;
+  ubicacion_id: string | null;
+  fecha_adquisicion: string | null;
+  valor_monetario: number | null;
+  moneda: string;
+  articulo_id: string;
   version: number;
+}
+
+export interface CatalogArticleResponse {
+  id: string;
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
 }

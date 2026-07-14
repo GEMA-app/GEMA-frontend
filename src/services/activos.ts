@@ -1,7 +1,8 @@
 import { buildOffsetQuery } from '@/lib/pagination';
 import { extractActivosFromResponse, extractActivosMeta, normalizeAssetStatus } from '@/lib/activos';
-import type { ActivosQuery, ActivosResponse } from '@/types/activo';
+import type { ActivoResponse, ActivosQuery, ActivosResponse, CreateActivoForm } from '@/types/activo';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { findOrCreateCatalogArticle } from '@/services/catalogo';
 
 export async function getActivos(params: ActivosQuery = {}): Promise<ActivosResponse> {
   const empresaId = await requireEmpresaId();
@@ -26,48 +27,29 @@ export async function getActivos(params: ActivosQuery = {}): Promise<ActivosResp
   };
 }
 
-export interface CreateActivoForm {
-  nombre: string;
-  codigo: string;
-  marca: string;
-  ubicacion: string;
-  fechaCompra: string;
-  valorMonetario: string;
-  moneda: string;
-  estadoInicial: string;
+export async function getActivo(id: string): Promise<ActivoResponse> {
+  const empresaId = await requireEmpresaId();
+  const res = await fetchWithAuth<{ data: { id: string; attributes: Record<string, unknown> } }>(
+    `/v1/empresas/${empresaId}/activos/${id}`,
+  );
+  const a = res.data.attributes;
+  return {
+    id: res.data.id,
+    serial_interno: a.serial_interno as string,
+    codigo_activo: a.codigo_activo as string,
+    estado: a.estado as string,
+    ubicacion_id: (a.ubicacion_id as string) || null,
+    fecha_adquisicion: (a.fecha_adquisicion as string) || null,
+    valor_monetario: (a.valor_monetario as number) ?? null,
+    moneda: (a.moneda as string) || 'USD',
+    articulo_id: a.articulo_id as string,
+    version: a.version as number,
+  };
 }
 
 export async function createActivo(data: CreateActivoForm): Promise<void> {
   const empresaId = await requireEmpresaId();
-
-  const searchResult = await fetchWithAuth<{ data: Array<{ id: string }> }>(
-    `/v1/empresas/${empresaId}/catalogo/articulos?search=${encodeURIComponent(data.nombre)}&limit=1`,
-  );
-
-  let articuloId: string;
-  if (searchResult.data?.length > 0) {
-    articuloId = searchResult.data[0].id;
-  } else {
-    const created = await fetchWithAuth<{ data: { id: string } }>(
-      `/v1/empresas/${empresaId}/catalogo/articulos`,
-      {
-        method: 'POST',
-        contentType: 'json-api',
-        json: {
-          data: {
-            type: 'catalog-articles',
-            attributes: {
-              name: data.nombre,
-              manufacturer: data.marca || null,
-              model: data.nombre,
-            },
-          },
-        },
-      },
-    );
-    articuloId = created.data.id;
-  }
-
+  const articuloId = await findOrCreateCatalogArticle(data.nombre, data.marca);
   const valor = data.valorMonetario ? parseFloat(data.valorMonetario.replace(',', '.')) : null;
 
   await fetchWithAuth(`/v1/empresas/${empresaId}/activos`, {
@@ -91,67 +73,6 @@ export async function createActivo(data: CreateActivoForm): Promise<void> {
   });
 }
 
-export async function deleteActivo(id: string): Promise<void> {
-  const empresaId = await requireEmpresaId();
-  await fetchWithAuth(`/v1/empresas/${empresaId}/activos/${id}`, {
-    method: 'DELETE',
-  });
-}
-
-export interface ActivoResponse {
-  id: string;
-  serial_interno: string;
-  codigo_activo: string;
-  estado: string;
-  ubicacion_id: string | null;
-  fecha_adquisicion: string | null;
-  valor_monetario: number | null;
-  moneda: string;
-  articulo_id: string;
-  version: number;
-}
-
-export async function getActivo(id: string): Promise<ActivoResponse> {
-  const empresaId = await requireEmpresaId();
-  const res = await fetchWithAuth<{ data: { id: string; attributes: Record<string, unknown> } }>(
-    `/v1/empresas/${empresaId}/activos/${id}`,
-  );
-  const a = res.data.attributes;
-  return {
-    id: res.data.id,
-    serial_interno: a.serial_interno as string,
-    codigo_activo: a.codigo_activo as string,
-    estado: a.estado as string,
-    ubicacion_id: (a.ubicacion_id as string) || null,
-    fecha_adquisicion: (a.fecha_adquisicion as string) || null,
-    valor_monetario: (a.valor_monetario as number) ?? null,
-    moneda: (a.moneda as string) || 'USD',
-    articulo_id: a.articulo_id as string,
-    version: a.version as number,
-  };
-}
-
-export interface CatalogArticleResponse {
-  id: string;
-  name: string;
-  manufacturer: string | null;
-  model: string | null;
-}
-
-export async function getCatalogArticle(id: string): Promise<CatalogArticleResponse> {
-  const empresaId = await requireEmpresaId();
-  const res = await fetchWithAuth<{ data: { id: string; attributes: Record<string, unknown> } }>(
-    `/v1/empresas/${empresaId}/catalogo/articulos/${id}`,
-  );
-  const a = res.data.attributes;
-  return {
-    id: res.data.id,
-    name: a.name as string,
-    manufacturer: (a.manufacturer as string) || null,
-    model: (a.model as string) || null,
-  };
-}
-
 export async function updateActivo(id: string, data: Partial<CreateActivoForm> & { version: number }): Promise<void> {
   const empresaId = await requireEmpresaId();
   const attrs: Record<string, unknown> = { version: data.version };
@@ -171,5 +92,12 @@ export async function updateActivo(id: string, data: Partial<CreateActivoForm> &
     method: 'PATCH',
     contentType: 'json-api',
     json: { data: { type: 'assets', attributes: attrs } },
+  });
+}
+
+export async function deleteActivo(id: string): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  await fetchWithAuth(`/v1/empresas/${empresaId}/activos/${id}`, {
+    method: 'DELETE',
   });
 }
