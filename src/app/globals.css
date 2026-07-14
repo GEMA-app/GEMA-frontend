@@ -44,7 +44,6 @@
   html, body {
     height: 100%;
   }
-}
 
   body {
     background-color: #ECEAE6;
@@ -53,9 +52,8 @@
     -moz-osx-font-smoothing: grayscale;
   }
  /* Capa oscura para imágenes de fondo */
- bg-overlay {
+ .bg-overlay {
   background: rgba(46, 67, 101, 0.6); /* Azul-gema con opacidad */
- } 
  }
 
  /* Estilos específicos solicitados para la página de repuestos */
