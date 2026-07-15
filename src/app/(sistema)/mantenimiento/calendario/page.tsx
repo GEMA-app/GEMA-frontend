@@ -17,43 +17,6 @@ const defaultTechnicians = [
   { value: '', label: 'Seleccione técnico' },
 ];
 
-const gemaApi = {
-  createOrden: async (empresaId: string, payload: Record<string, unknown>) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    console.log('Simulación de creación de orden', empresaId, payload);
-    return { success: true };
-  },
-
-  getEmpresaId: async () => {
-    /* error no tiene secion activa*/
-    if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
-      const error = new Error('No hay sesión activa. Inicie sesión para cargar activos y técnicos.');
-      Object.assign(error, { status: 401 });
-      throw error;
-    }
-   
-    return 'empresa-simulada';
-  },
-
-  getActivos: async (empresaId: string) => {
-    console.log('Simulación de carga de activos para empresa', empresaId);
-    return [
-      { value: 'activo-1', label: 'Compresor industrial' },
-      { value: 'activo-2', label: 'Bomba centrífuga' },
-      { value: 'activo-3', label: 'Motor eléctrico' },
-    ];
-  },
-
-  getUsuarios: async (empresaId: string) => {
-    console.log('Simulación de carga de técnicos para empresa', empresaId);
-    return [
-      { value: 'tech-1', label: 'Técnico Juan' },
-      { value: 'tech-2', label: 'Técnico María' },
-      { value: 'tech-3', label: 'Técnico Luis' },
-    ];
-  },
-};
-
 export default function CalendarPage() {
   const [serviceType, setServiceType] = useState<'correctivo' | 'preventivo'>('correctivo');
   const [asset, setAsset] = useState('');
@@ -102,23 +65,47 @@ export default function CalendarPage() {
     setSubmissionMessage(null);
 
     try {
-      /*empresa no tiene secion activa*/
-      if (!empresaId) {
-        throw new Error('No se pudo identificar la empresa del usuario.');
-      }
-    
+      const token = localStorage.getItem('token');
+      const empresaId = localStorage.getItem('empresa_id');
 
-      await gemaApi.createOrden(empresaId ?? 'empresa-simulada', {
-        tipo_servicio: serviceType,
-        activo_id: asset,
-        prioridad: priority,
-        tecnico_id: technician,
-        fecha_programada: `${scheduledDate}T${scheduledTime}`,
-        notas: notes,
-      });
+      if (!token || !empresaId) {
+        throw new Error('No se pudo identificar la sesión del usuario.');
+      }
 
       const activoLabel = activos.find((item) => item.value === asset)?.label ?? asset;
       const technicianLabel = techniciansList.find((item) => item.value === technician)?.label ?? technician;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/ordenes-trabajo`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/vnd.api+json',
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json',
+          },
+          body: JSON.stringify({
+            data: {
+              type: 'ordenes-trabajo',
+              attributes: {
+                tipo: serviceType,
+                descripcion_trabajo: notes,
+                fecha_apertura: `${scheduledDate}T${scheduledTime}`,
+                activo_id: asset,
+                supervisor_id: technician,
+                prioridad: priority,
+              },
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        const detail = (errBody as any)?.errors?.[0]?.detail ?? `Error ${response.status}`;
+        throw new Error(detail);
+      }
+
       const reportData = {
         equipoNombre: activoLabel,
         tipoServicio: serviceType === 'correctivo' ? 'Correctivo' : 'Preventivo',
@@ -137,9 +124,10 @@ export default function CalendarPage() {
       }
 
       router.push('/mantenimiento/orden');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creando orden', err);
-      setSubmissionMessage(err?.message || 'No se pudo agendar la orden. Intente nuevamente.');
+      const message = err instanceof Error ? err.message : 'No se pudo agendar la orden. Intente nuevamente.';
+      setSubmissionMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -166,21 +154,43 @@ export default function CalendarPage() {
       setDataLoadMessage(null);
 
       try {
-        /*iniciar sesión */
-        if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
-          throw Object.assign(new Error('No hay sesión activa. Inicie sesión para cargar activos y técnicos.'), { status: 401 });
+        const token = localStorage.getItem('token');
+        const empresaId = localStorage.getItem('empresa_id');
+
+        if (!token || !empresaId) {
+          throw Object.assign(
+            new Error('No hay sesión activa. Inicie sesión para cargar activos y técnicos.'),
+            { status: 401 }
+          );
         }
-        
 
-        const id = await gemaApi.getEmpresaId();
-        if (!mounted) return;
-        setEmpresaId(id);
+        setEmpresaId(empresaId);
 
-        const activosRes = await gemaApi.getActivos(id);
-        if (mounted) setActivos((prev) => (activosRes.length ? activosRes : prev));
+        const activosRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/activos`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.api+json' } }
+        );
+        if (activosRes.ok && mounted) {
+          const activosData = await activosRes.json();
+          const activosMapped = (activosData.data ?? []).map((a: Record<string, any>) => ({
+            value: a.id,
+            label: a.attributes?.nombre ?? a.id,
+          }));
+          if (activosMapped.length) setActivos(activosMapped);
+        }
 
-        const usuariosRes = await gemaApi.getUsuarios(id);
-        if (mounted) setTechniciansList((prev) => (usuariosRes.length ? usuariosRes : prev));
+        const usuariosRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/usuarios`,
+          { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.api+json' } }
+        );
+        if (usuariosRes.ok && mounted) {
+          const usuariosData = await usuariosRes.json();
+          const usuariosMapped = (usuariosData.data ?? []).map((u: Record<string, any>) => ({
+            value: u.id,
+            label: u.attributes?.nombre ?? u.attributes?.email ?? u.id,
+          }));
+          if (usuariosMapped.length) setTechniciansList(usuariosMapped);
+        }
       } catch (err: any) {
         const status = err?.status;
         if (status === 401) {
