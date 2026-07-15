@@ -1,6 +1,5 @@
 import type { HistorialEntry } from '@/types/historial';
 import { formatFechaAbsoluta } from '@/lib/formatRelativeTime';
-import { RolLabel } from './RolLabel';
 import { AccionBadge } from './AccionBadge';
 import { RelativeTime } from './RelativeTime';
 
@@ -16,15 +15,12 @@ export function HistorialEntryRow({ entry }: HistorialEntryRowProps) {
           <h3 className="font-bold text-gray-800 text-base leading-tight">
             {entry.usuario.nombre}
           </h3>
-          <div className="mt-1">
-            <RolLabel rol={entry.usuario.rol} />
-          </div>
         </div>
 
         <div className="lg:col-span-6">
           <AccionBadge accion={entry.accion} />
           <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-            {entry.descripcion}
+            {entry.accion.replace(/_/g, ' ')}
           </p>
         </div>
 

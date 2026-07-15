@@ -1,4 +1,4 @@
-import { fetchWithAuth } from '@/lib/api';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import {
   extractHistorialFromResponse,
   extractHistorialMeta,
@@ -21,18 +21,19 @@ export interface HistorialResponse {
   meta: HistorialMeta;
 }
 
+async function baseUrl(): Promise<string> {
+  const empresaId = await requireEmpresaId();
+  return `/v1/empresas/${empresaId}/auditorias`;
+}
+
 function buildHistorialQuery(params: HistorialQuery): string {
   const searchParams = new URLSearchParams();
+  const page = params.page ?? 1;
+  const limit = params.limit ?? 20;
 
-  if (params.page) {
-    searchParams.set('page', String(params.page));
-  }
-  if (params.limit) {
-    searchParams.set('per_page', String(params.limit));
-  }
-  if (params.search?.trim()) {
-    searchParams.set('search', params.search.trim());
-  }
+  searchParams.set('offset', String((page - 1) * limit));
+  searchParams.set('limit', String(limit));
+
   if (params.accion) {
     searchParams.set('accion', params.accion);
   }
@@ -50,9 +51,10 @@ function buildHistorialQuery(params: HistorialQuery): string {
 export async function getHistorial(params: HistorialQuery = {}): Promise<HistorialResponse> {
   const page = params.page ?? 1;
   const limit = params.limit ?? 20;
+  const url = await baseUrl();
   const query = buildHistorialQuery({ ...params, page, limit });
 
-  const payload = await fetchWithAuth<unknown>(`/admin/historial-logs${query}`);
+  const payload = await fetchWithAuth<unknown>(`${url}${query}`);
 
   return {
     entries: extractHistorialFromResponse(payload),
