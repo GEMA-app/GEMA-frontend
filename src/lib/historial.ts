@@ -1,75 +1,39 @@
-import type { RolUsuario, HistorialEntry } from '@/types/historial';
+import type { HistorialEntry } from '@/types/historial';
+import { asRecord } from '@/lib/jsonapi';
 
 type ApiRecord = Record<string, unknown>;
 
-function asRecord(value: unknown): ApiRecord | null {
-  return value && typeof value === 'object' ? (value as ApiRecord) : null;
-}
-
 function asString(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return String(value);
-  }
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
   return fallback;
 }
 
-function normalizeRol(value: unknown): RolUsuario {
-  const rol = asString(value, 'Técnico').toLowerCase();
-
-  if (rol.includes('admin')) {
-    return 'Administrador';
-  }
-  if (rol.includes('super')) {
-    return 'Supervisor';
-  }
-  return 'Técnico';
+function asRecordValue(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  return null;
 }
 
 export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
   const record = asRecord(raw);
-  if (!record) {
-    return null;
-  }
+  if (!record) return null;
 
   const attributes = asRecord(record.attributes) ?? record;
-  const usuario = asRecord(attributes.usuario) ?? asRecord(record.user);
-  const roles = usuario?.roles;
-  const rolFromArray = Array.isArray(roles) && typeof roles[0] === 'string' ? roles[0] : null;
 
-  const id = asString(record.id ?? attributes.id);
-  const fecha = asString(
-    attributes.fecha ?? attributes.created_at ?? attributes.timestamp,
-  );
+  const id = asString(record.id);
+  const fecha = asString(attributes.ocurrido_en);
 
-  if (!id || !fecha) {
-    return null;
-  }
+  if (!id || !fecha) return null;
 
   return {
     id,
     usuario: {
-      nombre: asString(
-        usuario?.name ??
-          usuario?.nombre ??
-          attributes.usuario_nombre ??
-          attributes.nombre_usuario,
-        'Usuario desconocido',
-      ),
-      rol: normalizeRol(rolFromArray ?? usuario?.rol ?? attributes.usuario_rol ?? attributes.rol),
+      nombre: asString(attributes.usuario_id, '—'),
     },
-    accion: asString(attributes.accion ?? attributes.action, 'Acción'),
-    descripcion: asString(
-      attributes.descripcion ?? attributes.detalle ?? attributes.description,
-      'Sin descripción',
-    ),
+    accion: asString(attributes.accion, '—'),
+    detalles: asRecordValue(attributes.detalles) ?? {},
     fecha,
-    metadata: {
-      ip: asString(attributes.ip, undefined) || undefined,
-      terminal: asString(attributes.terminal, undefined) || undefined,
-    },
+    ip: asString(attributes.ip_address, undefined) || undefined,
   };
 }
 
@@ -79,9 +43,7 @@ export function extractHistorialFromResponse(payload: unknown): HistorialEntry[]
   }
 
   const record = asRecord(payload);
-  if (!record) {
-    return [];
-  }
+  if (!record) return [];
 
   const data = record.data;
   if (Array.isArray(data)) {
@@ -120,10 +82,5 @@ export function extractHistorialMeta(payload: unknown, fallbackPage: number, fal
           ? page < lastPage
           : page * limit < total;
 
-  return {
-    page,
-    limit,
-    total,
-    hasMore,
-  };
+  return { page, limit, total, hasMore };
 }

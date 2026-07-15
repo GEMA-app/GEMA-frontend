@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LayoutDashboard, Box, Truck, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Box, Wrench, Truck, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clearSession, getToken } from '@/lib/auth';
@@ -17,6 +17,7 @@ export default function Sidebar() {
     { icon: Truck, label: 'Proveedores', href: '/proveedores' },
     { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
     { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
+    { icon: History, label: 'Historial', href: '/historial' },
     { icon: Settings, label: 'Configuración', href: '/configuracion' },
   ];
 
