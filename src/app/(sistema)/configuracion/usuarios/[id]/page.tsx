@@ -12,7 +12,7 @@ import { UsuarioDetalleHeader } from '@/components/usuarios/detalle/UsuarioDetal
 import { UsuarioInfoCard } from '@/components/usuarios/detalle/UsuarioInfoCard';
 import { UsuarioStatCard } from '@/components/usuarios/detalle/UsuarioStatCard';
 import { useUsuarioDetalle } from '@/hooks/useUsuarioDetalle';
-import type { ActualizarUsuarioInput } from '@/types/usuario';
+
 
 export default function UsuarioDetallePage() {
   const params = useParams<{ id: string }>();
@@ -23,11 +23,11 @@ export default function UsuarioDetallePage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const { usuario, loading, error, isMock, actualizarUsuario, eliminarUsuario } =
+  const { usuario, loading, error, actualizarUsuario, eliminarUsuario } =
     useUsuarioDetalle(id);
 
   const handleSave = useCallback(
-    async (input: ActualizarUsuarioInput) => {
+    async (input: { nombre: string; email: string; rol: string; estado: string; cargo?: string }) => {
       setSaving(true);
       try {
         await actualizarUsuario(input);
@@ -75,7 +75,6 @@ export default function UsuarioDetallePage() {
           role="alert"
         >
           {error}
-          {isMock ? ' (modo mock activo)' : ' — mostrando datos de respaldo.'}
         </div>
       )}
 

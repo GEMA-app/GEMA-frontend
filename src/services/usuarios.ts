@@ -1,116 +1,86 @@
-import { fetchWithAuth } from '@/lib/api';
-import {
-  extractUsuariosFromResponse,
-  extractUsuariosMeta,
-  mapUsuarioFromApi,
-  mapUsuarioDetalleFromApi,
-} from '@/lib/usuarios';
-import type {
-  ActualizarUsuarioInput,
-  NuevoUsuarioInput,
-  Usuario,
-  UsuarioDetalle,
-  UsuariosMeta,
-} from '@/types/usuario';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { extractUsuariosFromResponse, extractUsuariosMeta, mapUsuarioFromResource } from '@/lib/usuarios';
+import type { ActualizarUsuarioInput, NuevoUsuarioInput, Usuario } from '@/types/usuario';
 
 export interface UsuariosQuery {
   page?: number;
   perPage?: number;
   search?: string;
+  activo?: boolean;
 }
 
-export interface UsuariosResponse {
-  usuarios: Usuario[];
-  meta: UsuariosMeta;
-}
-
-function buildUsuariosQuery(params: UsuariosQuery): string {
-  const searchParams = new URLSearchParams();
+function buildQuery(params: UsuariosQuery): string {
   const page = params.page ?? 1;
   const perPage = params.perPage ?? 15;
-
-  searchParams.set('page', String(page));
-  searchParams.set('per_page', String(perPage));
-
-  if (params.search?.trim()) {
-    searchParams.set('search', params.search.trim());
-  }
-
-  return `?${searchParams.toString()}`;
+  const offset = (page - 1) * perPage;
+  const q = new URLSearchParams();
+  q.set('offset', String(offset));
+  q.set('limit', String(perPage));
+  if (params.search?.trim()) q.set('search', params.search.trim());
+  if (params.activo !== undefined) q.set('activo', String(params.activo));
+  return `?${q.toString()}`;
 }
 
-export async function getUsuarios(params: UsuariosQuery = {}): Promise<UsuariosResponse> {
-  const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
-  const query = buildUsuariosQuery({ ...params, page, perPage });
-
-  const payload = await fetchWithAuth<unknown>(`/admin/users${query}`);
-
+export async function getUsuarios(params: UsuariosQuery = {}): Promise<{ usuarios: Usuario[]; meta: { total: number; offset: number; limit: number } }> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios${buildQuery(params)}`);
   return {
     usuarios: extractUsuariosFromResponse(payload),
-    meta: extractUsuariosMeta(payload, page, perPage),
+    meta: extractUsuariosMeta(payload, 0, params.perPage ?? 15),
   };
 }
 
-export async function getUsuarioById(id: string): Promise<UsuarioDetalle> {
-  const payload = await fetchWithAuth<unknown>(`/admin/users/${id}`);
-  const usuario = mapUsuarioDetalleFromApi(payload);
-
-  if (!usuario) {
-    throw new Error('No se pudo interpretar la respuesta del usuario.');
-  }
-
-  return usuario;
-}
-
-export async function updateUsuario(id: string, input: ActualizarUsuarioInput): Promise<UsuarioDetalle> {
-  const payload = await fetchWithAuth<unknown>(`/admin/users/${id}`, {
-    method: 'PUT',
-    json: {
-      name: input.nombre,
-      email: input.email,
-      estado: input.estado,
-      roles: [input.rol.toLowerCase()],
-    },
-  });
-
-  const usuario = mapUsuarioDetalleFromApi(payload);
-  if (!usuario) {
-    throw new Error('No se pudo interpretar la respuesta del usuario actualizado.');
-  }
-
-  if (input.cargo) {
-    return { ...usuario, cargo: input.cargo };
-  }
-
+export async function getUsuarioById(id: string): Promise<Usuario> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios/${id}`);
+  const usuario = mapUsuarioFromResource(payload);
+  if (!usuario) throw new Error('No se pudo interpretar la respuesta del usuario.');
   return usuario;
 }
 
 export async function createUsuario(input: NuevoUsuarioInput): Promise<Usuario> {
-  const payload = await fetchWithAuth<{ data?: Record<string, unknown> }>('/admin/users', {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios`, {
     method: 'POST',
     json: {
-      name: input.nombre,
-      email: input.email,
-      password: '12345678',
-      password_confirmation: '12345678',
-      estado: input.estado,
-      roles: [input.rol.toLowerCase()],
-      telefono: null,
+      data: {
+        type: 'users',
+        attributes: {
+          email: input.email,
+          password: input.password,
+          nombre: input.nombre,
+          telefono: input.telefono ?? null,
+        },
+      },
     },
   });
+  const usuario = mapUsuarioFromResource(payload);
+  if (!usuario) throw new Error('No se pudo interpretar la respuesta del usuario creado.');
+  return usuario;
+}
 
-  const data = payload.data ?? (payload as Record<string, unknown>);
-  return mapUsuarioFromApi(data as Parameters<typeof mapUsuarioFromApi>[0]);
+export async function updateUsuario(id: string, input: ActualizarUsuarioInput): Promise<Usuario> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios/${id}`, {
+    method: 'PATCH',
+    json: {
+      data: {
+        type: 'users',
+        attributes: {
+          email: input.email,
+          nombre: input.nombre,
+          telefono: input.telefono,
+          activo: input.activo,
+        },
+      },
+    },
+  });
+  const usuario = mapUsuarioFromResource(payload);
+  if (!usuario) throw new Error('No se pudo interpretar la respuesta del usuario actualizado.');
+  return usuario;
 }
 
 export async function deleteUsuario(id: string): Promise<void> {
-  await fetchWithAuth(`/admin/users/${id}`, { method: 'DELETE' });
-}
-
-export async function updateUsuarioRoles(id: string, roles: string[]): Promise<void> {
-  await fetchWithAuth(`/admin/users/${id}/roles`, {
-    method: 'PATCH',
-    json: { roles },
-  });
+  const empresaId = await requireEmpresaId();
+  await fetchWithAuth(`/v1/empresas/${empresaId}/usuarios/${id}`, { method: 'DELETE' });
 }
