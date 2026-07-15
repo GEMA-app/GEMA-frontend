@@ -1,4 +1,4 @@
-export type RolUsuario = 'Administrador' | 'Supervisor' | 'Técnico';
+export type RolUsuario = string;
 
 export interface HistorialEntry {
   id: string;
