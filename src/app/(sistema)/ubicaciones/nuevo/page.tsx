@@ -10,9 +10,14 @@ import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { createUbicacion } from '@/services/ubicaciones';
 import type { Ubicacion } from '@/types/ubicacion';
 
-const initialFormState = {
+const initialFormState: {
+  nombre: string;
+  tipo: 'sede' | 'planta' | 'area';
+  parentId: string;
+  descripcion: string;
+} = {
   nombre: '',
-  tipo: 'area' as const,
+  tipo: 'area',
   parentId: '',
   descripcion: '',
 };

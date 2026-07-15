@@ -1,7 +1,7 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { extractResource, extractResourceList } from '@/lib/jsonapi';
 import type { JsonApiResource } from '@/lib/jsonapi';
-import type { NuevaUbicacionForm, TipoUbicacion, Ubicacion } from '@/types/ubicacion';
+import type { NuevaUbicacionForm, Ubicacion } from '@/types/ubicacion';
 
 function mapTreeResource(resource: JsonApiResource): Ubicacion {
   const attrs = resource.attributes;
@@ -11,8 +11,11 @@ function mapTreeResource(resource: JsonApiResource): Ubicacion {
   return {
     id: resource.id,
     nombre: (attrs.nombre as string) || '',
-    tipo: (attrs.tipo as TipoUbicacion) || 'area',
+    tipo: (attrs.tipo as string) || '',
     descripcion: (attrs.descripcion as string) || null,
+    jerarquia: (attrs.jerarquia as string) || '',
+    proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
+    estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
     parentId: (attrs.parent_id as string) || null,
     hijos: children,
   };
@@ -20,26 +23,25 @@ function mapTreeResource(resource: JsonApiResource): Ubicacion {
 
 export async function getUbicaciones(): Promise<Ubicacion[]> {
   const empresaId = await requireEmpresaId();
-  const payload = await fetchWithAuth<unknown>(
-    `/v1/empresas/${empresaId}/ubicaciones`,
-  );
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/ubicaciones`);
   const resources = extractResourceList(payload);
   return resources.map(mapTreeResource);
 }
 
 export async function getUbicacion(id: string): Promise<Ubicacion> {
   const empresaId = await requireEmpresaId();
-  const payload = await fetchWithAuth<unknown>(
-    `/v1/empresas/${empresaId}/ubicaciones/${id}`,
-  );
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/ubicaciones/${id}`);
   const resource = extractResource(payload);
   if (!resource) throw new Error('Ubicación no encontrada');
   const attrs = resource.attributes;
   return {
     id: resource.id,
     nombre: (attrs.nombre as string) || '',
-    tipo: (attrs.tipo as TipoUbicacion) || 'area',
+    tipo: (attrs.tipo as string) || '',
     descripcion: (attrs.descripcion as string) || null,
+    jerarquia: (attrs.jerarquia as string) || '',
+    proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
+    estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
     parentId: (attrs.parent_id as string) || null,
   };
 }
@@ -70,7 +72,6 @@ export async function updateUbicacion(id: string, data: Partial<NuevaUbicacionFo
   if (data.tipo !== undefined) attrs.tipo = data.tipo;
   if (data.parentId !== undefined) attrs.parent_id = data.parentId || null;
   if (data.descripcion !== undefined) attrs.descripcion = data.descripcion || null;
-
   await fetchWithAuth(`/v1/empresas/${empresaId}/ubicaciones/${id}`, {
     method: 'PATCH',
     contentType: 'json-api',
@@ -80,24 +81,23 @@ export async function updateUbicacion(id: string, data: Partial<NuevaUbicacionFo
 
 export async function deleteUbicacion(id: string): Promise<void> {
   const empresaId = await requireEmpresaId();
-  await fetchWithAuth(`/v1/empresas/${empresaId}/ubicaciones/${id}`, {
-    method: 'DELETE',
-  });
+  await fetchWithAuth(`/v1/empresas/${empresaId}/ubicaciones/${id}`, { method: 'DELETE' });
 }
 
 export async function getUbicacionChildren(id: string): Promise<Ubicacion[]> {
   const empresaId = await requireEmpresaId();
-  const payload = await fetchWithAuth<unknown>(
-    `/v1/empresas/${empresaId}/ubicaciones/${id}/hijos`,
-  );
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/ubicaciones/${id}/hijos`);
   const resources = extractResourceList(payload);
-  return resources.map((r) => {
+  return resources.map(r => {
     const attrs = r.attributes;
     return {
       id: r.id,
       nombre: (attrs.nombre as string) || '',
-      tipo: (attrs.tipo as TipoUbicacion) || 'area',
+      tipo: (attrs.tipo as string) || '',
       descripcion: (attrs.descripcion as string) || null,
+      jerarquia: (attrs.jerarquia as string) || '',
+      proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
+      estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
       parentId: (attrs.parent_id as string) || null,
     };
   });
