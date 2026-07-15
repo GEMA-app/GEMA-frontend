@@ -341,30 +341,30 @@ export default function RegistrarActivoPage() {
                 <span className="text-xs font-semibold text-gray-700">Operativo</span>
               </label>
 
-              {/* Opción En Mantenimiento */}
+              {/* Opción En mantenimiento */}
               <label className="flex items-center px-4 py-3 border border-gray-200 rounded-xl cursor-pointer transition-all bg-white">
                 <input
                   type="radio"
                   name="estadoInicial"
-                  value="En Mantenimiento"
-                  checked={formData.estadoInicial === 'En Mantenimiento'}
+                  value="En mantenimiento"
+                  checked={formData.estadoInicial === 'En mantenimiento'}
                   onChange={handleInputChange}
                   className="accent-[#8B4513] w-4 h-4 mr-3"
                 />
-                <span className="text-xs font-semibold text-gray-700">En Mantenimiento</span>
+                <span className="text-xs font-semibold text-gray-700">En mantenimiento</span>
               </label>
 
-              {/* Opción Para Revisión */}
+              {/* Opción Fuera de servicio */}
               <label className="flex items-center px-4 py-3 border border-gray-200 rounded-xl cursor-pointer transition-all bg-white">
                 <input
                   type="radio"
                   name="estadoInicial"
-                  value="Para Revisión"
-                  checked={formData.estadoInicial === 'Para Revisión'}
+                  value="Fuera de servicio"
+                  checked={formData.estadoInicial === 'Fuera de servicio'}
                   onChange={handleInputChange}
                   className="accent-[#8B4513] w-4 h-4 mr-3"
                 />
-                <span className="text-xs font-semibold text-gray-700">Para Revisión</span>
+                <span className="text-xs font-semibold text-gray-700">Fuera de servicio</span>
               </label>
             </div>
           </div>

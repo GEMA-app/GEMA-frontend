@@ -10,15 +10,14 @@ import type { Activo, ActivoEstado } from '@/types/activo';
 
 const ESTADO_MAP: Record<string, ActivoEstado> = {
   'operativo': 'operativo',
-  'en mantenimiento': 'en_mantenimiento',
   'en_mantenimiento': 'en_mantenimiento',
-  'para revisión': 'en_mantenimiento',
   'fuera_de_servicio': 'fuera_de_servicio',
   'dado_de_baja': 'dado_de_baja',
 };
 
 export function normalizeAssetStatus(raw: string): ActivoEstado {
-  return ESTADO_MAP[raw.trim().toLowerCase()] || 'operativo';
+  const normalized = raw.trim().toLowerCase().replace(/\s+/g, '_');
+  return ESTADO_MAP[normalized] || 'operativo';
 }
 
 const ESTADO_LABELS: Record<ActivoEstado, string> = {

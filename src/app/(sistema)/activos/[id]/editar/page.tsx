@@ -100,7 +100,12 @@ export default function EditarActivoPage() {
       setSubmitStatus('Activo actualizado correctamente.');
       setTimeout(() => router.push(`/activos/${activoId}`), 800);
     } catch (err) {
-      setSubmitStatus(err instanceof Error ? err.message : 'Error al actualizar el activo');
+      const msg = err instanceof Error ? err.message : '';
+      setSubmitStatus(
+        /no se puede transicionar/i.test(msg)
+          ? 'Los activos dados de baja no pueden cambiar de estado. Si necesitas registrar este activo de nuevo, crea uno desde cero.'
+          : msg || 'Error al actualizar el activo',
+      );
     } finally {
       setIsSubmitting(false);
     }
