@@ -1,5 +1,6 @@
 import type { PaginationMeta } from '@/types/common';
 
+
 /**
  * Construye query string con paginación offset/limit + filtros opcionales.
  * Patrón unificado para todos los servicios nuevos.
@@ -31,10 +32,11 @@ export function buildOffsetQuery(params: {
   return `?${searchParams.toString()}`;
 }
 
+
 /**
  * Calcula PaginationMeta a partir del total, página y perPage.
  * Funciona tanto con offset/limit como con page/per_page (el servicio traduce).
- */
+*/
 function calcMeta(total: number, page: number, perPage: number): PaginationMeta {
   const lastPage = Math.max(1, Math.ceil(total / perPage));
   return { page, perPage, total, lastPage };

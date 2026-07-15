@@ -1,27 +1,46 @@
-export type UsuarioEstado = 'activo' | 'inactivo' | 'suspendido';
+// --- Backend JSON:API types (nuevo modulo) ---
 
 export interface Usuario {
   id: string;
-  iniciales: string;
   nombre: string;
   email: string;
-  rol: string;
-  departamento: string;
-  estado: string;
+  telefono: string | null;
+  activo: boolean;
+  roles: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UsuariosMeta {
-  page: number;
-  perPage: number;
   total: number;
-  lastPage: number;
+  offset: number;
+  limit: number;
 }
 
 export interface NuevoUsuarioInput {
   nombre: string;
   email: string;
+  password: string;
+  telefono?: string;
+}
+
+export type UsuarioEstado = 'activo' | 'inactivo' | 'suspendido';
+
+export interface ActualizarUsuarioInput {
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  activo?: boolean;
+}
+
+// --- Legacy types (mock-based configuracion/usuarios) ---
+
+export interface LegacyActualizarUsuarioInput {
+  nombre: string;
+  email: string;
   rol: string;
   estado: UsuarioEstado;
+  cargo?: string;
 }
 
 export interface UsuarioPermiso {
@@ -43,12 +62,4 @@ export interface UsuarioDetalle {
   fechaIngreso: string;
   ultimoAcceso: string;
   permisos: UsuarioPermiso[];
-}
-
-export interface ActualizarUsuarioInput {
-  nombre: string;
-  email: string;
-  rol: string;
-  estado: UsuarioEstado;
-  cargo?: string;
 }

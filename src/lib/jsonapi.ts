@@ -1,6 +1,6 @@
 /**
  * Helpers compartidos para parsear respuestas JSON:API.
- * Todos los módulos nuevos DEBEN importar desde aquí en vez de duplicar.
+ * Todos los modulos nuevos DEBEN importar desde aqui en vez de duplicar.
  *
  * Consolidado desde: lib/usuarios.ts, lib/reportes.ts, lib/historial.ts
  */
