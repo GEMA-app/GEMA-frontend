@@ -1,13 +1,11 @@
-const TOKEN_KEY = 'token';
-const EMPRESA_ID_KEY = 'empresa_id';
-const ROLES_KEY = 'roles';
-const USER_NAME_KEY = 'userName';
+import { asRecord } from '@/lib/jsonapi';
 
 type SessionPayload = Record<string, unknown>;
 
-function asRecord(value: unknown): SessionPayload | null {
-  return value && typeof value === 'object' ? (value as SessionPayload) : null;
-}
+const TOKEN_KEY = 'token';
+const EMPRESA_ID_KEY = 'empresaId';
+const ROLES_KEY = 'roles';
+const USER_NAME_KEY = 'userName';
 
 function pickString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -20,6 +18,16 @@ function pickString(...values: unknown[]): string | null {
   }
   return null;
 }
+
+const ROLE_SLUG_MAP: Record<string, string> = {
+  administrador: 'admin',
+  'supervisor de activos': 'supervisor',
+  'supervisor de operaciones': 'supervisor',
+  'técnico de mantenimiento': 'tecnico',
+  almacenista: 'tecnico',
+  reporter: 'reporter',
+  consultor: 'consultor',
+};
 
 function normalizeRoles(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -37,7 +45,8 @@ function normalizeRoles(value: unknown): string[] {
       }
       return '';
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((r) => ROLE_SLUG_MAP[r] || r);
 }
 
 export function extractRolesFromPayload(payload: unknown): string[] {
@@ -47,6 +56,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
 
   const record = payload as Record<string, unknown>;
   const data = asRecord(record.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(record.usuario) ?? asRecord(data?.usuario);
 
   return normalizeRoles(
@@ -54,6 +64,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
       record.roles_asignados ??
       data?.roles ??
       data?.roles_asignados ??
+      attributes?.roles ??
       usuario?.roles ??
       usuario?.roles_asignados,
   );
@@ -116,12 +127,14 @@ export function setSession(loginResponse: SessionPayload): void {
   }
 
   const data = asRecord(loginResponse.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(loginResponse.usuario) ?? asRecord(data?.usuario);
   const token = pickString(
     loginResponse.token,
     loginResponse.access_token,
     data?.token,
     data?.access_token,
+    attributes?.access_token,
     usuario?.token,
   );
 
@@ -130,6 +143,8 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.empresaId,
     data?.empresa_id,
     data?.empresaId,
+    attributes?.empresa_id,
+    attributes?.empresaId,
     usuario?.empresa_id,
     usuario?.empresaId,
   );
@@ -152,6 +167,7 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.usuario,
     usuario?.name,
     usuario?.nombre,
+    attributes?.nombre,
   );
   if (userName) {
     localStorage.setItem(USER_NAME_KEY, userName);
@@ -174,27 +190,13 @@ export async function ensureSessionRoles(): Promise<string[]> {
     return existing;
   }
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  if (!token) {
+  if (!getToken()) {
     throw new Error('No hay sesión activa');
   }
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
-    {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/vnd.api+json',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener perfil: ${response.status}`);
-  }
-
-  const result = await response.json();
-  const roles: string[] = result.data?.attributes?.roles ?? [];
+  const { fetchWithAuth } = await import('@/lib/api');
+  const profile = await fetchWithAuth<unknown>('/v1/auth/yo');
+  const roles = extractRolesFromPayload(profile);
 
   if (roles.length > 0) {
     setRoles(roles);
