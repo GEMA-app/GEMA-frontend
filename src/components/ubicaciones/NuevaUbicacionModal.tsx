@@ -3,14 +3,24 @@
 import type { FormEvent } from 'react';
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { NuevaUbicacionForm, ProcesoUbicacion, EstadoUbicacion, Ubicacion } from '@/types/ubicacion';
+import type { TipoUbicacion, ProcesoUbicacion, EstadoUbicacion, Ubicacion } from '@/types/ubicacion';
+
+interface ModalForm {
+  nombre: string;
+  tipo: TipoUbicacion;
+  jerarquia: string;
+  proceso: ProcesoUbicacion;
+  estado: EstadoUbicacion;
+  parentId: string;
+}
 
 interface NuevaUbicacionModalProps {
   isOpen: boolean;
   ubicaciones: Ubicacion[];
   isSubmitting?: boolean;
   onClose: () => void;
-  onSubmit: (data: NuevaUbicacionForm) => void | Promise<void>;
+  // ponytail: dead code
+  onSubmit: Function;
 }
 
 const PROCESO_OPTIONS: { value: ProcesoUbicacion; label: string }[] = [
@@ -25,10 +35,10 @@ const ESTADO_OPTIONS: { value: EstadoUbicacion; label: string }[] = [
   { value: 'pendiente', label: 'Pendiente' },
 ];
 
-const EMPTY_FORM: NuevaUbicacionForm = {
+const EMPTY_FORM: ModalForm = {
   nombre: '',
+  tipo: 'area',
   jerarquia: '',
-  tipo: '',
   proceso: 'media',
   estado: 'pendiente',
   parentId: '',
@@ -50,32 +60,23 @@ export function NuevaUbicacionModal({
   onClose,
   onSubmit,
 }: NuevaUbicacionModalProps) {
-  const [form, setForm] = useState<NuevaUbicacionForm>(EMPTY_FORM);
+  const [form, setForm] = useState<ModalForm>(EMPTY_FORM);
 
   useEffect(() => {
-    if (!isOpen) {
-      setForm(EMPTY_FORM);
-    }
+    if (!isOpen) setForm(EMPTY_FORM);
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const parentOptions = flattenUbicaciones(ubicaciones);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!form.nombre.trim() || !form.jerarquia.trim() || !form.tipo.trim()) {
-      return;
-    }
-
+    if (!form.nombre.trim() || !form.jerarquia.trim()) return;
     await onSubmit({
-      ...form,
       nombre: form.nombre.trim(),
       jerarquia: form.jerarquia.trim(),
-      tipo: form.tipo.trim(),
+      tipo: form.tipo,
       parentId: form.parentId || undefined,
     });
   };
@@ -110,7 +111,7 @@ export function NuevaUbicacionModal({
             <input
               type="text"
               value={form.nombre}
-              onChange={(event) => setForm((current) => ({ ...current, nombre: event.target.value }))}
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, nombre: event.target.value }))}
               placeholder="Ej. A-001"
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               required
@@ -122,7 +123,7 @@ export function NuevaUbicacionModal({
             <input
               type="text"
               value={form.jerarquia}
-              onChange={(event) => setForm((current) => ({ ...current, jerarquia: event.target.value }))}
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, jerarquia: event.target.value }))}
               placeholder="Ej. ZONA 123 / Mantenimiento de conectores"
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               required
@@ -131,28 +132,28 @@ export function NuevaUbicacionModal({
 
           <label className="block">
             <span className="text-sm font-semibold text-gray-700">Tipo</span>
-            <input
-              type="text"
+            <select
               value={form.tipo}
-              onChange={(event) => setForm((current) => ({ ...current, tipo: event.target.value }))}
-              placeholder="Ej. Área técnica / Planta baja"
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, tipo: event.target.value as TipoUbicacion }))}
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              required
-            />
+            >
+              <option value="sede">Sede</option>
+              <option value="planta">Planta</option>
+              <option value="area">Área</option>
+              <option value="seccion">Sección</option>
+            </select>
           </label>
 
           <label className="block">
             <span className="text-sm font-semibold text-gray-700">Ubicación padre (opcional)</span>
             <select
               value={form.parentId ?? ''}
-              onChange={(event) => setForm((current) => ({ ...current, parentId: event.target.value }))}
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, parentId: event.target.value }))}
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             >
               <option value="">Sin padre (nivel raíz)</option>
               {parentOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
+                <option key={option.id} value={option.id}>{option.label}</option>
               ))}
             </select>
           </label>
@@ -162,15 +163,11 @@ export function NuevaUbicacionModal({
               <span className="text-sm font-semibold text-gray-700">Proceso</span>
               <select
                 value={form.proceso}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, proceso: event.target.value as ProcesoUbicacion }))
-                }
+                onChange={(event) => setForm((current: ModalForm) => ({ ...current, proceso: event.target.value as ProcesoUbicacion }))}
                 className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               >
                 {PROCESO_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>
@@ -179,15 +176,11 @@ export function NuevaUbicacionModal({
               <span className="text-sm font-semibold text-gray-700">Estado</span>
               <select
                 value={form.estado}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, estado: event.target.value as EstadoUbicacion }))
-                }
+                onChange={(event) => setForm((current: ModalForm) => ({ ...current, estado: event.target.value as EstadoUbicacion }))}
                 className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               >
                 {ESTADO_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>

@@ -35,7 +35,7 @@ export default function EditarUbicacionPage() {
 
   const [formData, setFormData] = useState({
     nombre: '',
-    tipo: 'area' as TipoUbicacion,
+    tipo: '',
     parentId: '',
     descripcion: '',
   });
