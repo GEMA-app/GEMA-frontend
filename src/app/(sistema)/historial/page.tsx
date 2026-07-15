@@ -123,10 +123,9 @@ export default function HistorialPage() {
                     <span className="font-semibold text-gray-900 text-sm">
                       {entry.usuario.nombre}
                     </span>
-                    <span className="text-xs text-gray-400">{entry.usuario.rol}</span>
                     <AccionBadge accion={entry.accion} />
                   </div>
-                  <p className="text-sm text-gray-600 line-clamp-2">{entry.descripcion}</p>
+                  <p className="text-sm text-gray-600 line-clamp-2">{entry.accion.replace(/_/g, ' ')}</p>
                   <p className="text-xs text-gray-400 mt-1">{formatFecha(entry.fecha)}</p>
                 </div>
                 <Link

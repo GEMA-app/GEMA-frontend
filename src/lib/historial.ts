@@ -9,6 +9,11 @@ function asString(value: unknown, fallback = ''): string {
   return fallback;
 }
 
+function asRecordValue(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  return null;
+}
+
 export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
   const record = asRecord(raw);
   if (!record) return null;
@@ -16,23 +21,19 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
   const attributes = asRecord(record.attributes) ?? record;
 
   const id = asString(record.id);
-  const fecha = asString(attributes.ocurrido_en ?? attributes.fecha ?? attributes.created_at ?? attributes.timestamp);
+  const fecha = asString(attributes.ocurrido_en);
 
   if (!id || !fecha) return null;
 
   return {
     id,
     usuario: {
-      nombre: asString(attributes.usuario_nombre ?? attributes.nombre_usuario, asString(attributes.usuario_id, 'Usuario desconocido')),
-      rol: asString(attributes.usuario_rol ?? attributes.rol, '—'),
+      nombre: asString(attributes.usuario_id, '—'),
     },
-    accion: asString(attributes.accion ?? attributes.action, 'Acción'),
-    descripcion: asString(attributes.detalles ?? attributes.descripcion ?? attributes.detalle ?? attributes.description, 'Sin descripción'),
+    accion: asString(attributes.accion, '—'),
+    detalles: asRecordValue(attributes.detalles) ?? {},
     fecha,
-    metadata: {
-      ip: asString(attributes.ip_address ?? attributes.ip, undefined) || undefined,
-      terminal: asString(attributes.terminal, undefined) || undefined,
-    },
+    ip: asString(attributes.ip_address, undefined) || undefined,
   };
 }
 
