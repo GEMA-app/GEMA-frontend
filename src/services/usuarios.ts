@@ -10,15 +10,10 @@ export interface UsuariosQuery {
 }
 
 function buildQuery(params: UsuariosQuery): string {
-  const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
-  const offset = (page - 1) * perPage;
   const q = new URLSearchParams();
-  q.set('offset', String(offset));
-  q.set('limit', String(perPage));
-  if (params.search?.trim()) q.set('search', params.search.trim());
   if (params.activo !== undefined) q.set('activo', String(params.activo));
-  return `?${q.toString()}`;
+  const s = q.toString();
+  return s ? `?${s}` : '';
 }
 
 export async function getUsuarios(params: UsuariosQuery = {}): Promise<{ usuarios: Usuario[]; meta: { total: number; offset: number; limit: number } }> {

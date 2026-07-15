@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Mail, Phone, User, Tag, Calendar, ShieldCheck, Pencil } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, User, Tag, Calendar, ShieldCheck, Pencil, Check, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { getUsuarioById } from '@/services/usuarios';
-import type { Usuario } from '@/types/usuario';
+import { buildPermisosFromRol, rolSlugFromLabel } from '@/lib/permisos';
+import type { Usuario, UsuarioPermiso } from '@/types/usuario';
 
 function formatFecha(fecha: string): string {
   try {
@@ -27,6 +28,23 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
         <p className="text-sm font-semibold text-gray-900">{value || '—'}</p>
       </div>
     </div>
+  );
+}
+
+function PermisoRow({ permiso }: { permiso: UsuarioPermiso }) {
+  return (
+    <li className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
+      <span className="text-sm font-semibold text-gray-800">{permiso.nombre}</span>
+      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${
+        permiso.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+      }`}>
+        {permiso.activo ? (
+          <Check size={18} strokeWidth={2.5} />
+        ) : (
+          <X size={18} strokeWidth={2.5} />
+        )}
+      </span>
+    </li>
   );
 }
 
@@ -52,6 +70,8 @@ export default function UsuarioDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
+  const permisos = usuario ? buildPermisosFromRol(rolSlugFromLabel(usuario.roles[0] || '')) : [];
+
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-[#F3F4F6] p-8 w-full font-sans">
       <PageHeader title="Usuarios / Detalle" variant="activos" />
@@ -71,17 +91,42 @@ export default function UsuarioDetailPage() {
 
       <RequestState loading={loading} error={error} empty={!loading && !error && !usuario}
         loadingMessage="Cargando usuario..." emptyMessage="Usuario no encontrado.">
-        <div className="rounded-3xl p-8 border border-gray-100 shadow-sm" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Detalle del usuario</h2>
-          <div className="rounded-3xl p-6 bg-white shadow-sm border border-gray-100 divide-y divide-gray-100">
-            <DetailRow icon={<User className="w-5 h-5" />} label="Nombre" value={usuario?.nombre || '—'} />
-            <DetailRow icon={<Mail className="w-5 h-5" />} label="Email" value={usuario?.email || '—'} />
-            <DetailRow icon={<Phone className="w-5 h-5" />} label="Teléfono" value={usuario?.telefono || '—'} />
-            <DetailRow icon={<ShieldCheck className="w-5 h-5" />} label="Estado" value={usuario?.activo ? 'Activo' : 'Inactivo'} />
-            <DetailRow icon={<Tag className="w-5 h-5" />} label="Roles" value={usuario?.roles.join(', ') || '—'} />
-            <DetailRow icon={<Calendar className="w-5 h-5" />} label="Creado" value={usuario?.created_at ? formatFecha(usuario.created_at) : '—'} />
-            <DetailRow icon={<Calendar className="w-5 h-5" />} label="Actualizado" value={usuario?.updated_at ? formatFecha(usuario.updated_at) : '—'} />
+        <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-6" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Detalle del usuario</h2>
+            <div className="rounded-3xl p-6 bg-white shadow-sm border border-gray-100 divide-y divide-gray-100">
+              <DetailRow icon={<User className="w-5 h-5" />} label="Nombre" value={usuario?.nombre || '—'} />
+              <DetailRow icon={<Mail className="w-5 h-5" />} label="Email" value={usuario?.email || '—'} />
+              <DetailRow icon={<Phone className="w-5 h-5" />} label="Telefono" value={usuario?.telefono || '—'} />
+              <DetailRow icon={<ShieldCheck className="w-5 h-5" />} label="Estado" value={usuario?.activo ? 'Activo' : 'Inactivo'} />
+              <div className="flex items-start gap-3 py-3">
+                <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Tag className="w-5 h-5" /></div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Roles</p>
+                  <div className="flex flex-wrap gap-2">
+                    {usuario?.roles?.length ? usuario.roles.map(r => (
+                      <span key={r} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#E59D12]/10 text-[#8B5E0A] border border-[#E59D12]/20">
+                        <ShieldCheck className="w-3 h-3" />{r}
+                      </span>
+                    )) : <span className="text-sm text-gray-400">—</span>}
+                  </div>
+                </div>
+              </div>
+              <DetailRow icon={<Calendar className="w-5 h-5" />} label="Creado" value={usuario?.created_at ? formatFecha(usuario.created_at) : '—'} />
+              <DetailRow icon={<Calendar className="w-5 h-5" />} label="Actualizado" value={usuario?.updated_at ? formatFecha(usuario.updated_at) : '—'} />
+            </div>
           </div>
+
+          {permisos.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Permisos y seguridad</h2>
+              <div className="rounded-3xl p-6 bg-white shadow-sm border border-gray-100">
+                <ul className="divide-y divide-gray-100" role="list">
+                  {permisos.map(p => <PermisoRow key={p.id} permiso={p} />)}
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
       </RequestState>
     </div>

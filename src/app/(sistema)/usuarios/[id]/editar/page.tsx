@@ -6,12 +6,17 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getUsuarioById, updateUsuario } from '@/services/usuarios';
+import { getRoles, asignarRol, revocarRol } from '@/services/roles';
+import type { Rol } from '@/types/rol';
 
 export default function EditarUsuarioPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [form, setForm] = useState({ nombre: '', email: '', telefono: '' });
   const [activo, setActivo] = useState(true);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [selectedRol, setSelectedRol] = useState('');
+  const [originalRol, setOriginalRol] = useState('');
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState('');
@@ -22,10 +27,15 @@ export default function EditarUsuarioPage() {
     let cancelled = false;
     (async () => {
       try {
-        const u = await getUsuarioById(id);
+        const [u, r] = await Promise.all([getUsuarioById(id), getRoles()]);
         if (cancelled) return;
         setForm({ nombre: u.nombre, email: u.email, telefono: u.telefono ?? '' });
         setActivo(u.activo);
+        setRoles(r);
+        const current = r.find(rol => u.roles.some(ur => ur === rol.id || ur === rol.nombre));
+        const currentId = current?.id || '';
+        setSelectedRol(currentId);
+        setOriginalRol(currentId);
       } catch (err) {
         if (!cancelled) setStatus(err instanceof Error ? err.message : 'Error al cargar usuario');
       } finally {
@@ -46,7 +56,7 @@ export default function EditarUsuarioPage() {
     const next: Record<string, string> = {};
     if (!form.nombre.trim()) next.nombre = 'El nombre es obligatorio.';
     if (!form.email.trim()) next.email = 'El email es obligatorio.';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email inválido.';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email invalido.';
     return next;
   };
 
@@ -59,6 +69,10 @@ export default function EditarUsuarioPage() {
     setStatus('Guardando...');
     try {
       await updateUsuario(id!, { nombre: form.nombre, email: form.email, telefono: form.telefono || undefined, activo });
+      if (selectedRol && selectedRol !== originalRol) {
+        if (originalRol) await revocarRol(originalRol, id!).catch(() => {});
+        await asignarRol(selectedRol, id!).catch(() => {});
+      }
       setStatus('Usuario actualizado.');
       setTimeout(() => router.push(`/usuarios/${id}`), 800);
     } catch (err) {
@@ -110,13 +124,13 @@ export default function EditarUsuarioPage() {
             {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Correo electrónico</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Correo electronico</label>
             <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
               className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.email ? 'border-red-500' : 'border-gray-400'}`} />
             {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Teléfono</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Telefono</label>
             <input id="telefono" name="telefono" type="text" value={form.telefono} onChange={handleChange}
               className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
           </div>
@@ -125,6 +139,16 @@ export default function EditarUsuarioPage() {
               className="w-4 h-4 rounded accent-[#E59D12]" />
             <label htmlFor="activo" className="text-sm text-gray-700">Usuario activo</label>
           </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="rol">Rol</label>
+            <select id="rol" value={selectedRol} onChange={e => setSelectedRol(e.target.value)}
+              className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
+              <option value="">Seleccione un rol...</option>
+              {roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+            </select>
+          </div>
+
           {status && <p className={`text-sm ${Object.keys(errors).length ? 'text-red-600' : 'text-emerald-700'}`}>{status}</p>}
         </form>
       </div>

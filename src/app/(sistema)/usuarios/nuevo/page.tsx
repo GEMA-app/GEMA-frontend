@@ -1,20 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { createUsuario } from '@/services/usuarios';
+import { getRoles, asignarRol } from '@/services/roles';
+import type { Rol } from '@/types/rol';
 
 const initialForm = { nombre: '', email: '', password: '', telefono: '' };
 
 export default function NuevoUsuarioPage() {
   const router = useRouter();
   const [form, setForm] = useState(initialForm);
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [selectedRol, setSelectedRol] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    getRoles().then(setRoles).catch(() => {});
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,9 +35,9 @@ export default function NuevoUsuarioPage() {
     const next: Record<string, string> = {};
     if (!form.nombre.trim()) next.nombre = 'El nombre es obligatorio.';
     if (!form.email.trim()) next.email = 'El email es obligatorio.';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email inválido.';
-    if (!form.password) next.password = 'La contraseña es obligatoria.';
-    else if (form.password.length < 6) next.password = 'Mínimo 6 caracteres.';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email invalido.';
+    if (!form.password) next.password = 'La contrasena es obligatoria.';
+    else if (form.password.length < 6) next.password = 'Minimo 6 caracteres.';
     return next;
   };
 
@@ -41,7 +49,8 @@ export default function NuevoUsuarioPage() {
     setSubmitting(true);
     setStatus('Guardando...');
     try {
-      await createUsuario(form);
+      const usuario = await createUsuario(form);
+      if (selectedRol) await asignarRol(selectedRol, usuario.id).catch(() => {});
       setStatus('Usuario creado correctamente.');
       setTimeout(() => router.push('/usuarios'), 800);
     } catch (err) {
@@ -86,22 +95,32 @@ export default function NuevoUsuarioPage() {
             {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Correo electrónico</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Correo electronico</label>
             <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
               className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.email ? 'border-red-500' : 'border-gray-400'}`} />
             {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="password">Contraseña</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="password">Contrasena</label>
             <input id="password" name="password" type="password" value={form.password} onChange={handleChange}
               className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.password ? 'border-red-500' : 'border-gray-400'}`} />
             {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Teléfono (opcional)</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Telefono (opcional)</label>
             <input id="telefono" name="telefono" type="text" value={form.telefono} onChange={handleChange}
               className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
           </div>
+
+          <div>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="rol">Rol</label>
+            <select id="rol" value={selectedRol} onChange={e => setSelectedRol(e.target.value)}
+              className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
+              <option value="">Seleccione un rol...</option>
+              {roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+            </select>
+          </div>
+
           {status && <p className={`text-sm ${Object.keys(errors).length ? 'text-red-600' : 'text-emerald-700'}`}>{status}</p>}
         </form>
       </div>
