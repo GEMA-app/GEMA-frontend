@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import Link from 'next/link';
 import { Search, Bell, User } from 'lucide-react';
 
 type PageHeaderVariant = 'configuracion' | 'activos' | 'proveedores';
@@ -96,13 +97,13 @@ export function PageHeader({
         >
           <Bell className={`w-6 h-6 ${styles.iconColor}`} strokeWidth={1.5} />
         </button>
-        <button
-          type="button"
+        <Link
+          href="/configuracion/perfil"
           className={`p-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer ${styles.iconButton}`}
           aria-label="Perfil de usuario"
         >
           <User className={`w-6 h-6 ${styles.iconColor}`} strokeWidth={1.5} />
-        </button>
+        </Link>
       </div>
     </header>
   );
