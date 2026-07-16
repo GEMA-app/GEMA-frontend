@@ -21,9 +21,8 @@ export async function getPreferences(): Promise<UserPreferences> {
   };
 }
 
-export async function updatePreferences(tema: string, version: number): Promise<UserPreferences> {
+export async function updatePreferences(tema: string, version: number, usuarioId?: string): Promise<UserPreferences> {
   const empresaId = localStorage.getItem('empresa_id');
-  const userId = localStorage.getItem('user_id');
   if (!empresaId) throw new Error('No hay sesión activa.');
 
   const payload: any = await fetchWithAuth(`/v1/empresas/${empresaId}/yo/preferencias`, {
@@ -32,7 +31,7 @@ export async function updatePreferences(tema: string, version: number): Promise<
     json: {
       data: {
         type: 'preferences',
-        id: userId,
+        id: usuarioId || 'current',
         attributes: { tema, version },
       },
     },

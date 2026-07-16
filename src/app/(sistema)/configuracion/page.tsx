@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Users, Hammer, Globe, User } from 'lucide-react';
+import { Clock, Users, Hammer, Globe, User, Sun } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ConfiguracionPage() {
@@ -15,9 +15,15 @@ export default function ConfiguracionPage() {
     },
     {
       title: 'Mi Perfil',
-      description: 'Datos personales, contraseña y preferencias visuales',
+      description: 'Datos personales y cambio de contraseña',
       icon: User,
       href: '/configuracion/perfil',
+    },
+    {
+      title: 'Preferencias',
+      description: 'Tema visual y personalización',
+      icon: Sun,
+      href: '/configuracion/preferencias',
     },
     {
       title: 'Gestión de usuarios',

@@ -1,20 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Save, KeyRound, ArrowLeft, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, KeyRound, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getCurrentUser, cambiarContrasena } from '@/services/auth';
 import { updateUsuario } from '@/services/usuarios';
-import { getPreferences, updatePreferences } from '@/services/preferences';
 
 export default function PerfilPage() {
   const [userId, setUserId] = useState('');
   const [form, setForm] = useState({ nombre: '', email: '', telefono: '' });
   const [passwordForm, setPasswordForm] = useState({ actual: '', nueva: '', confirmar: '' });
-  const [prefs, setPrefs] = useState({ tema: 'oscuro', version: 1 });
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [prefSaving, setPrefSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState('');
@@ -24,11 +20,10 @@ export default function PerfilPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [user, p] = await Promise.all([getCurrentUser(), getPreferences().catch(() => null)]);
+        const user = await getCurrentUser();
         if (cancelled) return;
         setUserId(user.id);
         setForm({ nombre: user.nombre, email: user.email, telefono: user.telefono ?? '' });
-        if (p) { setPrefs({ tema: p.tema, version: p.version }); setPrefsLoaded(true); }
       } catch (err) {
         if (!cancelled) setStatus(err instanceof Error ? err.message : 'Error al cargar perfil');
       } finally {
@@ -50,19 +45,6 @@ export default function PerfilPage() {
     setPasswordForm(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     setStatus('');
-  };
-
-  const handleThemeChange = async (tema: string) => {
-    if (prefSaving || !prefsLoaded) return;
-    setPrefSaving(true);
-    try {
-      const p = await updatePreferences(tema, prefs.version);
-      setPrefs({ tema: p.tema, version: p.version });
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Error al guardar preferencias');
-    } finally {
-      setPrefSaving(false);
-    }
   };
 
   const validate = () => {
@@ -159,30 +141,6 @@ export default function PerfilPage() {
               <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Teléfono</label>
               <input id="telefono" name="telefono" type="text" value={form.telefono} onChange={handleChange}
                 className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 pt-8 space-y-6">
-            <div className="flex items-center gap-2">
-              <Sun className="w-5 h-5 text-gray-600" strokeWidth={1.5} />
-              <h3 className="text-lg font-semibold text-gray-800">Preferencias visuales</h3>
-            </div>
-            <div className="flex gap-3">
-              {[
-                { value: 'claro', icon: Sun, label: 'Claro' },
-                { value: 'oscuro', icon: Moon, label: 'Oscuro' },
-                { value: 'sistema', icon: Monitor, label: 'Sistema' },
-              ].map(t => {
-                const Icon = t.icon;
-                return (
-                  <button key={t.value} type="button" onClick={() => handleThemeChange(t.value)}
-                    className={`flex-1 flex flex-col items-center gap-2 rounded-xl border px-4 py-4 transition-all ${prefs.tema === t.value ? 'border-[#ECA03C] bg-amber-50/50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
-                  >
-                    <Icon className={`w-6 h-6 ${prefs.tema === t.value ? 'text-[#8B4513]' : 'text-gray-500'}`} strokeWidth={1.5} />
-                    <span className={`text-xs font-semibold ${prefs.tema === t.value ? 'text-[#8B4513]' : 'text-gray-600'}`}>{t.label}</span>
-                  </button>
-                );
-              })}
             </div>
           </div>
 
