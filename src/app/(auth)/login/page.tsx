@@ -1,16 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 import { Mail, KeyRound, Eye, EyeOff, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { setSession } from '@/lib/auth';
-import { login } from '@/services/auth';
-import { ApiError } from '@/lib/api';
+
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,11 +19,57 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await login(email, password);
-      setSession(result);
-      router.push('/dashboard');
+      // Paso 1: Obtener token
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/vnd.api+json',
+            'Accept': 'application/vnd.api+json',
+          },
+          body: JSON.stringify({
+            data: {
+              type: 'tokens',
+              attributes: { email, password },
+            },
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const detail = result?.errors?.[0]?.detail ?? result?.mensaje ?? 'Credenciales inválidas';
+        setError(detail);
+        return;
+      }
+
+      const token = result.data?.attributes?.access_token;
+      if (token) localStorage.setItem('token', token);
+
+      // Paso 2: Obtener perfil, empresa_id y roles
+      const perfilResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.api+json',
+          },
+        }
+      );
+      const perfil = await perfilResponse.json();
+      const attrs = perfil.data?.attributes;
+
+      if (attrs?.empresa_id) localStorage.setItem('empresa_id', attrs.empresa_id);
+      if (attrs?.roles && attrs.roles.length > 0) {
+        localStorage.setItem('roles', JSON.stringify(attrs.roles));
+      }
+
+      window.location.href = '/dashboard';
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor.');
+      setError('No se pudo conectar con el servidor.');
+      console.error('Error en login:', err);
     } finally {
       setLoading(false);
     }
