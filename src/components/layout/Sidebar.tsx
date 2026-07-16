@@ -16,7 +16,6 @@ export default function Sidebar() {
     { icon: Box, label: 'Activos', href: '/activos' },
     { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
     { icon: Truck, label: 'Proveedores', href: '/proveedores' },
-    { icon: FileText, label: 'Órdenes de Trabajo', href: '/ordenes-trabajo' },
     { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
     { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
     { icon: Users, label: 'Usuarios', href: '/usuarios' },

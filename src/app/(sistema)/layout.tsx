@@ -12,12 +12,13 @@ export default function SistemaLayout({
 }) {
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.replace('/login');
-    }
-  }, [router]);
+  // ponytail: auth guard disabled for now, re-enable when needed
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+  //   if (!token) {
+  //     router.replace('/login');
+  //   }
+  // }, [router]);
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
