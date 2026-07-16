@@ -25,10 +25,28 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
 
   if (!id || !fecha) return null;
 
+  // Intentar resolver el nombre real del usuario desde varios campos posibles.
+  // El backend puede incluirlo directamente en el registro de auditoría o solo
+  // devolver el UUID en usuario_id.
+  const usuarioObj = asRecordValue(attributes.usuario);
+  const nombreResuelto =
+    asString(usuarioObj?.nombre ?? usuarioObj?.name, '') ||
+    asString(attributes.usuario_nombre, '') ||
+    asString(attributes.usuario_name, '') ||
+    asString(attributes.nombre_usuario, '') ||
+    asString(attributes.user_name, '') ||
+    asString(attributes.usuario_id, '—');
+
+  const emailResuelto =
+    asString(usuarioObj?.email, '') ||
+    asString(attributes.usuario_email, '') ||
+    undefined;
+
   return {
     id,
     usuario: {
-      nombre: asString(attributes.usuario_id, '—'),
+      nombre: nombreResuelto,
+      ...(emailResuelto ? { email: emailResuelto } : {}),
     },
     accion: asString(attributes.accion, '—'),
     detalles: asRecordValue(attributes.detalles) ?? {},
@@ -71,8 +89,8 @@ export function extractHistorialMeta(payload: unknown, fallbackPage: number, fal
 
   const page = Number(meta?.page ?? meta?.current_page ?? fallbackPage);
   const limit = Number(meta?.limit ?? meta?.per_page ?? fallbackLimit);
-  const total = Number(meta?.total ?? meta?.total_count ?? 0);
-  const lastPage = Number(meta?.last_page ?? 0);
+  const total = Number(meta?.total ?? meta?.total_count ?? meta?.count ?? meta?.total_items ?? 0);
+  const lastPage = Number(meta?.last_page ?? meta?.total_pages ?? meta?.pages ?? 0);
   const hasMore =
     typeof meta?.has_more === 'boolean'
       ? meta.has_more
@@ -80,7 +98,9 @@ export function extractHistorialMeta(payload: unknown, fallbackPage: number, fal
         ? meta.hasMore
         : lastPage > 0
           ? page < lastPage
-          : page * limit < total;
+          : total > 0
+            ? page * limit < total
+            : false;
 
   return { page, limit, total, hasMore };
 }

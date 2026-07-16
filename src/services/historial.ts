@@ -34,6 +34,12 @@ function buildHistorialQuery(params: HistorialQuery): string {
   searchParams.set('offset', String((page - 1) * limit));
   searchParams.set('limit', String(limit));
 
+  if (params.search) {
+    searchParams.set('search', params.search);
+  }
+  if (params.usuario_id) {
+    searchParams.set('usuario_id', params.usuario_id);
+  }
   if (params.accion) {
     searchParams.set('accion', params.accion);
   }

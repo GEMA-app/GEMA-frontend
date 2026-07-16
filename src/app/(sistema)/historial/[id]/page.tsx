@@ -75,7 +75,18 @@ function HistorialDetail() {
               if (attrs.email) mapped.usuario.email = attrs.email as string;
               const roles = attrs.roles;
               if (Array.isArray(roles)) {
-                mapped.usuario.roles = roles.map((r: unknown) => typeof r === 'string' ? r : (r as Record<string, unknown>)?.nombre as string ?? String(r));
+                mapped.usuario.roles = roles.map((r: unknown) => {
+                  if (typeof r === 'string') return r;
+                  const obj = r as Record<string, unknown>;
+                  // Intentar múltiples campos en orden de preferencia
+                  const name =
+                    (typeof obj?.nombre === 'string' && obj.nombre) ||
+                    (typeof obj?.name === 'string' && obj.name) ||
+                    (typeof obj?.display_name === 'string' && obj.display_name) ||
+                    (typeof obj?.slug === 'string' && obj.slug) ||
+                    null;
+                  return name ?? String(r);
+                });
               }
             } catch {
               // fallback al UUID
