@@ -14,6 +14,10 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, roleRequired }: AuthGuardProps) {
+  // BYPASS TEMPORAL PARA DEMO:
+  // Siempre permitimos el acceso sin importar los roles o la sesión
+  return <>{children}</>;
+
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
