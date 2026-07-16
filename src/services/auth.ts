@@ -1,4 +1,13 @@
 import { fetchWithAuth } from '@/lib/api';
+import { mapUsuarioFromResource } from '@/lib/usuarios';
+import type { Usuario } from '@/types/usuario';
+
+export async function getCurrentUser(): Promise<Usuario> {
+  const payload = await fetchWithAuth<unknown>('/v1/auth/yo');
+  const usuario = mapUsuarioFromResource(payload);
+  if (!usuario) throw new Error('No se pudo obtener el perfil del usuario.');
+  return usuario;
+}
 
 export async function login(email: string, password: string): Promise<Record<string, unknown>> {
   return fetchWithAuth<Record<string, unknown>>('/v1/auth/ingresar', {
@@ -50,8 +59,8 @@ export async function cambiarContrasena(
       data: {
         type: 'auth',
         attributes: {
-          contrasena_actual: contrasenaActual,
-          contrasena_nueva: contrasenaNueva,
+          old_password: contrasenaActual,
+          new_password: contrasenaNueva,
         },
       },
     },
