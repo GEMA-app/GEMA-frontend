@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Users, Hammer, Globe } from 'lucide-react';
+import { Clock, Users, Hammer, Globe, User } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ConfiguracionPage() {
@@ -12,6 +12,12 @@ export default function ConfiguracionPage() {
       description: 'Registros de actividad',
       icon: Clock,
       href: '/configuracion/historial',
+    },
+    {
+      title: 'Mi Perfil',
+      description: 'Datos personales, contraseña y preferencias visuales',
+      icon: User,
+      href: '/configuracion/perfil',
     },
     {
       title: 'Gestión de usuarios',
