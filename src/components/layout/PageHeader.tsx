@@ -3,7 +3,7 @@
 import { useId } from 'react';
 import { Search, Bell, User } from 'lucide-react';
 
-type PageHeaderVariant = 'configuracion' | 'activos';
+type PageHeaderVariant = 'configuracion' | 'activos' | 'proveedores';
 
 interface PageHeaderProps {
   title: string;
@@ -28,6 +28,11 @@ const VARIANT_STYLES: Record<
     iconColor: 'text-[#8B5E3C]',
   },
   activos: {
+    input: 'bg-white border border-gray-200 text-gray-700',
+    iconButton: 'border border-gray-200 bg-white',
+    iconColor: 'text-gray-600',
+  },
+  proveedores: {
     input: 'bg-white border border-gray-200 text-gray-700',
     iconButton: 'border border-gray-200 bg-white',
     iconColor: 'text-gray-600',

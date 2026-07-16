@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LayoutDashboard, Box, Wrench, ClipboardList, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Box, Wrench, ClipboardList, Truck, Users, MapPin, History, Settings, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { clearSession, getToken } from '@/lib/auth';
+import { fetchWithAuth } from '@/lib/api';
 
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -12,28 +14,24 @@ export default function Sidebar() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
     { icon: Box, label: 'Activos', href: '/activos' },
+    { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
+    { icon: Truck, label: 'Proveedores', href: '/proveedores' },
     { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
     { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
+    { icon: Users, label: 'Usuarios', href: '/usuarios' },
+    { icon: History, label: 'Historial', href: '/historial' },
     { icon: Settings, label: 'Configuración', href: '/configuracion' },
   ];
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    if (getToken()) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/v1/auth/cerrar-sesion`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.api+json'
-          }
-        });
-      } catch (e) {
-        console.error('Error al cerrar sesión', e);
+        await fetchWithAuth('/v1/auth/cerrar-sesion', { method: 'POST' });
+      } catch {
+        // cerrar sesión igual aunque falle el request
       }
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('empresa_id');
+    clearSession();
     window.location.href = '/login';
   };
 
