@@ -1,6 +1,7 @@
 import { buildOffsetQuery } from '@/lib/pagination';
 import { extractActivosFromResponse, extractActivosMeta, normalizeAssetStatus } from '@/lib/activos';
-import type { ActivosQuery, ActivosResponse } from '@/types/activo';
+import { extractResourceList } from '@/lib/jsonapi';
+import type { ActivosQuery, ActivosResponse, LogEstadoActivo } from '@/types/activo';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 
 export async function getActivos(params: ActivosQuery = {}): Promise<ActivosResponse> {
@@ -172,4 +173,22 @@ export async function updateActivo(id: string, data: Partial<CreateActivoForm> &
     contentType: 'json-api',
     json: { data: { type: 'assets', attributes: attrs } },
   });
+}
+
+export async function getHistorialEstadosActivo(activoId: string): Promise<LogEstadoActivo[]> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/activos/${activoId}/historial-estados`,
+  );
+  return extractResourceList(payload).map((r) => ({
+    id: r.id,
+    activo_id: (r.attributes.activo_id as string) ?? activoId,
+    estado_anterior: r.attributes.estado_anterior
+      ? normalizeAssetStatus(r.attributes.estado_anterior as string)
+      : null,
+    estado_nuevo: normalizeAssetStatus((r.attributes.estado_nuevo as string) || 'operativo'),
+    motivo: (r.attributes.motivo as string) || null,
+    fecha_cambio: (r.attributes.fecha_cambio as string) ?? '',
+    usuario_id: (r.attributes.usuario_id as string) || null,
+  }));
 }
