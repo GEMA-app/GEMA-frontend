@@ -2,6 +2,8 @@ import { fetchWithAuth } from '@/lib/api';
 import { mapUsuarioFromResource } from '@/lib/usuarios';
 import type { Usuario } from '@/types/usuario';
 
+export { refreshSession } from '@/lib/auth';
+
 export async function getCurrentUser(): Promise<Usuario> {
   const payload = await fetchWithAuth<unknown>('/v1/auth/yo');
   const usuario = mapUsuarioFromResource(payload);
