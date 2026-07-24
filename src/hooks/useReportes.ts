@@ -2,115 +2,62 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
-import { computeReportesStats } from '@/lib/reportes';
-import { mockFetchReportes, mockFetchReportesResumen } from '@/data/mockReportesApi';
-import { MOCK_REPORTES } from '@/data/mockReportes';
-import {
-  createReporte,
-  getReportes,
-  getReportesResumen,
-  isReportesMockMode,
-} from '@/services/reportes';
+import { createReporte, deleteReporte, getReportes, updateReporte } from '@/services/reportes';
 import type {
+  ActualizarReporteInput,
   NuevoReporteInput,
   Reporte,
-  ReporteFiltroTipo,
-  ReportesMeta,
-  ReportesResumen,
+  ReportesQuery,
 } from '@/types/reporte';
+import type { PaginationMeta } from '@/types/common';
 
-export interface UseReportesOptions {
-  search?: string;
-  tipo?: ReporteFiltroTipo;
-  page?: number;
-  perPage?: number;
-}
+const DEFAULT_META: PaginationMeta = { page: 1, perPage: 15, total: 0, lastPage: 1 };
 
-const EMPTY_STATS: ReportesResumen = {
-  alertasCriticas: 0,
-  enProceso: 0,
-  completados: 0,
-};
-
-const DEFAULT_META: ReportesMeta = {
-  page: 1,
-  perPage: 15,
-  total: 0,
-  lastPage: 1,
-};
-
-export function useReportes({
-  search = '',
-  tipo = 'todos',
-  page = 1,
-  perPage = 15,
-}: UseReportesOptions = {}) {
+export function useReportes(filters: ReportesQuery = {}) {
   const [reportes, setReportes] = useState<Reporte[]>([]);
-  const [meta, setMeta] = useState<ReportesMeta>(DEFAULT_META);
-  const [stats, setStats] = useState<ReportesResumen>(EMPTY_STATS);
+  const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isMock, setIsMock] = useState(isReportesMockMode);
+
+  const filtersKey = JSON.stringify(filters);
 
   const fetchReportes = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    const query = { page, perPage, search, tipo };
-
     try {
-      const [lista, resumen] = await Promise.all([
-        getReportes(query),
-        getReportesResumen(),
-      ]);
-
-      setReportes(lista.reportes);
-      setMeta(lista.meta);
-      setStats(resumen);
-      setIsMock(isReportesMockMode);
+      const parsed = JSON.parse(filtersKey) as ReportesQuery;
+      const res = await getReportes(parsed);
+      setReportes(res.reportes);
+      setMeta(res.meta);
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : 'No se pudieron cargar los reportes de mantenimiento.';
-
-      const fallbackLista = mockFetchReportes(query);
-      setReportes(fallbackLista.reportes);
-      setMeta(fallbackLista.meta);
-      setStats(mockFetchReportesResumen());
-      setIsMock(true);
-      setError(message);
+      setError(err instanceof ApiError ? err.message : 'No se pudieron cargar los reportes.');
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, search, tipo]);
+  }, [filtersKey]);
 
-  useEffect(() => {
-    void fetchReportes();
-  }, [fetchReportes]);
+  useEffect(() => { void fetchReportes(); }, [fetchReportes]);
 
-  const refetch = useCallback(async () => {
-    await fetchReportes();
-  }, [fetchReportes]);
+  const refetch = useCallback(async () => { await fetchReportes(); }, [fetchReportes]);
 
-  const crearReporte = useCallback(
-    async (input: NuevoReporteInput) => {
-      const nuevo = await createReporte(input, meta.total + 1);
-      await refetch();
-      return nuevo;
-    },
-    [meta.total, refetch],
-  );
+  const crearReporte = useCallback(async (input: NuevoReporteInput) => {
+    await createReporte(input);
+    await refetch();
+  }, [refetch]);
+
+  const editarReporte = useCallback(async (id: string, input: ActualizarReporteInput) => {
+    await updateReporte(id, input);
+    await refetch();
+  }, [refetch]);
+
+  const eliminarReporte = useCallback(async (id: string) => {
+    await deleteReporte(id);
+    await refetch();
+  }, [refetch]);
 
   return {
-    reportes,
-    meta,
-    stats,
-    loading,
-    error,
-    isMock,
+    reportes, meta, loading, error,
     empty: !loading && reportes.length === 0,
-    refetch,
-    crearReporte,
+    refetch, crearReporte, editarReporte, eliminarReporte,
   };
 }

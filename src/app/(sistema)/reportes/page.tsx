@@ -9,18 +9,20 @@ import { ReportesBackLink } from '@/components/reportes/ReportesBackLink';
 import { ReportesList } from '@/components/reportes/ReportesList';
 import { ReportesStatCard } from '@/components/reportes/ReportesStatCard';
 import { useReportes } from '@/hooks/useReportes';
-import type { NuevoReporteInput, ReporteFiltroTipo } from '@/types/reporte';
+import type { NuevoReporteInput, ReporteEstado } from '@/types/reporte';
+
+type FiltroEstado = ReporteEstado | 'todos';
 
 export default function ReportesPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState<ReporteFiltroTipo>('todos');
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos');
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { reportes, stats, meta, loading, error, isMock, empty, crearReporte } = useReportes({
+  const { reportes, meta, loading, error, empty, crearReporte } = useReportes({
     search: debouncedSearch,
-    tipo: filtroTipo,
+    status: filtroEstado === 'todos' ? undefined : filtroEstado,
   });
 
   useEffect(() => {
@@ -45,22 +47,26 @@ export default function ReportesPage() {
 
   const emptyMessage = debouncedSearch
     ? `No se encontraron reportes para "${debouncedSearch}".`
-    : filtroTipo !== 'todos'
-      ? `No hay reportes ${filtroTipo === 'correctivo' ? 'correctivos' : 'preventivos'}.`
+    : filtroEstado !== 'todos'
+      ? `No hay reportes con estado "${filtroEstado}".`
       : 'No hay reportes registrados.';
 
-  const activeTabId = `tab-reportes-${filtroTipo}`;
+  const pendientes = reportes.filter((r) => r.status === 'pendiente').length;
+  const enProceso = reportes.filter((r) => r.status === 'en_proceso').length;
+  const atendidos = reportes.filter((r) => r.status === 'atendido').length;
+
+  const activeTabId = `tab-reportes-${filtroEstado}`;
 
   return (
     <div className="flex-1 bg-white p-6 sm:p-8 overflow-y-auto">
       <PageHeader
-        title="Reportes"
+        title="Reportes de Falla"
         subtitle="*Administrador/Supervisor*"
         subtitleClassName="italic"
         searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Buscar"
-        searchLabel="Buscar reportes por título, código o asignado"
+        searchLabel="Buscar reportes por titulo o ubicacion"
         className="mb-4"
       />
 
@@ -81,7 +87,6 @@ export default function ReportesPage() {
           role="alert"
         >
           {error}
-          {isMock ? ' (modo mock activo)' : ' — mostrando datos de respaldo.'}
         </div>
       )}
 
@@ -90,18 +95,18 @@ export default function ReportesPage() {
         role="region"
         aria-label="Resumen de reportes"
       >
-        <ReportesStatCard label="Alertas críticas" value={stats.alertasCriticas} />
-        <ReportesStatCard label="En proceso" value={stats.enProceso} />
-        <ReportesStatCard label="Completado" value={stats.completados} />
+        <ReportesStatCard label="Pendientes" value={pendientes} />
+        <ReportesStatCard label="En proceso" value={enProceso} />
+        <ReportesStatCard label="Atendidos" value={atendidos} />
       </div>
 
       <section className="rounded-[2rem] border border-[#EBE2D5] bg-[#F7F4EF] p-5 sm:p-8 shadow-sm">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-5">
-          Mantenimientos prioritarios pendientes de ejecución
+          Reportes de falla
         </h2>
 
         <div className="mb-6">
-          <ReporteFilterTabs value={filtroTipo} onChange={setFiltroTipo} />
+          <ReporteFilterTabs value={filtroEstado} onChange={setFiltroEstado} />
         </div>
 
         <div
@@ -113,13 +118,13 @@ export default function ReportesPage() {
             loading={loading}
             error={empty ? error : null}
             empty={empty}
-            loadingMessage="Cargando reportes…"
+            loadingMessage="Cargando reportes..."
             emptyMessage={emptyMessage}
           >
             <ReportesList reportes={reportes} />
             {meta.lastPage > 1 && (
               <p className="mt-4 text-xs text-gray-500 text-center">
-                Página {meta.page} de {meta.lastPage} · {meta.total} reportes
+                Pagina {meta.page} de {meta.lastPage} - {meta.total} reportes
               </p>
             )}
           </RequestState>
