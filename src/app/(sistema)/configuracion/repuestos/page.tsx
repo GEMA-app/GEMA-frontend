@@ -1,132 +1,137 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import React from 'react';
-import { Search, Plus, Eye, Pencil, Trash2, Bell, User, ArrowLeft } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash, ArrowLeft } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { RequestState } from '@/components/ui/RequestState';
+import { useRepuestos } from '@/hooks/useRepuestos';
+import { stockBajo } from '@/lib/repuestos';
 
-interface Repuesto {
-  id: string;
-  codigo: string;
-  descripcion: string;
-  categoria: string;
-  ubicacion: string;
-  stock: number;
-}
-
-const MOCK: Repuesto[] = [
-  {
-    id: '1',
-    codigo: 'LC-001',
-    descripcion: 'Memoria RAM\n16GB DDR4',
-    categoria: 'Cómputo',
-    ubicacion: 'Almacén',
-    stock: 15,
-  },
-  {
-    id: '2',
-    codigo: 'LC-002',
-    descripcion: 'Disco SSD 500GB',
-    categoria: 'Cómputo',
-    ubicacion: 'Almacén',
-    stock: 8,
-  },
-  {
-    id: '3',
-    codigo: 'LC-003',
-    descripcion: 'Fuente 500W',
-    categoria: 'Eléctrico',
-    ubicacion: 'Almacén',
-    stock: 5,
-  },
-];
+const PER_PAGE = 15;
 
 export default function RepuestosPage() {
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  const { repuestos, meta, loading, error, empty, eliminarRepuesto, refetch } = useRepuestos({
+    page, perPage: PER_PAGE,
+  });
+
+  const handleDelete = useCallback(async (id: string, name: string) => {
+    if (!confirm(`¿Eliminar el repuesto "${name}"?`)) return;
+    try {
+      await eliminarRepuesto(id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar');
+    }
+  }, [eliminarRepuesto]);
+
   return (
-    <div className="h-screen overflow-y-auto bg-white p-8">
-      <div className="mx-auto max-w-[1400px] space-y-6 pb-8">
-        <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-5xl font-bold text-black">Configuración / Repuestos</h1>
-            <p className="text-sm text-gray-600 mt-2">Control de stock, partes y consumibles</p>
-          </div>
+    <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
+      <PageHeader
+        title="Repuestos"
+        subtitle="Control de stock, partes y consumibles"
+        variant="configuracion"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Buscar repuesto..."
+        searchLabel="Buscar repuestos"
+        className="mb-8"
+      />
 
-          <div className="flex items-center gap-3">
-            <div className="search-bar flex items-center gap-2 px-4 py-3 rounded-full shadow-sm min-w-[280px]">
-              <Search className="w-5 h-5 text-gray-600" />
-              <input
-                className="w-full bg-transparent text-sm text-gray-800 placeholder:text-gray-500 outline-none"
-                placeholder="Buscar"
-              />
-            </div>
+      <div className="mb-6">
+        <Link href="/configuracion" className="inline-flex items-center text-gray-500 hover:text-gray-900 transition-colors text-sm font-semibold gap-2">
+          <ArrowLeft size={16} strokeWidth={2.5} />
+          Volver a configuración
+        </Link>
+      </div>
 
-            <button aria-label="notificaciones" className="grid place-items-center rounded-2xl bg-white p-3 shadow-sm hover:bg-gray-100">
-              <Bell className="w-5 h-5 text-gray-700" />
-            </button>
-
-            <button aria-label="usuario" className="grid place-items-center rounded-2xl bg-white p-3 shadow-sm hover:bg-gray-100">
-              <User className="w-5 h-5 text-gray-700" />
-            </button>
-          </div>
-        </header>
-
-        <div className="flex justify-between items-center">
-          <Link href="/configuracion" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 transition hover:text-gray-900">
-            <ArrowLeft className="w-5 h-5" />
-            <span>Volver a configuración</span>
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Gestión de repuestos</h2>
+          <Link href="/configuracion/repuestos/nuevo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo repuesto
           </Link>
         </div>
 
-        <main className="card-large overflow-hidden">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-black">Gestión de repuestos</h2>
-              <p className="text-sm text-gray-600 mt-1">Control de stock, partes y consumibles</p>
-            </div>
-
-            <Link href="/configuracion/agg_editar_repuesto" className="btn-nuevo-repuesto inline-flex items-center gap-2 shadow-sm transition hover:brightness-95">
-              <Plus className="w-5 h-5" />
-              <span>Nuevo repuesto</span>
-            </Link>
+        <RequestState
+          loading={loading}
+          error={empty ? error : null}
+          empty={empty}
+          loadingMessage="Cargando repuestos..."
+          emptyMessage="No hay repuestos registrados."
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Artículo</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Ubicación</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Stock</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Precio</th>
+                  <th className="pb-4 text-sm font-semibold text-gray-900 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {repuestos.map((r) => (
+                  <tr key={r.id} className="border-b border-gray-100 last:border-0">
+                    <td className="py-5 pr-6">
+                      <p className="font-semibold text-gray-900">{r.articulo_id}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">{r.proveedor_id || 'Sin proveedor'}</p>
+                    </td>
+                    <td className="py-5 pr-6 text-gray-700">{r.ubicacion_almacen}</td>
+                    <td className="py-5 pr-6">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                        stockBajo(r) ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${stockBajo(r) ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                        {r.stock_actual}
+                      </span>
+                    </td>
+                    <td className="py-5 pr-6 text-gray-900 font-medium">{r.moneda} {r.precio_unitario}</td>
+                    <td className="py-5">
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/configuracion/repuestos/${r.id}`} aria-label="Ver"
+                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                          <Eye className="w-5 h-5" strokeWidth={1.5} />
+                        </Link>
+                        <Link href={`/configuracion/repuestos/${r.id}/editar`} aria-label="Editar"
+                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                          <Pencil className="w-5 h-5" strokeWidth={1.5} />
+                        </Link>
+                        <button onClick={() => handleDelete(r.id, r.articulo_id)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" aria-label="Eliminar">
+                          <Trash className="w-5 h-5" strokeWidth={1.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="table-header-box mb-4">
-            <div className="grid grid-cols-7 gap-4 text-sm font-semibold text-gray-700">
-              <div className="text-left">CÓDIGO</div>
-              <div className="col-span-2 text-left">DESCRIPCIÓN</div>
-              <div className="text-left">CATEGORÍA</div>
-              <div className="text-left">UBICACIÓN</div>
-              <div className="text-left">STOCK</div>
-              <div className="text-left">ACCIONES</div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {MOCK.map((r) => (
-              <div key={r.id} className="rounded-[1.5rem] bg-white p-4 shadow-sm">
-                <div className="grid grid-cols-7 gap-4 items-center text-sm">
-                  <div className="text-gray-700">{r.codigo}</div>
-                  <div className="col-span-2 text-gray-900 whitespace-pre-line font-semibold">{r.descripcion}</div>
-                  <div>
-                    <span className="badge-categoria">{r.categoria}</span>
-                  </div>
-                  <div className="text-gray-700">{r.ubicacion}</div>
-                  <div className="text-lg font-semibold text-gray-900">{r.stock}</div>
-                  <div className="flex items-center gap-3 justify-end">
-                    <Link href="/configuracion/info_repuesto" aria-label="ver" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#2E4365] hover:bg-[#F2F7F3]">
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                    <Link href="/configuracion/agg_editar_repuesto" aria-label="editar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#0A8E71] hover:bg-[#F2F7F3]">
-                      <Pencil className="w-4 h-4" />
-                    </Link>
-                    <button aria-label="eliminar" className="grid place-items-center rounded-full border border-gray-200 p-2 text-[#FF0000] hover:bg-[#FDECEF]">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+          {!loading && !empty && meta.lastPage > 1 && (
+            <nav className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600" aria-label="Paginación">
+              <p>Página {meta.page} de {meta.lastPage} — {meta.total} repuestos</p>
+              <div className="flex gap-2">
+                <button type="button" disabled={meta.page <= 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                  Anterior
+                </button>
+                <button type="button" disabled={meta.page >= meta.lastPage}
+                  onClick={() => setPage(p => p + 1)}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
+                  Siguiente
+                </button>
               </div>
-            ))}
-          </div>
-        </main>
+            </nav>
+          )}
+        </RequestState>
       </div>
     </div>
   );
