@@ -182,9 +182,9 @@ const PLANS = [
 
 const TEAM = [
   { name: "Sebastián Ortiz", role: "Diseño de producto", initials: "SO" },
-  { name: "María Fernanda Díaz", role: "Ingeniería de software", initials: "MD" },
-  { name: "Carlos Rondón", role: "Operaciones industriales", initials: "CR" },
-  { name: "Andreína Pérez", role: "Éxito del cliente", initials: "AP" },
+  { name: "Jesus Rodriguez", role: "Ingeniería de software", initials: "MD" },
+  { name: "Jose Miserol", role: "Operaciones industriales", initials: "CR" },
+  { name: "Sheen Alburquerque", role: "Éxito del cliente", initials: "AP" },
 ];
 
 const FOOTER_PRODUCT_LINKS = [
@@ -212,7 +212,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className={`${isDark ? "dark" : ""} ${sora.variable} ${inter.variable}`}>
+    <div
+      className={`${isDark ? "dark" : ""} ${sora.variable} ${inter.variable}`}
+    >
       <main className="min-h-screen font-[family-name:var(--font-inter)] bg-white text-gema-primary dark:bg-gema-bg-dark dark:text-white overflow-x-hidden transition-colors duration-300">
         {/* --- NAVBAR --- */}
         <header
@@ -259,7 +261,9 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setIsDark((v) => !v)}
-                aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                aria-label={
+                  isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+                }
                 className="w-10 h-10 flex items-center justify-center rounded-full text-gema-primary/70 dark:text-white/70 hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -282,7 +286,9 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => setIsDark((v) => !v)}
-                aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+                aria-label={
+                  isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+                }
                 className="w-11 h-11 flex items-center justify-center rounded-full text-gema-primary/70 dark:text-white/70 cursor-pointer"
               >
                 {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -396,7 +402,11 @@ export default function HomePage() {
             >
               <motion.div
                 animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 6,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
                 className="rounded-2xl border border-gema-primary/10 dark:border-white/10 bg-white dark:bg-gema-surface-dark shadow-2xl shadow-gema-primary/10 dark:shadow-black/40 overflow-hidden"
               >
                 <div className="flex items-center gap-2 px-5 py-3.5 border-b border-gema-primary/10 dark:border-white/10 bg-gema-bg-light dark:bg-gema-surface-dark-2">
@@ -433,9 +443,15 @@ export default function HomePage() {
                     </div>
                     <div className="flex flex-col gap-3">
                       {[
-                        { name: "Motor línea de laminado A-12", status: "En proceso" },
+                        {
+                          name: "Motor línea de laminado A-12",
+                          status: "En proceso",
+                        },
                         { name: "Compresor sala 3", status: "Programado" },
-                        { name: "Cinta transportadora B-04", status: "Urgente" },
+                        {
+                          name: "Cinta transportadora B-04",
+                          status: "Urgente",
+                        },
                       ].map((row) => (
                         <div
                           key={row.name}
@@ -608,7 +624,10 @@ export default function HomePage() {
                 className="rounded-2xl border border-gema-primary/10 dark:border-white/10 bg-white dark:bg-gema-surface-dark p-7 hover:border-gema-accent/40 hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-gema-primary dark:bg-gema-accent/15 flex items-center justify-center mb-5">
-                  <benefit.icon size={22} className="text-gema-accent dark:text-gema-accent" />
+                  <benefit.icon
+                    size={22}
+                    className="text-gema-accent dark:text-gema-accent"
+                  />
                 </div>
                 <h3 className="font-[family-name:var(--font-sora)] font-bold text-lg text-gema-primary dark:text-white mb-2">
                   {benefit.title}
@@ -718,11 +737,16 @@ export default function HomePage() {
                 </div>
                 <ul className="flex flex-col gap-3 mb-8 flex-1">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                    <li
+                      key={feature}
+                      className="flex items-start gap-2.5 text-sm"
+                    >
                       <Check
                         size={16}
                         className={`shrink-0 mt-0.5 ${
-                          plan.highlighted ? "text-gema-accent" : "text-gema-accent-dark dark:text-gema-accent"
+                          plan.highlighted
+                            ? "text-gema-accent"
+                            : "text-gema-accent-dark dark:text-gema-accent"
                         }`}
                       />
                       <span
@@ -764,14 +788,14 @@ export default function HomePage() {
             <Quote size={32} className="text-gema-accent/40 mx-auto mb-4" />
             <p className="text-xl md:text-2xl font-medium text-gema-primary dark:text-white leading-relaxed">
               &quot;GEMA nos permitió pasar de hojas de cálculo a un control
-              real de nuestros activos. Redujimos las paradas no programadas
-              en pocos meses.&quot;
+              real de nuestros activos. Redujimos las paradas no programadas en
+              pocos meses.&quot;
             </p>
             <p className="mt-6 font-[family-name:var(--font-sora)] font-bold text-gema-primary dark:text-white">
-              Sebastián Ortiz
+              Jesus Rodriguez
             </p>
             <p className="text-sm text-gema-primary/60 dark:text-white/50">
-              Diseño de producto, GEMA
+              Diseño de infrastrucctura, GEMA
             </p>
           </motion.div>
         </section>
@@ -919,8 +943,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-white/10 py-6 px-6">
             <p className="text-center text-xs text-white/40">
-              © {new Date().getFullYear()} GEMA. Todos los derechos
-              reservados.
+              © {new Date().getFullYear()} GEMA. Todos los derechos reservados.
             </p>
           </div>
         </footer>
