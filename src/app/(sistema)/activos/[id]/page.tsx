@@ -3,12 +3,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, FileText, MapPin, Pencil } from 'lucide-react';
+import { ArrowLeft, FileText, History, MapPin, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
-import { getActivo, getCatalogArticle } from '@/services/activos';
+import { useUsuarios } from '@/hooks/useUsuarios';
+import { getActivo, getCatalogArticle, getHistorialEstadosActivo } from '@/services/activos';
 import type { ActivoResponse, CatalogArticleResponse } from '@/services/activos';
+import type { LogEstadoActivo } from '@/types/activo';
 
 function normalizeEstadoDisplay(estado: string): string {
   const map: Record<string, string> = {
@@ -23,11 +25,15 @@ function normalizeEstadoDisplay(estado: string): string {
 function FichaDeActivoContent() {
   const { id: activoId } = useParams<{ id: string }>();
   const { ubicaciones } = useUbicaciones();
+  const { usuarios } = useUsuarios();
+  const usuarioMap = useMemo(() => Object.fromEntries(usuarios.map(u => [u.id, u])), [usuarios]);
 
   const [asset, setAsset] = useState<ActivoResponse | null>(null);
   const [catalog, setCatalog] = useState<CatalogArticleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [historial, setHistorial] = useState<LogEstadoActivo[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(true);
 
   const ubicacionName = useMemo(() => {
     if (!asset?.ubicacion_id || !ubicaciones.length) return null;
@@ -49,15 +55,26 @@ function FichaDeActivoContent() {
         const a = await getActivo(activoId);
         if (cancelled) return;
         setAsset(a);
-        const c = await getCatalogArticle(a.articulo_id);
-        if (!cancelled) setCatalog(c);
+        const [c, h] = await Promise.all([
+          getCatalogArticle(a.articulo_id).catch(() => null as unknown as CatalogArticleResponse),
+          getHistorialEstadosActivo(activoId).catch(() => [] as LogEstadoActivo[]),
+        ]);
+        if (cancelled) return;
+        if (c) setCatalog(c);
+        setHistorial(h);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar activo');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) { setLoading(false); setLoadingHistorial(false); }
       }
     })();
-    return () => { cancelled = true; };
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        getHistorialEstadosActivo(activoId).then(setHistorial).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onFocus);
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onFocus); };
   }, [activoId]);
 
   const estado = asset ? normalizeEstadoDisplay(asset.estado) : '';
@@ -154,6 +171,34 @@ function FichaDeActivoContent() {
                 ))}
               </div>
             </div>
+          </div>
+
+          <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm mb-4">
+              <History className="w-4 h-4 text-[#E5920C]" />
+              Historial de estados
+            </div>
+            {loadingHistorial ? (
+              <p className="text-sm text-gray-400">Cargando historial...</p>
+            ) : historial.length === 0 ? (
+              <p className="text-sm text-gray-400">Sin cambios de estado registrados.</p>
+            ) : (
+              <div className="space-y-3">
+                {historial.map((log, i) => (
+                  <div key={log.id} className="relative pl-6 border-l-2 border-[#E59D12]/30 last:border-l-0 last:pl-6">
+                    <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full bg-[#E59D12]" />
+                    <p className="text-xs text-gray-400">{new Date(log.fecha_cambio).toLocaleString('es')}</p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold">{log.estado_anterior ? normalizeEstadoDisplay(log.estado_anterior) : '—'}</span>
+                      {' → '}
+                      <span className="font-semibold">{normalizeEstadoDisplay(log.estado_nuevo)}</span>
+                    </p>
+                    {log.motivo && <p className="text-xs text-gray-500 italic">"{log.motivo}"</p>}
+                    <p className="text-xs text-gray-400 mt-0.5">{usuarioMap[log.usuario_id ?? '']?.nombre ?? 'Sistema'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </RequestState>
