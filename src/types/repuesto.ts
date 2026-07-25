@@ -39,7 +39,7 @@ export interface RepuestosResponse {
 
 export interface NuevoRepuestoInput {
   articulo_id: string;
-  proveedor_id?: string;
+  proveedor_id: string;
   ubicacion_almacen: string;
   stock_actual?: number;
   stock_minimo?: number;

@@ -63,7 +63,7 @@ export default function EditarRepuestoPage() {
         moneda,
         version: repuesto.version,
       });
-      router.push(`/configuracion/repuestos/${id}`);
+      router.push(`/repuestos/${id}`);
     } catch (err) {
       setSubmitStatus(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
@@ -85,7 +85,7 @@ export default function EditarRepuestoPage() {
       <PageHeader title="Repuestos / Editar repuesto" variant="configuracion" />
 
       <div className="mb-6">
-        <Link href={`/configuracion/repuestos/${id}`} className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+        <Link href={`/repuestos/${id}`} className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
           <ArrowLeft className="w-4 h-4" />
           Volver al detalle
         </Link>
@@ -98,7 +98,7 @@ export default function EditarRepuestoPage() {
             <p className="text-gray-500 text-xs mt-1">{repuesto?.articulo_id}</p>
           </div>
           <div className="flex gap-3">
-            <Link href={`/configuracion/repuestos/${id}`} className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+            <Link href={`/repuestos/${id}`} className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
               Cancelar
             </Link>
             <button type="submit" form="editar-repuesto-form" disabled={isSubmitting}

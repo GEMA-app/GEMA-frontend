@@ -59,14 +59,14 @@ export default function NuevoRepuestoPage() {
     try {
       await crearRepuesto({
         articulo_id: formData.articuloId,
-        proveedor_id: formData.proveedorId || undefined,
+        proveedor_id: formData.proveedorId,
         ubicacion_almacen: formData.ubicacion,
         stock_actual: Number(formData.stockActual),
         stock_minimo: Number(formData.stockMinimo),
         precio_unitario: Number(formData.precioUnitario),
         moneda: formData.moneda,
       });
-      router.push('/configuracion/repuestos');
+      router.push('/repuestos');
     } catch (err) {
       setSubmitStatus(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
@@ -79,7 +79,7 @@ export default function NuevoRepuestoPage() {
       <PageHeader title="Repuestos / Nuevo repuesto" variant="configuracion" />
 
       <div className="mb-6">
-        <Link href="/configuracion/repuestos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+        <Link href="/repuestos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
           <ArrowLeft className="w-4 h-4" />
           Volver a repuestos
         </Link>
@@ -92,7 +92,7 @@ export default function NuevoRepuestoPage() {
             <p className="text-gray-500 text-xs mt-1">Complete los datos para agregar un repuesto al inventario.</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/configuracion/repuestos" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+            <Link href="/repuestos" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
               Cancelar
             </Link>
             <button type="submit" form="nuevo-repuesto-form" disabled={isSubmitting}

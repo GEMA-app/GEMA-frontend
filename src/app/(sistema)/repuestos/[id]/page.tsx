@@ -64,7 +64,7 @@ export default function RepuestoDetallePage() {
       <PageHeader title="Repuestos / Ficha de repuesto" variant="configuracion" />
 
       <div className="mb-6">
-        <Link href="/configuracion/repuestos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+        <Link href="/repuestos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
           <ArrowLeft className="w-4 h-4" />
           Volver a repuestos
         </Link>
@@ -85,7 +85,7 @@ export default function RepuestoDetallePage() {
                     {stockBajo(repuesto) ? 'Stock bajo' : 'Stock OK'}
                   </span>
                 </div>
-                <Link href={`/configuracion/repuestos/${repuesto.id}/editar`}
+                <Link href={`/repuestos/${repuesto.id}/editar`}
                   className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
                   <Pencil className="w-4 h-4" strokeWidth={2} />
                   Editar
