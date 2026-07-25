@@ -87,6 +87,29 @@ export async function createArticulo(input: {
   return mapArticulo(resource);
 }
 
+export async function updateArticulo(id: string, input: Partial<{
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
+  category_id: string | null;
+  description: string | null;
+  unit_of_measure: string | null;
+}>): Promise<ArticuloCatalogo> {
+  const url = await baseUrl();
+  const attributes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) attributes[key] = value;
+  }
+  const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
+    method: 'PATCH',
+    contentType: 'json-api',
+    json: { data: { type: 'catalog-articles', attributes } },
+  });
+  const resource = extractResource(payload);
+  if (!resource) throw new Error('No se pudo interpretar el articulo actualizado.');
+  return mapArticulo(resource);
+}
+
 export async function deleteArticulo(id: string): Promise<void> {
   const url = await baseUrl();
   await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
