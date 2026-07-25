@@ -3,15 +3,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, FileText, Calendar, Users, Save } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Users, Save, Plus, Trash, Wrench } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { useOrdenDetalle } from '@/hooks/useOrdenDetalle';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { useIntervenciones } from '@/hooks/useIntervenciones';
 import { updateOrden } from '@/services/ordenes-trabajo';
+import { getRepuestos } from '@/services/repuestos';
+import { getArticulos } from '@/services/catalogo';
+import { createRepuestoUtilizado, deleteRepuestoUtilizado } from '@/services/repuestos-utilizados';
 import { formatEstadoOT, transicionesValidas } from '@/lib/orden-trabajo';
 import type { EstadoOT, OrdenTrabajo } from '@/types/orden-trabajo';
+import type { Repuesto } from '@/types/repuesto';
+import type { ArticuloCatalogo } from '@/services/catalogo';
 
 const badgeStyles: Record<string, string> = {
   Abierta: 'bg-[#E3F2FD] text-[#1565C0]',
@@ -82,6 +88,57 @@ export default function OrdenDetallePage() {
     () => activos.find(a => a.id === orden?.activo_id)?.nombre ?? orden?.activo_id ?? '—',
     [activos, orden],
   );
+
+  const { intervenciones, loading: loadingInt, error: errorInt, empty: emptyInt, crearIntervencion, eliminarIntervencion } = useIntervenciones(id);
+  const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
+  const [articulos, setArticulos] = useState<ArticuloCatalogo[]>([]);
+  useEffect(() => {
+    getRepuestos({}).then(r => setRepuestos(r.repuestos)).catch(() => {});
+    getArticulos({}).then(a => setArticulos(a)).catch(() => {});
+  }, []);
+
+  const tecnicos = useMemo(() => usuarios.filter(u => u.roles.some(r => r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('tecnico'))), [usuarios]);
+  const usuarioMap = useMemo(() => Object.fromEntries(usuarios.map(u => [u.id, u])), [usuarios]);
+  const repuestoMap = useMemo(() => Object.fromEntries(repuestos.map(r => [r.id, r])), [repuestos]);
+  const articuloMap = useMemo(() => Object.fromEntries(articulos.map(a => [a.id, a])), [articulos]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [techId, setTechId] = useState('');
+  const [tareas, setTareas] = useState('');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [horasHombre, setHorasHombre] = useState('');
+  const [savingInt, setSavingInt] = useState(false);
+  const [saveErrorInt, setSaveErrorInt] = useState<string | null>(null);
+
+  const handleCreateIntervencion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!techId || !tareas || !fechaInicio || !horasHombre) { setSaveErrorInt('Completa todos los campos.'); return; }
+    setSavingInt(true); setSaveErrorInt(null);
+    try {
+      await crearIntervencion({ technician_id: techId, tareas_realizadas: tareas, fecha_inicio: fechaInicio, horas_hombre: Number(horasHombre) });
+      setShowForm(false); setTechId(''); setTareas(''); setFechaInicio(''); setHorasHombre('');
+    } catch (err) { setSaveErrorInt(err instanceof Error ? err.message : 'Error al crear intervención.'); }
+    finally { setSavingInt(false); }
+  };
+
+  const [addingRepuesto, setAddingRepuesto] = useState<string | null>(null);
+  const [selRepuesto, setSelRepuesto] = useState('');
+  const [cantidad, setCantidad] = useState('');
+
+  const handleAddRepuesto = async (intervencionId: string) => {
+    if (!selRepuesto || !cantidad) return;
+    try {
+      await createRepuestoUtilizado(id, intervencionId, { repuesto_id: selRepuesto, cantidad_usada: Number(cantidad) });
+      setAddingRepuesto(null); setSelRepuesto(''); setCantidad('');
+      window.location.reload();
+    } catch (err) { alert(err instanceof Error ? err.message : 'Error al agregar repuesto.'); }
+  };
+
+  const handleDeleteRepuesto = async (intervencionId: string, repuestoId: string) => {
+    if (!window.confirm('¿Eliminar repuesto? El stock se restaurará.')) return;
+    try { await deleteRepuestoUtilizado(id, intervencionId, repuestoId); window.location.reload(); }
+    catch { alert('Error al eliminar repuesto.'); }
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
@@ -268,6 +325,128 @@ export default function OrdenDetallePage() {
           </div>
         </div>
       </RequestState>
+
+      <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8 mt-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
+        <div className="flex items-center justify-between border-b-2 border-[#2E4365]/20 pb-4">
+          <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+            <Wrench className="w-5 h-5" />
+            <span className="text-gray-800">Intervenciones</span>
+          </div>
+          <button type="button" onClick={() => setShowForm(!showForm)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            {showForm ? 'Cancelar' : 'Nueva intervención'}
+          </button>
+        </div>
+
+        {showForm && (
+          <form onSubmit={handleCreateIntervencion} className="rounded-2xl bg-white border border-gray-100 p-6 mb-2 space-y-4 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Técnico *</label>
+                <select value={techId} onChange={e => setTechId(e.target.value)} required
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400">
+                  <option value="">Seleccionar...</option>
+                  {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Fecha inicio *</label>
+                <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} required
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Horas hombre *</label>
+                <input type="number" min="0" step="0.5" value={horasHombre} onChange={e => setHorasHombre(e.target.value)} required
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Tareas realizadas *</label>
+              <textarea value={tareas} onChange={e => setTareas(e.target.value)} required rows={3}
+                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400 resize-none" />
+            </div>
+            {saveErrorInt && <p className="text-sm text-red-600">{saveErrorInt}</p>}
+            <div className="flex justify-end">
+              <button type="submit" disabled={savingInt}
+                className="px-6 py-2 bg-[#E59D12] text-black font-bold rounded-full text-sm hover:brightness-95 disabled:opacity-60 transition-all">
+                {savingInt ? 'Creando...' : 'Crear intervención'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        <RequestState loading={loadingInt} error={errorInt} empty={emptyInt}
+          loadingMessage="Cargando intervenciones..." emptyMessage="No hay intervenciones registradas."
+        >
+          <div className="space-y-4">
+            {intervenciones.map(intv => (
+              <div key={intv.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">Fecha</label>
+                    <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{new Date(intv.fecha_inicio).toLocaleDateString('es')} — {intv.horas_hombre}h</p>
+                  </div>
+                  <button type="button" onClick={() => eliminarIntervencion(intv.id)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                    <Trash className="w-4 h-4 text-red-400" />
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-500 mb-1">Técnico</label>
+                  <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{usuarioMap[intv.technician_id]?.nombre ?? intv.technician_id}</p>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-xs text-gray-500 mb-1">Tareas realizadas</label>
+                  <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{intv.tareas_realizadas}</p>
+                </div>
+
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Repuestos utilizados</span>
+                    <button type="button" onClick={() => setAddingRepuesto(addingRepuesto === intv.id ? null : intv.id)}
+                      className="text-xs text-[#E59D12] font-semibold hover:underline cursor-pointer">
+                      {addingRepuesto === intv.id ? 'Cancelar' : '+ Agregar repuesto'}
+                    </button>
+                  </div>
+
+                  {addingRepuesto === intv.id && (
+                    <div className="flex items-center gap-2 mb-3 bg-gray-50 p-3 rounded-xl">
+                      <select value={selRepuesto} onChange={e => setSelRepuesto(e.target.value)}
+                        className="flex-1 bg-transparent border-b py-1 text-sm outline-none border-gray-400">
+                        <option value="">Seleccionar...</option>
+                        {repuestos.map(r => <option key={r.id} value={r.id}>{articuloMap[r.articulo_id]?.name ?? r.articulo_id} (stock: {r.stock_actual})</option>)}
+                      </select>
+                      <input type="number" min="1" value={cantidad} onChange={e => setCantidad(e.target.value)} placeholder="Cant."
+                        className="w-20 bg-transparent border-b py-1 text-sm outline-none border-gray-400" />
+                      <button type="button" onClick={() => handleAddRepuesto(intv.id)}
+                        className="px-3 py-1.5 bg-[#E59D12] text-black font-bold rounded-full text-xs hover:brightness-95 transition-all cursor-pointer">
+                        Agregar
+                      </button>
+                    </div>
+                  )}
+
+                  {intv.used_parts.length === 0 ? (
+                    <p className="text-xs text-gray-400">Sin repuestos</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {intv.used_parts.map((up, i) => (
+                        <div key={up.id || `up-${i}`} className="flex items-center justify-between text-sm text-gray-600 py-1.5 border-b border-gray-100">
+                          <span>{(() => { const r = repuestoMap[up.repuesto_id]; return r ? (articuloMap[r.articulo_id]?.name ?? r.articulo_id) : up.repuesto_id; })()} × {up.cantidad_usada}</span>
+                          <button type="button" onClick={() => handleDeleteRepuesto(intv.id, up.id)}
+                            className="p-1 hover:bg-gray-100 rounded cursor-pointer">
+                            <Trash className="w-3 h-3 text-red-300" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </RequestState>
+      </div>
     </div>
   );
 }
