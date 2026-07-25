@@ -112,7 +112,7 @@ function FichaDeActivoContent() {
                   <div className="md:col-span-2"><p className="text-xs text-gray-500 mb-1">ID Activo</p><p className="font-semibold break-all">{asset?.id || '—'}</p></div>
                   <div><p className="text-xs text-gray-500 mb-1">Nombre del Activo</p><p className="font-semibold">{asset?.serial_interno || '—'}</p></div>
                   <div><p className="text-xs text-gray-500 mb-1">Código Inventario</p><p className="font-semibold">{asset?.codigo_activo || '—'}</p></div>
-                  <div><p className="text-xs text-gray-500 mb-1">Categoría</p><p className="font-semibold">{catalog?.name || '—'}</p></div>
+                  <div><p className="text-xs text-gray-500 mb-1">Artículo (catálogo)</p><p className="font-semibold">{catalog?.name ? <Link href={`/catalogo/${asset?.articulo_id}`} className="text-[#E59D12] hover:underline">{catalog.name}</Link> : '—'}</p></div>
                   <div><p className="text-xs text-gray-500 mb-1">Marca / Fabricante</p><p className="font-semibold">{catalog?.manufacturer || '—'}</p></div>
                 </div>
               </div>
