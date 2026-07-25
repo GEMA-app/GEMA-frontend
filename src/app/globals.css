@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -25,6 +27,17 @@
   --color-beige-gema-35: rgba(235, 221, 197, 0.35);
   --icon-edit: #0A8E71;
   --icon-delete: #FF0000;
+
+  /* Landing page tokens */
+  --color-gema-primary: #2B405B;
+  --color-gema-primary-light: #3D5A7D;
+  --color-gema-accent: #ECA03C;
+  --color-gema-accent-dark: #C97F1E;
+  --color-gema-bg-dark: #1A2536;
+  --color-gema-surface-dark: #223148;
+  --color-gema-surface-dark-2: #2A3B54;
+  --color-gema-bg-light: #F5F6F8;
+  --color-gema-surface-light: #FFFFFF;
 }
 
 @theme inline {
