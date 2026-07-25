@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { NuevoReporteInput, ReportePrioridad, ReporteTipo } from '@/types/reporte';
+import type { NuevoReporteInput, ReportePrioridad } from '@/types/reporte';
 
 interface CrearReporteModalProps {
   isOpen: boolean;
@@ -11,33 +11,29 @@ interface CrearReporteModalProps {
   saving?: boolean;
 }
 
-const TIPOS: { value: ReporteTipo; label: string }[] = [
-  { value: 'correctivo', label: 'Correctivo' },
-  { value: 'preventivo', label: 'Preventivo' },
-];
-
 const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
+  { value: 'critica', label: 'Critica' },
   { value: 'alta', label: 'Alta' },
   { value: 'media', label: 'Media' },
   { value: 'baja', label: 'Baja' },
 ];
 
 export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: CrearReporteModalProps) {
-  const [titulo, setTitulo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [tipo, setTipo] = useState<ReporteTipo>('correctivo');
-  const [prioridad, setPrioridad] = useState<ReportePrioridad>('media');
-  const [asignado, setAsignado] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [priority, setPriority] = useState<ReportePrioridad>('media');
+  const [reported_by, setReportedBy] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
-    setTitulo('');
-    setDescripcion('');
-    setTipo('correctivo');
-    setPrioridad('media');
-    setAsignado('');
+    setTitle('');
+    setDescription('');
+    setLocation('');
+    setPriority('media');
+    setReportedBy('');
   }, [isOpen]);
 
   if (!isOpen) {
@@ -46,7 +42,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await onSave({ titulo, descripcion, tipo, prioridad, asignado });
+    await onSave({ title, description, location, priority, reported_by });
     onClose();
   };
 
@@ -60,7 +56,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
       <div className="w-full max-w-md rounded-3xl border border-[#DED4C7] bg-[#F7F4EF] shadow-xl">
         <div className="flex items-center justify-between border-b border-[#EBE2D5] px-6 py-4">
           <h2 id="crear-reporte-title" className="text-xl font-bold text-gray-800">
-            Crear reporte
+            Crear reporte de falla
           </h2>
           <button
             type="button"
@@ -74,60 +70,56 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
 
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
           <div>
-            <label htmlFor="reporte-titulo" className="mb-1 block text-sm font-semibold text-gray-700">
-              Título
+            <label htmlFor="reporte-title" className="mb-1 block text-sm font-semibold text-gray-700">
+              Titulo
             </label>
             <input
-              id="reporte-titulo"
+              id="reporte-title"
               type="text"
-              value={titulo}
-              onChange={(event) => setTitulo(event.target.value)}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
               required
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             />
           </div>
 
           <div>
-            <label htmlFor="reporte-descripcion" className="mb-1 block text-sm font-semibold text-gray-700">
-              Descripción
+            <label htmlFor="reporte-description" className="mb-1 block text-sm font-semibold text-gray-700">
+              Descripcion
             </label>
             <textarea
-              id="reporte-descripcion"
-              value={descripcion}
-              onChange={(event) => setDescripcion(event.target.value)}
+              id="reporte-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
               required
               rows={3}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] resize-none"
             />
           </div>
 
+          <div>
+            <label htmlFor="reporte-location" className="mb-1 block text-sm font-semibold text-gray-700">
+              Ubicacion
+            </label>
+            <input
+              id="reporte-location"
+              type="text"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              required
+              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="reporte-tipo" className="mb-1 block text-sm font-semibold text-gray-700">
-                Tipo
-              </label>
-              <select
-                id="reporte-tipo"
-                value={tipo}
-                onChange={(event) => setTipo(event.target.value as ReporteTipo)}
-                className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              >
-                {TIPOS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="reporte-prioridad" className="mb-1 block text-sm font-semibold text-gray-700">
+              <label htmlFor="reporte-priority" className="mb-1 block text-sm font-semibold text-gray-700">
                 Prioridad
               </label>
               <select
-                id="reporte-prioridad"
-                value={prioridad}
-                onChange={(event) => setPrioridad(event.target.value as ReportePrioridad)}
+                id="reporte-priority"
+                value={priority}
+                onChange={(event) => setPriority(event.target.value as ReportePrioridad)}
                 className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               >
                 {PRIORIDADES.map((option) => (
@@ -137,20 +129,20 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
                 ))}
               </select>
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="reporte-asignado" className="mb-1 block text-sm font-semibold text-gray-700">
-              Asignado a
-            </label>
-            <input
-              id="reporte-asignado"
-              type="text"
-              value={asignado}
-              onChange={(event) => setAsignado(event.target.value)}
-              required
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-            />
+            <div>
+              <label htmlFor="reporte-reported_by" className="mb-1 block text-sm font-semibold text-gray-700">
+                Reportado por
+              </label>
+              <input
+                id="reporte-reported_by"
+                type="text"
+                value={reported_by}
+                onChange={(event) => setReportedBy(event.target.value)}
+                required
+                className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
@@ -166,7 +158,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
               disabled={saving}
               className="rounded-xl bg-[#E5A93D] px-4 py-2 text-sm font-semibold text-black hover:bg-[#d19730] disabled:opacity-60 cursor-pointer"
             >
-              {saving ? 'Guardando…' : 'Guardar'}
+              {saving ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </form>

@@ -60,3 +60,13 @@ export interface ActualizarActivoInput {
   estadoInicial?: ActivoEstado | string;
   version: number;
 }
+
+export interface LogEstadoActivo {
+  id: string;
+  activo_id: string;
+  estado_anterior: ActivoEstado | null;
+  estado_nuevo: ActivoEstado;
+  motivo: string | null;
+  fecha_cambio: string;
+  usuario_id: string | null;
+}
