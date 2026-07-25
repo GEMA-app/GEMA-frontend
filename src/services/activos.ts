@@ -1,7 +1,9 @@
 import { buildOffsetQuery } from '@/lib/pagination';
 import { extractActivosFromResponse, extractActivosMeta, normalizeAssetStatus } from '@/lib/activos';
-import type { ActivosQuery, ActivosResponse } from '@/types/activo';
+import { extractResourceList } from '@/lib/jsonapi';
+import type { ActivosQuery, ActivosResponse, LogEstadoActivo } from '@/types/activo';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { createArticulo, deleteArticulo, getArticulos } from '@/services/catalogo';
 
 export async function getActivos(params: ActivosQuery = {}): Promise<ActivosResponse> {
   const empresaId = await requireEmpresaId();
@@ -40,55 +42,50 @@ export interface CreateActivoForm {
 export async function createActivo(data: CreateActivoForm): Promise<void> {
   const empresaId = await requireEmpresaId();
 
-  const searchResult = await fetchWithAuth<{ data: Array<{ id: string }> }>(
-    `/v1/empresas/${empresaId}/catalogo/articulos?search=${encodeURIComponent(data.nombre)}&limit=1`,
-  );
-
+  const existentes = await getArticulos({ search: data.nombre, perPage: 1 });
   let articuloId: string;
-  if (searchResult.data?.length > 0) {
-    articuloId = searchResult.data[0].id;
+  let articuloCreado = false;
+
+  if (existentes.length > 0) {
+    articuloId = existentes[0].id;
   } else {
-    const created = await fetchWithAuth<{ data: { id: string } }>(
-      `/v1/empresas/${empresaId}/catalogo/articulos`,
-      {
-        method: 'POST',
-        contentType: 'json-api',
-        json: {
-          data: {
-            type: 'catalog-articles',
-            attributes: {
-              name: data.nombre,
-              manufacturer: data.marca || null,
-              model: data.nombre,
-            },
-          },
-        },
-      },
-    );
-    articuloId = created.data.id;
+    const nuevo = await createArticulo({
+      name: data.nombre,
+      manufacturer: data.marca || undefined,
+      model: data.nombre,
+    });
+    articuloId = nuevo.id;
+    articuloCreado = true;
   }
 
   const valor = data.valorMonetario ? parseFloat(data.valorMonetario.replace(',', '.')) : null;
 
-  await fetchWithAuth(`/v1/empresas/${empresaId}/activos`, {
-    method: 'POST',
-    contentType: 'json-api',
-    json: {
-      data: {
-        type: 'assets',
-        attributes: {
-          articulo_id: articuloId,
-          serial_interno: data.nombre,
-          codigo_activo: data.codigo,
-          estado: normalizeAssetStatus(data.estadoInicial),
-          ubicacion_id: data.ubicacion || null,
-          fecha_adquisicion: data.fechaCompra || null,
-          valor_monetario: valor,
-          moneda: data.moneda || 'USD',
+  try {
+    await fetchWithAuth(`/v1/empresas/${empresaId}/activos`, {
+      method: 'POST',
+      contentType: 'json-api',
+      json: {
+        data: {
+          type: 'assets',
+          attributes: {
+            articulo_id: articuloId,
+            serial_interno: data.nombre,
+            codigo_activo: data.codigo,
+            estado: normalizeAssetStatus(data.estadoInicial),
+            ubicacion_id: data.ubicacion || null,
+            fecha_adquisicion: data.fechaCompra || null,
+            valor_monetario: valor,
+            moneda: data.moneda || 'USD',
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    if (articuloCreado) {
+      try { await deleteArticulo(articuloId); } catch { /* ponytail: rollback silencioso */ }
+    }
+    throw err;
+  }
 }
 
 export async function deleteActivo(id: string): Promise<void> {
@@ -172,4 +169,22 @@ export async function updateActivo(id: string, data: Partial<CreateActivoForm> &
     contentType: 'json-api',
     json: { data: { type: 'assets', attributes: attrs } },
   });
+}
+
+export async function getHistorialEstadosActivo(activoId: string): Promise<LogEstadoActivo[]> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/activos/${activoId}/historial-estados`,
+  );
+  return extractResourceList(payload).map((r) => ({
+    id: r.id,
+    activo_id: (r.attributes.activo_id as string) ?? activoId,
+    estado_anterior: r.attributes.estado_anterior
+      ? normalizeAssetStatus(r.attributes.estado_anterior as string)
+      : null,
+    estado_nuevo: normalizeAssetStatus((r.attributes.estado_nuevo as string) || 'operativo'),
+    motivo: (r.attributes.motivo as string) || null,
+    fecha_cambio: (r.attributes.fecha_cambio as string) ?? '',
+    usuario_id: (r.attributes.usuario_id as string) || null,
+  }));
 }

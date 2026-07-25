@@ -23,6 +23,7 @@ export async function createRol(input: NuevoRolInput): Promise<Rol | null> {
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(url, {
     method: 'POST',
+    contentType: 'json-api',
     json: {
       data: { type: 'roles', attributes: { nombre: input.nombre, permisos: permisosToApi(input.permisos) } },
     },
@@ -37,6 +38,7 @@ export async function updateRol(id: string, input: ActualizarRolInput): Promise<
   if (input.permisos !== undefined) attrs.permisos = permisosToApi(input.permisos);
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',
+    contentType: 'json-api',
     json: { data: { type: 'roles', attributes: attrs } },
   });
   return extractRolFromResponse(payload);
@@ -51,6 +53,7 @@ export async function asignarRol(rolId: string, usuarioId: string): Promise<void
   const url = await baseUrl();
   await fetchWithAuth(`${url}/${rolId}/asignar`, {
     method: 'POST',
+    contentType: 'json-api',
     json: { data: { type: 'roles', attributes: { usuario_id: usuarioId } } },
   });
 }
