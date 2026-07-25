@@ -10,8 +10,8 @@ import { useOrdenDetalle } from '@/hooks/useOrdenDetalle';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { updateOrden } from '@/services/ordenes-trabajo';
-import { formatEstadoOT } from '@/lib/orden-trabajo';
-import type { OrdenTrabajo } from '@/types/orden-trabajo';
+import { formatEstadoOT, transicionesValidas } from '@/lib/orden-trabajo';
+import type { EstadoOT, OrdenTrabajo } from '@/types/orden-trabajo';
 
 const badgeStyles: Record<string, string> = {
   Abierta: 'bg-[#E3F2FD] text-[#1565C0]',
@@ -28,7 +28,7 @@ function EstadoBadge({ estado }: { estado: string }) {
 
 export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { orden, loading, error, empty } = useOrdenDetalle(id);
+  const { orden, loading, error, empty, cambiarEstado, validar } = useOrdenDetalle(id);
   const { activos } = useActivos({ perPage: 200 });
   const { usuarios } = useUsuarios();
 
@@ -238,6 +238,31 @@ export default function OrdenDetallePage() {
                     </div>
                   ))}
                 </div>
+              </div>
+              <div>
+                <h3 className="text-gray-800 font-bold text-base mb-5">Estado</h3>
+                <p className="text-sm font-semibold text-gray-800 mb-3 capitalize">{formatEstadoOT(orden?.estado ?? '')}</p>
+                {orden?.estado !== 'cerrada' && orden?.estado !== 'cancelada' && transicionesValidas(orden?.estado ?? '').length > 0 && (
+                  <div className="space-y-2">
+                    {transicionesValidas(orden?.estado ?? '').map(est => (
+                      <button key={est} onClick={() => cambiarEstado({ estado: est as EstadoOT })}
+                        className="w-full text-sm px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-100 text-gray-700 capitalize transition-all"
+                      >
+                        {formatEstadoOT(est)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {orden?.estado === 'cerrada' && !orden?.validado_por_id && (
+                  <button onClick={() => validar()}
+                    className="w-full mt-3 text-sm px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-all"
+                  >
+                    Validar orden
+                  </button>
+                )}
+                {orden?.validado_por_id && orden?.fecha_validacion && (
+                  <p className="text-xs text-gray-500 mt-2">Validada el {new Date(orden.fecha_validacion).toLocaleDateString('es-VE')}</p>
+                )}
               </div>
             </div>
           </div>

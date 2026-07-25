@@ -43,6 +43,18 @@ export function extractOrdenesMeta(payload: unknown, page = 1, perPage = 15): {
   return { total, offset, limit, lastPage, page, hasMore: page < lastPage };
 }
 
+export const TRANSICIONES_OT: Record<string, string[]> = {
+  abierta: ['en_proceso', 'cancelada'],
+  en_proceso: ['pausada', 'cerrada', 'cancelada'],
+  pausada: ['en_proceso', 'cancelada'],
+  cerrada: [],
+  cancelada: [],
+};
+
+export function transicionesValidas(estado: string): string[] {
+  return TRANSICIONES_OT[estado] ?? [];
+}
+
 export function formatEstadoOT(estado: string): string {
   const map: Record<string, string> = {
     abierta: 'Abierta',

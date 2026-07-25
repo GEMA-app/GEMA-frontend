@@ -34,7 +34,7 @@ export function useOrdenDetalle(id: string) {
 
   const cambiarEstado = useCallback(async (input: CambioEstadoInput): Promise<OrdenTrabajo> => {
     if (!orden) throw new Error('Orden no cargada');
-    const updated = await cambiarEstadoOrden(orden.id, input, orden.version);
+    const updated = await cambiarEstadoOrden(orden.id, input);
     setOrden(updated);
     return updated;
   }, [orden]);

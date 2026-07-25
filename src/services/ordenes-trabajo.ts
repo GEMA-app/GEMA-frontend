@@ -1,4 +1,5 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { buildOffsetQuery } from '@/lib/pagination';
 import { extractOrdenesFromResponse, extractOrdenesMeta, mapOrdenFromResource } from '@/lib/orden-trabajo';
 import type { OrdenTrabajo, OrdenesQuery, NuevaOrdenInput, ActualizarOrdenInput, CambioEstadoInput, HistorialEstado } from '@/types/orden-trabajo';
 
@@ -7,24 +8,9 @@ async function baseUrl(): Promise<string> {
   return `/v1/empresas/${empresaId}/ordenes-trabajo`;
 }
 
-function buildQuery(params: OrdenesQuery): string {
-  const q = new URLSearchParams();
-  const page = params.page ?? 1;
-  const limit = params.perPage ?? 15;
-  q.set('offset', String((page - 1) * limit));
-  q.set('limit', String(limit));
-  if (params.estado) q.set('estado', params.estado);
-  if (params.activo_id) q.set('activo_id', params.activo_id);
-  if (params.tipo) q.set('tipo', params.tipo);
-  if (params.supervisor_id) q.set('supervisor_id', params.supervisor_id);
-  if (params.search) q.set('search', params.search);
-  const s = q.toString();
-  return s ? `?${s}` : '';
-}
-
 export async function getOrdenes(params: OrdenesQuery = {}): Promise<{ ordenes: OrdenTrabajo[]; meta: ReturnType<typeof extractOrdenesMeta> }> {
   const url = await baseUrl();
-  const payload = await fetchWithAuth<unknown>(`${url}${buildQuery(params)}`);
+  const payload = await fetchWithAuth<unknown>(`${url}${buildOffsetQuery(params as Record<string, string | number | undefined>)}`);
   return {
     ordenes: extractOrdenesFromResponse(payload),
     meta: extractOrdenesMeta(payload, params.page ?? 1, params.perPage ?? 15),
@@ -43,6 +29,7 @@ export async function createOrden(input: NuevaOrdenInput): Promise<OrdenTrabajo>
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(url, {
     method: 'POST',
+    contentType: 'json-api',
     json: {
       data: {
         type: 'work_orders',
@@ -67,6 +54,7 @@ export async function updateOrden(id: string, input: ActualizarOrdenInput): Prom
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',
+    contentType: 'json-api',
     json: {
       data: {
         type: 'work_orders',
@@ -89,16 +77,17 @@ export async function deleteOrden(id: string): Promise<void> {
   await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
 }
 
-export async function cambiarEstadoOrden(id: string, input: CambioEstadoInput, version: number): Promise<OrdenTrabajo> {
+export async function cambiarEstadoOrden(id: string, input: CambioEstadoInput): Promise<OrdenTrabajo> {
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(`${url}/${id}/estado`, {
     method: 'PATCH',
+    contentType: 'json-api',
     json: {
       data: {
         type: 'work_orders',
         attributes: {
           estado: input.estado,
-          version,
+          motivo: input.motivo ?? null,
         },
       },
     },
@@ -112,6 +101,7 @@ export async function asignarTecnico(ordenId: string, tecnicoId: string): Promis
   const url = await baseUrl();
   await fetchWithAuth(`${url}/${ordenId}/asignar-tecnico`, {
     method: 'POST',
+    contentType: 'json-api',
     json: {
       data: {
         type: 'work_order_technician',
@@ -132,6 +122,8 @@ export async function validarOrden(ordenId: string): Promise<OrdenTrabajo> {
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(`${url}/${ordenId}/validar`, {
     method: 'POST',
+    contentType: 'json-api',
+    json: {},
   });
   const orden = mapOrdenFromResource(payload);
   if (!orden) throw new Error('No se pudo interpretar la respuesta.');
