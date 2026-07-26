@@ -26,14 +26,6 @@ export async function getIntervenciones(otId: string, page = 1, perPage = 20): P
   };
 }
 
-export async function getIntervencionById(otId: string, id: string): Promise<Intervencion> {
-  const url = await baseUrl(otId);
-  const payload = await fetchWithAuth<unknown>(`${url}/${id}`);
-  const intervencion = mapIntervencionFromResponse(payload);
-  if (!intervencion) throw new Error('No se pudo interpretar la intervencion.');
-  return intervencion;
-}
-
 export async function createIntervencion(otId: string, input: NuevaIntervencionInput): Promise<Intervencion> {
   const url = await baseUrl(otId);
   const payload = await fetchWithAuth<unknown>(url, {
@@ -67,6 +59,7 @@ export async function updateIntervencion(
   const attributes: Record<string, unknown> = {};
   if (input.tareas_realizadas !== undefined) attributes.tareas_realizadas = input.tareas_realizadas;
   if (input.horas_hombre !== undefined) attributes.horas_hombre = input.horas_hombre;
+  if (input.fecha_fin !== undefined) attributes.fecha_fin = input.fecha_fin;
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',
     contentType: 'json-api',

@@ -28,4 +28,5 @@ export interface NuevaIntervencionInput {
 export interface ActualizarIntervencionInput {
   tareas_realizadas?: string;
   horas_hombre?: number;
+  fecha_fin?: string;
 }

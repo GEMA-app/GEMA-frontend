@@ -53,8 +53,12 @@ export function useIntervenciones(otId: string) {
   }, [otId, refetch]);
 
   const eliminarIntervencion = useCallback(async (id: string) => {
-    await deleteIntervencion(otId, id);
-    await refetch();
+    try {
+      await deleteIntervencion(otId, id);
+      await refetch();
+    } catch (err) {
+      throw err instanceof ApiError ? err : new Error('Error al eliminar intervencion.');
+    }
   }, [otId, refetch]);
 
   return {
