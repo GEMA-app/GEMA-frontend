@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Users, Hammer, Globe } from 'lucide-react';
+import { Clock, Users, Hammer, Globe, Building2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ConfiguracionPage() {
@@ -18,6 +18,12 @@ export default function ConfiguracionPage() {
       description: 'Administrar accesos, rol y permisos del personal',
       icon: Users,
       href: '/configuracion/usuarios',
+    },
+    {
+      title: 'Empresa',
+      description: 'Perfil y datos de la empresa',
+      icon: Building2,
+      href: '/configuracion/empresa',
     },
     {
       title: 'Gestión de repuestos',

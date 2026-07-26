@@ -11,11 +11,13 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
+  ClipboardList,
 } from 'lucide-react';
+import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
 
 type Vista = 'ordenes' | 'calendario';
 type EstadoOrden = 'Pendiente' | 'En progreso' | 'Completado' | 'Cancelado';
-type TipoEvento = 'preventivo' | 'correctivo' | 'cancelado';
+type TipoEvento = 'preventivo' | 'correctivo' | 'predictivo' | 'cancelado';
 
 interface OrdenRow {
   id: string;
@@ -41,14 +43,15 @@ function mapEstado(estado: string): EstadoOrden {
   return ESTADO_BACKEND_MAP[estado] ?? 'Pendiente';
 }
 
-const EVENTOS_MARZO_2026: EventoCalendario[] = [
-  { dia: 5, titulo: 'Preventivo — Compresor', tipo: 'preventivo' },
-  { dia: 12, titulo: 'Correctivo — Bomba', tipo: 'correctivo' },
-  { dia: 18, titulo: 'Preventivo — Motor', tipo: 'preventivo' },
-  { dia: 20, titulo: 'OT-098 Pendiente', tipo: 'correctivo' },
-  { dia: 25, titulo: 'OT-104 En progreso', tipo: 'preventivo' },
-  { dia: 28, titulo: 'Cancelado — Panel', tipo: 'cancelado' },
-];
+function planToEventos(planes: Array<{ nombre: string; tipo: TipoEvento; proxima_ejecucion: string }>, year: number, month: number): EventoCalendario[] {
+  return planes
+    .filter(p => p.proxima_ejecucion.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
+    .map(p => ({
+      dia: Number(p.proxima_ejecucion.split('-')[2]),
+      titulo: `${p.tipo === 'preventivo' ? 'Preventivo' : p.tipo === 'correctivo' ? 'Correctivo' : 'Predictivo'} — ${p.nombre}`,
+      tipo: p.tipo as TipoEvento,
+    }));
+}
 
 const DIAS_SEMANA = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
@@ -62,6 +65,7 @@ const ESTADO_STYLES: Record<EstadoOrden, string> = {
 const EVENTO_STYLES: Record<TipoEvento, string> = {
   preventivo: 'bg-[#E3F2FD] text-[#1565C0] border-l-[#1565C0]',
   correctivo: 'bg-[#FFF3E0] text-[#E65100] border-l-[#E65100]',
+  predictivo: 'bg-[#F3E5F5] text-[#7B1FA2] border-l-[#7B1FA2]',
   cancelado: 'bg-[#F5F5F5] text-[#757575] border-l-[#9E9E9E]',
 };
 
@@ -111,6 +115,12 @@ function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => 
       >
         Calendario
       </button>
+      <Link href="/mantenimiento/planes"
+        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center gap-2"
+      >
+        <ClipboardList className="w-4 h-4" />
+        Planes
+      </Link>
     </div>
   );
 }
@@ -209,7 +219,7 @@ function OrdenesView({
   );
 }
 
-function CalendarioView() {
+function CalendarioView({ planes }: { planes: Array<{ nombre: string; tipo: TipoEvento; proxima_ejecucion: string }> }) {
   const router = useRouter();
   const hoy = new Date();
 
@@ -234,10 +244,12 @@ function CalendarioView() {
     router.push(`/mantenimiento/calendario?fecha=${fechaStr}`);
   };
 
+  const year = fechaActual.getFullYear();
+  const month = fechaActual.getMonth();
+  const eventosDelMes = useMemo(() => planToEventos(planes, year, month), [planes, year, month]);
+
   // Generar las celdas del calendario (depende de fechaActual)
   const celdas = useMemo(() => {
-    const year = fechaActual.getFullYear();
-    const month = fechaActual.getMonth();
     const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const startOffset = (firstDay.getDay() + 6) % 7; // lunes = 0
@@ -253,7 +265,7 @@ function CalendarioView() {
     for (let dia = 1; dia <= daysInMonth; dia++) {
       cells.push({
         dia,
-        eventos: EVENTOS_MARZO_2026.filter((e) => e.dia === dia),
+        eventos: eventosDelMes.filter((e) => e.dia === dia),
       });
     }
 
@@ -263,7 +275,7 @@ function CalendarioView() {
     }
 
     return cells;
-  }, [fechaActual]);
+  }, [year, month, eventosDelMes]);
 
   const mes = fechaActual.toLocaleString('es', { month: 'long' });
   const año = fechaActual.getFullYear();
@@ -404,6 +416,7 @@ export default function MantenimientoPage() {
   const [ordenes, setOrdenes] = useState<OrdenRow[]>([]);
   const [loadingOrdenes, setLoadingOrdenes] = useState(false);
   const [errorOrdenes, setErrorOrdenes] = useState<string | null>(null);
+  const { planes } = usePlanesMantenimiento({ activo: true });
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -472,7 +485,7 @@ export default function MantenimientoPage() {
       {vista === 'ordenes' ? (
         <OrdenesView ordenes={ordenes} loading={loadingOrdenes} error={errorOrdenes} />
       ) : (
-        <CalendarioView />
+        <CalendarioView planes={planes} />
       )}
     </div>
   );
