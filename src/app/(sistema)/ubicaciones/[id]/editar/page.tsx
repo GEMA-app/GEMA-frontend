@@ -5,12 +5,21 @@ import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { getUbicacion, updateUbicacion } from '@/services/ubicaciones';
 import type { TipoUbicacion, Ubicacion } from '@/types/ubicacion';
 
-export default function EditarUbicacionPage() {
+const TIPO_PADRE_PERMITE: Record<TipoUbicacion, TipoUbicacion | null> = {
+  sede: null,
+  planta: 'sede',
+  area: 'planta',
+  seccion: 'area',
+};
+
+function EditarUbicacionPageContent() {
   const params = useParams();
   const ubicacionId = params.id as string;
   const { ubicaciones, loading: loadingUbicaciones } = useUbicaciones();
@@ -19,38 +28,39 @@ export default function EditarUbicacionPage() {
     [ubicaciones],
   );
 
-  const sedeIds = useMemo(() => {
-    const ids = new Set<string>();
+  const typeMap = useMemo(() => {
+    const map = new Map<string, Ubicacion>();
     const walk = (items: Ubicacion[]) => {
-      for (const item of items) {
-        if (item.tipo === 'sede') ids.add(item.id);
-        if (item.hijos) walk(item.hijos);
-      }
+      for (const item of items) { map.set(item.id, item); if (item.hijos) walk(item.hijos); }
     };
     walk(ubicaciones);
-    return ids;
+    return map;
   }, [ubicaciones]);
 
   const router = useRouter();
 
   const [formData, setFormData] = useState({
     nombre: '',
-    tipo: '',
+    tipo: 'sede' as TipoUbicacion,
     parentId: '',
     descripcion: '',
   });
+  const [version, setVersion] = useState<number>(1);
   const [loadingUbicacion, setLoadingUbicacion] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const parentTipo = TIPO_PADRE_PERMITE[formData.tipo];
+  const isSede = formData.tipo === 'sede';
+
   const parentOptions = useMemo(() => {
-    if (formData.tipo === 'sede') return [];
-    if (formData.tipo === 'planta') {
-      return ubicacionOptions.filter((opt) => sedeIds.has(opt.id));
-    }
-    return ubicacionOptions;
-  }, [formData.tipo, ubicacionOptions, sedeIds]);
+    if (!parentTipo) return [];
+    return ubicacionOptions.filter((opt) => {
+      const u = typeMap.get(opt.id);
+      return u?.tipo === parentTipo && opt.id !== ubicacionId;
+    });
+  }, [parentTipo, ubicacionOptions, typeMap, ubicacionId]);
 
   useEffect(() => {
     if (!ubicacionId) return;
@@ -65,6 +75,7 @@ export default function EditarUbicacionPage() {
             parentId: u.parentId || '',
             descripcion: u.descripcion || '',
           });
+          setVersion(u.version);
         }
       } catch (err) {
         if (!cancelled) setSubmitStatus(err instanceof Error ? err.message : 'Error al cargar ubicación');
@@ -75,14 +86,12 @@ export default function EditarUbicacionPage() {
     return () => { cancelled = true; };
   }, [ubicacionId]);
 
-  const isSede = formData.tipo === 'sede';
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'tipo' && value === 'sede' ? { parentId: '' } : {}),
+      ...(name === 'tipo' ? { parentId: '' } : {}),
     }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     setSubmitStatus('');
@@ -91,6 +100,7 @@ export default function EditarUbicacionPage() {
   const validateForm = () => {
     const next: Record<string, string> = {};
     if (!formData.nombre.trim()) next.nombre = 'El nombre de la ubicación es obligatorio.';
+    if (parentTipo && !formData.parentId) next.parentId = `Debe seleccionar una ${parentTipo} como padre.`;
     return next;
   };
 
@@ -107,7 +117,13 @@ export default function EditarUbicacionPage() {
     setSubmitStatus('Guardando...');
 
     try {
-      await updateUbicacion(ubicacionId, formData);
+      await updateUbicacion(ubicacionId, {
+        nombre: formData.nombre,
+        tipo: formData.tipo,
+        parentId: formData.parentId || null,
+        descripcion: formData.descripcion || null,
+        version,
+      });
       setSubmitStatus('Ubicación actualizada correctamente.');
       setTimeout(() => router.push(`/ubicaciones/${ubicacionId}`), 800);
     } catch (err) {
@@ -148,15 +164,17 @@ export default function EditarUbicacionPage() {
             <Link href="/ubicaciones" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
               Cancelar
             </Link>
-            <button
-              type="submit"
-              form="editar-ubicacion-form"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-            >
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-              {isSubmitting ? 'Guardando...' : 'guardar cambios'}
-            </button>
+            <PermissionGuard module="administracion" action="edit">
+              <button
+                type="submit"
+                form="editar-ubicacion-form"
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              >
+                <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
+                {isSubmitting ? 'Guardando...' : 'guardar cambios'}
+              </button>
+            </PermissionGuard>
           </div>
         </div>
 
@@ -186,22 +204,22 @@ export default function EditarUbicacionPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="parentId">Ubicación Padre</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="parentId">
+              Ubicación Padre {parentTipo ? `(solo ${parentTipo}s)` : ''}
+            </label>
             <select
               id="parentId" name="parentId"
               value={formData.parentId} onChange={handleInputChange}
               disabled={loadingUbicaciones || isSede}
               className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${isSede ? 'border-gray-200 text-gray-400' : 'border-gray-400'}`}
             >
-              <option value="">{isSede ? 'Una sede no puede tener padre' : formData.tipo === 'planta' ? 'Seleccione una sede' : 'Ninguna (raíz)'}</option>
+              <option value="">{isSede ? 'Una sede no puede tener padre' : parentTipo ? `Seleccione una ${parentTipo}` : 'Ninguna (raíz)'}</option>
               {!isSede && parentOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>{opt.label}</option>
               ))}
             </select>
             {isSede && <p className="text-xs text-amber-600 mt-1">Las sedes son ubicaciones raíz y no pueden tener padre.</p>}
-            {formData.tipo === 'planta' && !isSede && parentOptions.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">No hay sedes registradas. Crea una sede primero.</p>
-            )}
+            {errors.parentId && <p className="text-xs text-red-600 mt-1">{errors.parentId}</p>}
           </div>
 
           <div>
@@ -219,5 +237,13 @@ export default function EditarUbicacionPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function EditarUbicacionPage() {
+  return (
+    <AuthGuard roleRequired={['admin']}>
+      <EditarUbicacionPageContent />
+    </AuthGuard>
   );
 }

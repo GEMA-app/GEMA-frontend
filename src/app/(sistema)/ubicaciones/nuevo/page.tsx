@@ -5,56 +5,65 @@ import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { createUbicacion } from '@/services/ubicaciones';
-import type { Ubicacion } from '@/types/ubicacion';
+import type { TipoUbicacion, Ubicacion } from '@/types/ubicacion';
 
-const initialFormState: {
+const TIPO_PADRE_PERMITE: Record<TipoUbicacion, TipoUbicacion | null> = {
+  sede: null,
+  planta: 'sede',
+  area: 'planta',
+  seccion: 'area',
+};
+
+interface FormState {
   nombre: string;
-  tipo: 'sede' | 'planta' | 'area';
+  tipo: TipoUbicacion;
   parentId: string;
   descripcion: string;
-} = {
+}
+
+const initialFormState: FormState = {
   nombre: '',
   tipo: 'area',
   parentId: '',
   descripcion: '',
 };
 
-export default function NuevaUbicacionPage() {
+function NuevaUbicacionPageContent() {
   const { ubicaciones, loading: loadingUbicaciones } = useUbicaciones();
   const ubicacionOptions = useMemo(
     () => flattenUbicacionesForSelect(ubicaciones),
     [ubicaciones],
   );
 
-  const sedeIds = useMemo(() => {
-    const ids = new Set<string>();
+  const typeMap = useMemo(() => {
+    const map = new Map<string, Ubicacion>();
     const walk = (items: Ubicacion[]) => {
-      for (const item of items) {
-        if (item.tipo === 'sede') ids.add(item.id);
-        if (item.hijos) walk(item.hijos);
-      }
+      for (const item of items) { map.set(item.id, item); if (item.hijos) walk(item.hijos); }
     };
     walk(ubicaciones);
-    return ids;
+    return map;
   }, [ubicaciones]);
 
   const router = useRouter();
 
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState<FormState>(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const parentTipo = TIPO_PADRE_PERMITE[formData.tipo];
+
   const parentOptions = useMemo(() => {
-    if (formData.tipo === 'sede') return [];
-    if (formData.tipo === 'planta') {
-      return ubicacionOptions.filter((opt) => sedeIds.has(opt.id));
-    }
-    return ubicacionOptions;
-  }, [formData.tipo, ubicacionOptions, sedeIds]);
+    if (!parentTipo) return [];
+    return ubicacionOptions.filter((opt) => {
+      const u = typeMap.get(opt.id);
+      return u?.tipo === parentTipo;
+    });
+  }, [parentTipo, ubicacionOptions, typeMap]);
 
   const isSede = formData.tipo === 'sede';
 
@@ -63,7 +72,7 @@ export default function NuevaUbicacionPage() {
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      ...(name === 'tipo' && value === 'sede' ? { parentId: '' } : {}),
+      ...(name === 'tipo' ? { parentId: '' } : {}),
     }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     setSubmitStatus('');
@@ -72,6 +81,7 @@ export default function NuevaUbicacionPage() {
   const validateForm = () => {
     const next: Record<string, string> = {};
     if (!formData.nombre.trim()) next.nombre = 'El nombre de la ubicación es obligatorio.';
+    if (parentTipo && !formData.parentId) next.parentId = `Debe seleccionar una ${parentTipo} como padre.`;
     return next;
   };
 
@@ -174,7 +184,9 @@ export default function NuevaUbicacionPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="parentId">Ubicación Padre</label>
+            <label className="block text-xs text-gray-500 mb-1" htmlFor="parentId">
+              Ubicación Padre {parentTipo ? `(solo ${parentTipo}s)` : ''}
+            </label>
             <select
               id="parentId"
               name="parentId"
@@ -183,15 +195,13 @@ export default function NuevaUbicacionPage() {
               disabled={loadingUbicaciones || isSede}
               className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${isSede ? 'border-gray-200 text-gray-400' : 'border-gray-400'}`}
             >
-              <option value="">{isSede ? 'Una sede no puede tener padre' : formData.tipo === 'planta' ? 'Seleccione una sede' : 'Ninguna (raíz)'}</option>
+              <option value="">{isSede ? 'Una sede no puede tener padre' : parentTipo ? `Seleccione una ${parentTipo}` : 'Ninguna (raíz)'}</option>
               {!isSede && parentOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>{opt.label}</option>
               ))}
             </select>
             {isSede && <p className="text-xs text-amber-600 mt-1">Las sedes son ubicaciones raíz y no pueden tener padre.</p>}
-            {formData.tipo === 'planta' && !isSede && parentOptions.length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">No hay sedes registradas. Crea una sede primero.</p>
-            )}
+            {errors.parentId && <p className="text-xs text-red-600 mt-1">{errors.parentId}</p>}
           </div>
 
           <div>
@@ -207,10 +217,18 @@ export default function NuevaUbicacionPage() {
           </div>
 
           {submitStatus && (
-            <p className={`text-sm ${Object.keys(errors).length === 0 && !Object.values(errors).some(Boolean) ? 'text-emerald-700' : 'text-red-600'}`}>{submitStatus}</p>
+            <p className={`text-sm ${submitStatus.includes('Error') || submitStatus.includes('error') ? 'text-red-600' : 'text-emerald-700'}`}>{submitStatus}</p>
           )}
         </form>
       </div>
     </div>
+  );
+}
+
+export default function NuevaUbicacionPage() {
+  return (
+    <AuthGuard roleRequired={['admin']}>
+      <NuevaUbicacionPageContent />
+    </AuthGuard>
   );
 }

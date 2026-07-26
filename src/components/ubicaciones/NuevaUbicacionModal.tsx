@@ -1,16 +1,22 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import type { TipoUbicacion, ProcesoUbicacion, EstadoUbicacion, Ubicacion } from '@/types/ubicacion';
+import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
+import type { NuevaUbicacionForm, TipoUbicacion, Ubicacion } from '@/types/ubicacion';
+
+const TIPO_HIJO_PERMITE: Record<TipoUbicacion, TipoUbicacion | null> = {
+  sede: null,
+  planta: 'sede',
+  area: 'planta',
+  seccion: 'area',
+};
 
 interface ModalForm {
   nombre: string;
   tipo: TipoUbicacion;
-  jerarquia: string;
-  proceso: ProcesoUbicacion;
-  estado: EstadoUbicacion;
+  descripcion: string;
   parentId: string;
 }
 
@@ -19,39 +25,15 @@ interface NuevaUbicacionModalProps {
   ubicaciones: Ubicacion[];
   isSubmitting?: boolean;
   onClose: () => void;
-  // ponytail: dead code
-  onSubmit: Function;
+  onSubmit: (data: NuevaUbicacionForm) => Promise<void>;
 }
-
-const PROCESO_OPTIONS: { value: ProcesoUbicacion; label: string }[] = [
-  { value: 'alta', label: 'Alta' },
-  { value: 'media', label: 'Media' },
-  { value: 'baja', label: 'Baja' },
-];
-
-const ESTADO_OPTIONS: { value: EstadoUbicacion; label: string }[] = [
-  { value: 'completado', label: 'Completado' },
-  { value: 'en_progreso', label: 'En progreso' },
-  { value: 'pendiente', label: 'Pendiente' },
-];
 
 const EMPTY_FORM: ModalForm = {
   nombre: '',
   tipo: 'area',
-  jerarquia: '',
-  proceso: 'media',
-  estado: 'pendiente',
+  descripcion: '',
   parentId: '',
 };
-
-function flattenUbicaciones(ubicaciones: Ubicacion[], depth = 0): { id: string; label: string }[] {
-  return ubicaciones.flatMap((ubicacion) => {
-    const prefix = depth > 0 ? `${'— '.repeat(depth)}` : '';
-    const current = { id: ubicacion.id, label: `${prefix}${ubicacion.nombre}` };
-    const children = ubicacion.hijos ? flattenUbicaciones(ubicacion.hijos, depth + 1) : [];
-    return [current, ...children];
-  });
-}
 
 export function NuevaUbicacionModal({
   isOpen,
@@ -66,17 +48,54 @@ export function NuevaUbicacionModal({
     if (!isOpen) setForm(EMPTY_FORM);
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const parentTipo = TIPO_HIJO_PERMITE[form.tipo];
 
-  const parentOptions = flattenUbicaciones(ubicaciones);
+  const parentOptions = useMemo(() => {
+    const all = flattenUbicacionesForSelect(ubicaciones);
+    if (!parentTipo) return [];
+    return all.filter((opt) => {
+      const find = (items: Ubicacion[]): boolean =>
+        items.some((u) => u.id === opt.id || (u.hijos && find(u.hijos)));
+      return find(ubicaciones);
+    });
+  }, [ubicaciones, parentTipo]);
+
+  const parentMap = useMemo(() => {
+    const map = new Map<string, Ubicacion>();
+    const walk = (items: Ubicacion[]) => {
+      for (const u of items) { map.set(u.id, u); if (u.hijos) walk(u.hijos); }
+    };
+    walk(ubicaciones);
+    return map;
+  }, [ubicaciones]);
+
+  const filteredOptions = useMemo(() => {
+    if (!parentTipo) return [];
+    return parentOptions.filter((opt) => {
+      const u = parentMap.get(opt.id);
+      return u?.tipo === parentTipo;
+    });
+  }, [parentOptions, parentMap, parentTipo]);
+
+  // Reset parentId si el padre seleccionado ya no es válido
+  useEffect(() => {
+    if (form.parentId && parentTipo) {
+      const u = parentMap.get(form.parentId);
+      if (u?.tipo !== parentTipo) {
+        setForm((prev) => ({ ...prev, parentId: '' }));
+      }
+    }
+  }, [form.parentId, form.tipo, parentTipo, parentMap]);
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.nombre.trim() || !form.jerarquia.trim()) return;
+    if (!form.nombre.trim()) return;
     await onSubmit({
       nombre: form.nombre.trim(),
-      jerarquia: form.jerarquia.trim(),
       tipo: form.tipo,
+      descripcion: form.descripcion.trim() || undefined,
       parentId: form.parentId || undefined,
     });
   };
@@ -112,19 +131,7 @@ export function NuevaUbicacionModal({
               type="text"
               value={form.nombre}
               onChange={(event) => setForm((current: ModalForm) => ({ ...current, nombre: event.target.value }))}
-              placeholder="Ej. A-001"
-              className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              required
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-gray-700">Jerarquía</span>
-            <input
-              type="text"
-              value={form.jerarquia}
-              onChange={(event) => setForm((current: ModalForm) => ({ ...current, jerarquia: event.target.value }))}
-              placeholder="Ej. ZONA 123 / Mantenimiento de conectores"
+              placeholder="Ej. Planta A / Área 1"
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               required
             />
@@ -134,7 +141,7 @@ export function NuevaUbicacionModal({
             <span className="text-sm font-semibold text-gray-700">Tipo</span>
             <select
               value={form.tipo}
-              onChange={(event) => setForm((current: ModalForm) => ({ ...current, tipo: event.target.value as TipoUbicacion }))}
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, tipo: event.target.value as TipoUbicacion, parentId: '' }))}
               className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             >
               <option value="sede">Sede</option>
@@ -145,46 +152,30 @@ export function NuevaUbicacionModal({
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-gray-700">Ubicación padre (opcional)</span>
+            <span className="text-sm font-semibold text-gray-700">Ubicación padre {parentTipo ? `(solo ${parentTipo})` : '(opcional)'}</span>
             <select
               value={form.parentId ?? ''}
               onChange={(event) => setForm((current: ModalForm) => ({ ...current, parentId: event.target.value }))}
-              className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+              disabled={!parentTipo}
+              className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Sin padre (nivel raíz)</option>
-              {parentOptions.map((option) => (
+              <option value="">{parentTipo ? `Seleccione una ${parentTipo}` : 'Sin padre (raíz)'}</option>
+              {filteredOptions.map((option) => (
                 <option key={option.id} value={option.id}>{option.label}</option>
               ))}
             </select>
           </label>
 
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="text-sm font-semibold text-gray-700">Proceso</span>
-              <select
-                value={form.proceso}
-                onChange={(event) => setForm((current: ModalForm) => ({ ...current, proceso: event.target.value as ProcesoUbicacion }))}
-                className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              >
-                {PROCESO_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-semibold text-gray-700">Estado</span>
-              <select
-                value={form.estado}
-                onChange={(event) => setForm((current: ModalForm) => ({ ...current, estado: event.target.value as EstadoUbicacion }))}
-                className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              >
-                {ESTADO_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="block">
+            <span className="text-sm font-semibold text-gray-700">Descripción (opcional)</span>
+            <textarea
+              value={form.descripcion}
+              onChange={(event) => setForm((current: ModalForm) => ({ ...current, descripcion: event.target.value }))}
+              placeholder="Descripción opcional de la ubicación..."
+              className="mt-1 w-full rounded-xl border border-[#DED4C7] bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] resize-none"
+              rows={3}
+            />
+          </label>
 
           <div className="flex justify-end gap-3 pt-2">
             <button

@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, MapPin, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { getUbicacion } from '@/services/ubicaciones';
 import type { Ubicacion } from '@/types/ubicacion';
@@ -80,13 +82,15 @@ function UbicacionDetail() {
                 <h2 className="text-2xl font-bold text-gray-900">{ubicacion?.nombre || 'Sin nombre'}</h2>
               </div>
               {ubicacion && (
-                <Link
-                  href={`/ubicaciones/${ubicacion.id}/editar`}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all"
-                >
-                  <Pencil className="w-4 h-4" strokeWidth={2} />
-                  Editar
-                </Link>
+                <PermissionGuard module="administracion" action="edit">
+                  <Link
+                    href={`/ubicaciones/${ubicacion.id}/editar`}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" strokeWidth={2} />
+                    Editar
+                  </Link>
+                </PermissionGuard>
               )}
             </div>
 
@@ -113,5 +117,9 @@ function UbicacionDetail() {
 }
 
 export default function UbicacionDetailPage() {
-  return <UbicacionDetail />;
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <UbicacionDetail />
+    </AuthGuard>
+  );
 }
