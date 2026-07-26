@@ -13,7 +13,7 @@ import {
   Users,
   Settings,
   LogOut,
-  FileText,
+  Package,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,6 +44,7 @@ const MENU_SECTIONS: MenuSection[] = [
     label: 'Recursos',
     items: [
       { icon: Boxes, label: 'Inventario', href: '/configuracion/repuestos' },
+      { icon: Package, label: 'Repuestos', href: '/repuestos' },
       { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
       { icon: Truck, label: 'Proveedores', href: '/proveedores' },
     ],
@@ -67,6 +68,7 @@ const MENU_SECTIONS: MenuSection[] = [
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+
 
   const handleLogout = async () => {
     if (getToken()) {
