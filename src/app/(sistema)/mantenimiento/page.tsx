@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Plus,
   Eye,
@@ -17,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { useOrdenesTrabajo } from '@/hooks/useOrdenesTrabajo';
 import { useUsuariosMap } from '@/hooks/useUsuariosMap';
@@ -29,8 +27,9 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoOT } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import type { OrdenTrabajo } from '@/types/orden-trabajo';
+import type { PlanMantenimiento, TipoMantenimiento as TipoPlan } from '@/types/plan-mantenimiento';
 
-type Vista = 'ordenes' | 'calendario';
+type Vista = 'ordenes' | 'calendario' | 'planes';
 type TipoEvento = 'preventivo' | 'correctivo' | 'predictivo' | 'cancelado';
 
 interface EventoCalendario {
@@ -46,6 +45,13 @@ const ESTADO_FILTER_OPTIONS: { value: EstadoOT | ''; label: string }[] = [
   { value: 'pausada', label: 'Pausada' },
   { value: 'cerrada', label: 'Cerrada' },
   { value: 'cancelada', label: 'Cancelada' },
+];
+
+const TIPO_PLAN_OPTIONS = [
+  { value: '', label: 'Todos los tipos' },
+  { value: 'preventivo', label: 'Preventivo' },
+  { value: 'correctivo', label: 'Correctivo' },
+  { value: 'predictivo', label: 'Predictivo' },
 ];
 
 function planToEventos(
@@ -96,13 +102,18 @@ function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => 
       >
         Calendario
       </button>
-      <Link
-        href="/mantenimiento/planes"
-        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 border border-gray-200 dark:border-white/10 hover:bg-gema-primary/5 dark:hover:bg-white/10 flex items-center gap-2"
+      <button
+        type="button"
+        onClick={() => onChange('planes')}
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer flex items-center gap-2 ${
+          vista === 'planes'
+            ? 'bg-gema-primary dark:bg-white text-white dark:text-gema-primary'
+            : 'bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 border border-gray-200 dark:border-white/10 hover:bg-gema-primary/5 dark:hover:bg-white/10'
+        }`}
       >
         <ClipboardList className="w-4 h-4" />
         Planes
-      </Link>
+      </button>
     </div>
   );
 }
@@ -260,14 +271,213 @@ function CalendarioView({
   );
 }
 
+function PlanesTabContent() {
+  const [page, setPage] = useState(1);
+  const [filtroTipo, setFiltroTipo] = useState('');
+  const [filtroSoloActivos, setFiltroSoloActivos] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+
+  const { planes, meta, loading, error, empty, eliminarPlan } = usePlanesMantenimiento({
+    page,
+    perPage: 15,
+    tipo: (filtroTipo as TipoPlan) || undefined,
+    activo: filtroSoloActivos || undefined,
+  });
+
+  const { activos } = useActivos({ search: busqueda });
+  const activoMap = useMemo(() => new Map(activos.map((a) => [a.id, a.nombre])), [activos]);
+
+  const handleDelete = useCallback(
+    async (id: string, nombre: string) => {
+      if (!window.confirm(`¿Eliminar el plan "${nombre}"? Esta acción no se puede deshacer.`)) return;
+      try {
+        await eliminarPlan(id);
+      } catch {
+        alert('Error al eliminar el plan.');
+      }
+    },
+    [eliminarPlan]
+  );
+
+  const columns: DataTableColumn<PlanMantenimiento>[] = [
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      render: (plan) => (
+        <span className="font-semibold text-gema-primary dark:text-white">{plan.nombre}</span>
+      ),
+    },
+    {
+      key: 'activo',
+      header: 'Activo',
+      render: (plan) => (
+        <span className="font-medium text-gema-primary/80 dark:text-white/80">
+          {activoMap.get(plan.activo_id) || plan.activo_id}
+        </span>
+      ),
+    },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      render: (plan) => (
+        <span className="capitalize text-gema-primary/80 dark:text-white/80">
+          {plan.tipo}
+        </span>
+      ),
+    },
+    {
+      key: 'intervalo',
+      header: 'Intervalo (días)',
+      className: 'text-center',
+      render: (plan) => (
+        <span className="text-gema-primary/80 dark:text-white/80">{plan.intervalo_dias}</span>
+      ),
+    },
+    {
+      key: 'proxima_ejecucion',
+      header: 'Próxima ejecución',
+      className: 'text-center',
+      render: (plan) => (
+        <span className="text-gema-primary/70 dark:text-white/70">{plan.proxima_ejecucion}</span>
+      ),
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      className: 'text-center',
+      render: (plan) => (
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+            plan.activo
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+              : 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20'
+          }`}
+        >
+          {plan.activo ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
+    {
+      key: 'acciones',
+      header: '',
+      className: 'text-right',
+      render: (plan) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/mantenimiento/planes/${plan.id}`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label={`Editar ${plan.nombre}`}
+          >
+            <Pencil className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          <button
+            type="button"
+            onClick={() => handleDelete(plan.id, plan.nombre)}
+            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+            aria-label={`Eliminar ${plan.nombre}`}
+          >
+            <Trash className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
+        <div className="flex-1 relative">
+          <input
+            type="search"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por activo..."
+            aria-label="Buscar por activo"
+            className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+          />
+        </div>
+        <select
+          value={filtroTipo}
+          onChange={(e) => {
+            setFiltroTipo(e.target.value);
+            setPage(1);
+          }}
+          aria-label="Filtrar por tipo"
+          className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
+        >
+          {TIPO_PLAN_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-2 text-sm text-gema-primary/80 dark:text-white/80 cursor-pointer select-none px-2">
+          <input
+            type="checkbox"
+            checked={filtroSoloActivos}
+            onChange={(e) => {
+              setFiltroSoloActivos(e.target.checked);
+              setPage(1);
+            }}
+            className="accent-gema-accent w-4 h-4 rounded"
+          />
+          Solo activos
+        </label>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={planes}
+        keyExtractor={(plan) => plan.id}
+        loading={loading}
+        emptyMessage="No hay planes de mantenimiento registrados."
+      />
+
+      {!loading && meta.lastPage > 1 && (
+        <nav
+          className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+          aria-label="Paginación de planes"
+        >
+          <p>
+            Página {meta.page} de {meta.lastPage} — {meta.total} planes
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={meta.page <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+              className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              type="button"
+              disabled={meta.page >= meta.lastPage}
+              onClick={() => setPage((current) => current + 1)}
+              className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+        </nav>
+      )}
+    </div>
+  );
+}
+
 const PER_PAGE = 15;
 
-export default function OrdenesTrabajoPage() {
+function OrdenesTrabajoContent() {
+  const searchParams = useSearchParams();
+  const vistaParam = searchParams.get('vista');
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [filtroEstado, setFiltroEstado] = useState<EstadoOT | ''>('');
-  const [vista, setVista] = useState<Vista>('ordenes');
+  const [vista, setVista] = useState<Vista>(() =>
+    vistaParam === 'calendario' ? 'calendario' : vistaParam === 'planes' ? 'planes' : 'ordenes'
+  );
 
   const { ordenes, meta, loading, error, empty, eliminarOrden } = useOrdenesTrabajo({
     search: debouncedSearch || undefined,
@@ -458,100 +668,123 @@ export default function OrdenesTrabajoPage() {
             Gestión de órdenes de trabajo y mantenimientos
           </p>
         </div>
-        <Link
-          href="/mantenimiento/nuevo"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nueva OT
-        </Link>
+        {vista === 'planes' ? (
+          <Link
+            href="/mantenimiento/planes/nuevo"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo plan
+          </Link>
+        ) : (
+          <Link
+            href="/mantenimiento/nuevo"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nueva OT
+          </Link>
+        )}
       </div>
 
       <VistaTabs vista={vista} onChange={setVista} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-        <StatCard icon={Clock} value={summary.abierta} label="Abiertas" loading={summaryLoading} tone="default" />
-        <StatCard icon={Wrench} value={summary.enProceso} label="En proceso" loading={summaryLoading} tone="accent" />
-        <StatCard icon={CheckCircle2} value={summary.cerrada} label="Cerradas" loading={summaryLoading} tone="accent" />
-        <StatCard icon={XCircle} value={summary.cancelada} label="Canceladas" loading={summaryLoading} tone="danger" />
-      </div>
-
-      {vista === 'ordenes' ? (
-        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por código de OT o activo..."
-              aria-label="Buscar órdenes de trabajo"
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
-            />
-            <select
-              value={filtroEstado}
-              onChange={(e) => {
-                setFiltroEstado(e.target.value as EstadoOT | '');
-                setPage(1);
-              }}
-              aria-label="Filtrar por estado"
-              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-            >
-              {ESTADO_FILTER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+      {vista === 'ordenes' && (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <StatCard icon={Clock} value={summary.abierta} label="Abiertas" loading={summaryLoading} tone="default" />
+            <StatCard icon={Wrench} value={summary.enProceso} label="En proceso" loading={summaryLoading} tone="accent" />
+            <StatCard icon={CheckCircle2} value={summary.cerrada} label="Cerradas" loading={summaryLoading} tone="accent" />
+            <StatCard icon={XCircle} value={summary.cancelada} label="Canceladas" loading={summaryLoading} tone="danger" />
           </div>
 
-          {error && empty ? (
-            <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-              <AlertCircle className="w-5 h-5 shrink-0" />
-              {error}
+          <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por código de OT o activo..."
+                aria-label="Buscar órdenes de trabajo"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+              />
+              <select
+                value={filtroEstado}
+                onChange={(e) => {
+                  setFiltroEstado(e.target.value as EstadoOT | '');
+                  setPage(1);
+                }}
+                aria-label="Filtrar por estado"
+                className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
+              >
+                {ESTADO_FILTER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={ordenes}
-              keyExtractor={(orden) => orden.id}
-              loading={loading}
-              emptyMessage={emptyMessage}
-            />
-          )}
 
-          {!loading && !empty && meta.lastPage > 1 && (
-            <nav
-              className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
-              aria-label="Paginación de órdenes"
-            >
-              <p>
-                Página {meta.page} de {meta.lastPage} — {meta.total} órdenes
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={meta.page <= 1}
-                  onClick={() => setPage((current) => Math.max(1, current - 1))}
-                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  Anterior
-                </button>
-                <button
-                  type="button"
-                  disabled={meta.page >= meta.lastPage}
-                  onClick={() => setPage((current) => current + 1)}
-                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                >
-                  Siguiente
-                </button>
+            {error && empty ? (
+              <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                {error}
               </div>
-            </nav>
-          )}
-        </div>
-      ) : (
-        <CalendarioView planes={planes} />
+            ) : (
+              <DataTable
+                columns={columns}
+                data={ordenes}
+                keyExtractor={(orden) => orden.id}
+                loading={loading}
+                emptyMessage={emptyMessage}
+              />
+            )}
+
+            {!loading && !empty && meta.lastPage > 1 && (
+              <nav
+                className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+                aria-label="Paginación de órdenes"
+              >
+                <p>
+                  Página {meta.page} de {meta.lastPage} — {meta.total} órdenes
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={meta.page <= 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={meta.page >= meta.lastPage}
+                    onClick={() => setPage((current) => current + 1)}
+                    className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </nav>
+            )}
+          </div>
+        </>
       )}
+
+      {vista === 'calendario' && <CalendarioView planes={planes} />}
+
+      {vista === 'planes' && <PlanesTabContent />}
     </div>
   );
 }
+
+export default function OrdenesTrabajoPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gema-primary/50 dark:text-white/50">Cargando...</div>}>
+      <OrdenesTrabajoContent />
+    </Suspense>
+  );
+}
+
 
