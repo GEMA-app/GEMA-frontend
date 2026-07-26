@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Users, Hammer, Globe, Building2 } from 'lucide-react';
+import { Clock, Users, Hammer, Building2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ConfiguracionPage() {
@@ -30,12 +30,6 @@ export default function ConfiguracionPage() {
       description: 'Administrar materiales y herramientas',
       icon: Hammer,
       href: '/configuracion/repuestos',
-    },
-    {
-      title: 'Ubicaciones',
-      description: 'Gestionar ubicaciones',
-      icon: Globe,
-      href: '/configuracion/ubicaciones',
     },
   ];
 
