@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
@@ -11,9 +11,19 @@ import { ReportesBackLink } from '@/components/reportes/ReportesBackLink';
 import { ReportesList } from '@/components/reportes/ReportesList';
 import { ReportesStatCard } from '@/components/reportes/ReportesStatCard';
 import { useReportes } from '@/hooks/useReportes';
+import { useUbicaciones } from '@/hooks/useUbicaciones';
+import { getUsuarios } from '@/services/usuarios';
 import type { ActualizarReporteInput, NuevoReporteInput, Reporte, ReporteEstado } from '@/types/reporte';
+import type { Ubicacion } from '@/types/ubicacion';
 
 type FiltroEstado = ReporteEstado | 'todos';
+
+function flattenUbicaciones(ubs: Ubicacion[]): { id: string; nombre: string }[] {
+  return ubs.flatMap((u) => [
+    { id: u.id, nombre: u.nombre },
+    ...(u.hijos ? flattenUbicaciones(u.hijos) : []),
+  ]);
+}
 
 export default function ReportesPage() {
   const [search, setSearch] = useState('');
@@ -23,6 +33,45 @@ export default function ReportesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Reporte | null>(null);
   const [saving, setSaving] = useState(false);
+  const [tecnicos, setTecnicos] = useState<{ id: string; nombre: string }[]>([]);
+
+  const { ubicaciones } = useUbicaciones();
+  const ubicacionesFlat = useMemo(() => flattenUbicaciones(ubicaciones), [ubicaciones]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { usuarios } = await getUsuarios({ perPage: 200 });
+        if (cancelled) return;
+        // Mismo mapeo que ROLE_SLUG_MAP en auth.ts
+        const roleSlug: Record<string, string> = {
+          administrador: 'admin',
+          'supervisor de activos': 'supervisor',
+          'supervisor de operaciones': 'supervisor',
+          'tecnico de mantenimiento': 'tecnico',
+          'técnico de mantenimiento': 'tecnico',
+          almacenista: 'tecnico',
+          reporter: 'reporter',
+          'consultor (solo lectura)': 'consultor',
+        };
+        const extraerRol = (r: unknown): string => {
+          if (typeof r === 'string') return r;
+          if (r && typeof r === 'object' && 'nombre' in r) return String((r as Record<string, unknown>).nombre);
+          return String(r);
+        };
+        const normalizeR = (r: string) => roleSlug[r.trim().toLowerCase()] || r.trim().toLowerCase();
+        const filtrados = usuarios.filter((u) =>
+          (u.roles as unknown[]).some((r) => normalizeR(extraerRol(r)) === 'tecnico')
+        );
+        console.log('[reportes] usuarios total:', usuarios.length, 'tecnicos filtrados:', filtrados.length, 'TODOS los usuarios:', usuarios.map((u) => ({ nombre: u.nombre, roles: u.roles })));
+        setTecnicos(filtrados.map((u) => ({ id: u.id, nombre: u.nombre })));
+      } catch (err) {
+        console.error('[reportes] error al cargar tecnicos:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const { reportes, meta, loading, error, empty, crearReporte, editarReporte, eliminarReporte } = useReportes({
     search: debouncedSearch,
@@ -33,12 +82,11 @@ export default function ReportesPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedSearch(search);
-      setPage(1); // resetear pÃ¡gina al buscar
+      setPage(1);
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  // Resetear pÃ¡gina al cambiar filtro
   useEffect(() => { setPage(1); }, [filtroEstado]);
 
   const handleCreate = useCallback(async (input: NuevoReporteInput) => {
@@ -52,7 +100,7 @@ export default function ReportesPage() {
   }, [editarReporte]);
 
   const handleDelete = useCallback(async (id: string) => {
-    try { await eliminarReporte(id); } catch { /* error ya manejado por el hook */ }
+    try { await eliminarReporte(id); } catch { }
   }, [eliminarReporte]);
 
   const handleTransition = useCallback(async (id: string, status: ReporteEstado, version: number) => {
@@ -133,7 +181,6 @@ export default function ReportesPage() {
               onTransition={handleTransition}
             />
 
-            {/* PaginaciÃ³n */}
             {meta.lastPage > 1 && (
               <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-600">
                 <button
@@ -161,15 +208,15 @@ export default function ReportesPage() {
         </div>
       </section>
 
-      {/* Modal crear */}
       <CrearReporteModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSave={handleCreate}
         saving={saving}
+        ubicaciones={ubicacionesFlat}
+        tecnicos={tecnicos}
       />
 
-      {/* Modal editar */}
       <CrearReporteModal
         isOpen={!!editTarget}
         onClose={() => setEditTarget(null)}
@@ -177,6 +224,8 @@ export default function ReportesPage() {
         onUpdate={handleUpdate}
         saving={saving}
         reporte={editTarget ?? undefined}
+        ubicaciones={ubicacionesFlat}
+        tecnicos={tecnicos}
       />
     </div>
   );

@@ -10,7 +10,9 @@ interface CrearReporteModalProps {
   onSave: (input: NuevoReporteInput) => Promise<void>;
   onUpdate?: (id: string, input: ActualizarReporteInput) => Promise<void>;
   saving?: boolean;
-  reporte?: Reporte; // si se pasa, modo edición
+  reporte?: Reporte;
+  ubicaciones?: { id: string; nombre: string }[];
+  tecnicos?: { id: string; nombre: string }[];
 }
 
 const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
@@ -20,7 +22,7 @@ const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
   { value: 'baja', label: 'Baja' },
 ];
 
-export function CrearReporteModal({ isOpen, onClose, onSave, onUpdate, saving = false, reporte }: CrearReporteModalProps) {
+export function CrearReporteModal({ isOpen, onClose, onSave, onUpdate, saving = false, reporte, ubicaciones = [], tecnicos = [] }: CrearReporteModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -136,19 +138,25 @@ export function CrearReporteModal({ isOpen, onClose, onSave, onUpdate, saving = 
             />
           </div>
 
+          {/* Ubicacion como select */}
           <div>
             <label htmlFor="reporte-location" className="mb-1 block text-sm font-semibold text-gray-700">
               Ubicacion
             </label>
-            <input
+            <select
               id="reporte-location"
-              type="text"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
               required
-              maxLength={200}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-            />
+            >
+              <option value="">Seleccionar ubicacion...</option>
+              {ubicaciones.map((u) => (
+                <option key={u.id} value={u.nombre}>
+                  {u.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -170,19 +178,25 @@ export function CrearReporteModal({ isOpen, onClose, onSave, onUpdate, saving = 
               </select>
             </div>
 
+            {/* Reportado por como select con tecnicos */}
             <div>
               <label htmlFor="reporte-reported_by" className="mb-1 block text-sm font-semibold text-gray-700">
                 Reportado por
               </label>
-              <input
+              <select
                 id="reporte-reported_by"
-                type="text"
                 value={reported_by}
                 onChange={(event) => setReportedBy(event.target.value)}
                 required
-                maxLength={100}
                 className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              />
+              >
+                <option value="">Seleccionar tecnico...</option>
+                {tecnicos.map((t) => (
+                  <option key={t.id} value={t.nombre}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
