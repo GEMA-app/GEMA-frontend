@@ -9,30 +9,27 @@ import {
   Trash,
   ChevronLeft,
   ChevronRight,
-  Search,
-  Bell,
-  User,
-  MoreHorizontal,
   ClipboardList,
+  Clock,
+  Wrench,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { RequestState } from '@/components/ui/RequestState';
 import { useOrdenesTrabajo } from '@/hooks/useOrdenesTrabajo';
 import { useUsuariosMap } from '@/hooks/useUsuariosMap';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
-import { formatEstadoOT, formatTipoMantenimiento } from '@/lib/orden-trabajo';
-import { useRouter } from 'next/navigation';
+import { useActivos } from '@/hooks/useActivos';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { formatTipoMantenimiento } from '@/lib/orden-trabajo';
+import { StatCard } from '@/components/ui/StatCard';
+import { Badge, type EstadoOT } from '@/components/ui/Badge';
+import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import type { OrdenTrabajo } from '@/types/orden-trabajo';
 
 type Vista = 'ordenes' | 'calendario';
-type EstadoOrden = 'Pendiente' | 'En progreso' | 'Completado' | 'Cancelado';
 type TipoEvento = 'preventivo' | 'correctivo' | 'predictivo' | 'cancelado';
-
-interface OrdenRow {
-  id: string;
-  activo: string;
-  fecha: string;
-  estado: EstadoOrden;
-}
 
 interface EventoCalendario {
   dia: number;
@@ -40,16 +37,14 @@ interface EventoCalendario {
   tipo: TipoEvento;
 }
 
-const ESTADO_BACKEND_MAP: Record<string, EstadoOrden> = {
-  abierta: 'Pendiente',
-  en_proceso: 'En progreso',
-  cerrada: 'Completado',
-  cancelada: 'Cancelado',
-};
-
-function mapEstado(estado: string): EstadoOrden {
-  return ESTADO_BACKEND_MAP[estado] ?? 'Pendiente';
-}
+const ESTADO_FILTER_OPTIONS: { value: EstadoOT | ''; label: string }[] = [
+  { value: '', label: 'Todos los estados' },
+  { value: 'abierta', label: 'Abierta' },
+  { value: 'en_proceso', label: 'En progreso' },
+  { value: 'pausada', label: 'Pausada' },
+  { value: 'cerrada', label: 'Cerrada' },
+  { value: 'cancelada', label: 'Cancelada' },
+];
 
 function planToEventos(
   planes: Array<{ nombre: string; tipo: TipoEvento; proxima_ejecucion: string }>,
@@ -57,7 +52,7 @@ function planToEventos(
   month: number
 ): EventoCalendario[] {
   return planes
-    .filter((p) => p.proxima_ejecucion.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
+    .filter((p) => p.proxima_ejecucion && p.proxima_ejecucion.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`))
     .map((p) => ({
       dia: Number(p.proxima_ejecucion.split('-')[2]),
       titulo: `${p.tipo === 'preventivo' ? 'Preventivo' : p.tipo === 'correctivo' ? 'Correctivo' : 'Predictivo'} — ${p.nombre}`,
@@ -68,55 +63,40 @@ function planToEventos(
 const DIAS_SEMANA = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
 const EVENTO_STYLES: Record<TipoEvento, string> = {
-  preventivo: 'bg-[#E3F2FD] text-[#1565C0] border-l-[#1565C0]',
-  correctivo: 'bg-[#FFF3E0] text-[#E65100] border-l-[#E65100]',
-  predictivo: 'bg-[#F3E5F5] text-[#7B1FA2] border-l-[#7B1FA2]',
-  cancelado: 'bg-[#F5F5F5] text-[#757575] border-l-[#9E9E9E]',
+  preventivo: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 border-l-blue-600',
+  correctivo: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border-l-amber-600',
+  predictivo: 'bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300 border-l-purple-600',
+  cancelado: 'bg-gray-50 dark:bg-gray-500/10 text-gray-700 dark:text-gray-300 border-l-gray-500',
 };
-
-const badgeStyles: Record<string, string> = {
-  Abierta: 'bg-[#E3F2FD] text-[#1565C0]',
-  'En progreso': 'bg-[#FFF3E0] text-[#E65100]',
-  Pausada: 'bg-[#F3E5F5] text-[#6A1B9A]',
-  Cerrada: 'bg-[#E8F5E9] text-[#2E7D32]',
-  Cancelada: 'bg-[#FCE4EC] text-[#C62828]',
-};
-
-function EstadoBadge({ estado }: { estado: string }) {
-  const s = badgeStyles[estado] || 'bg-gray-100 text-gray-600';
-  return (
-    <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${s}`}>
-      {estado}
-    </span>
-  );
-}
 
 function VistaTabs({ vista, onChange }: { vista: Vista; onChange: (v: Vista) => void }) {
   return (
-    <div className="flex gap-2 mb-6">
+    <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
       <button
+        type="button"
         onClick={() => onChange('ordenes')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
           vista === 'ordenes'
-            ? 'bg-[#2B405B] text-white'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            ? 'bg-gema-primary dark:bg-white text-white dark:text-gema-primary'
+            : 'bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 border border-gray-200 dark:border-white/10 hover:bg-gema-primary/5 dark:hover:bg-white/10'
         }`}
       >
         Órdenes de trabajo
       </button>
       <button
+        type="button"
         onClick={() => onChange('calendario')}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+        className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors cursor-pointer ${
           vista === 'calendario'
-            ? 'bg-[#2B405B] text-white'
-            : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            ? 'bg-gema-primary dark:bg-white text-white dark:text-gema-primary'
+            : 'bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 border border-gray-200 dark:border-white/10 hover:bg-gema-primary/5 dark:hover:bg-white/10'
         }`}
       >
         Calendario
       </button>
       <Link
         href="/mantenimiento/planes"
-        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 flex items-center gap-2"
+        className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 border border-gray-200 dark:border-white/10 hover:bg-gema-primary/5 dark:hover:bg-white/10 flex items-center gap-2"
       >
         <ClipboardList className="w-4 h-4" />
         Planes
@@ -130,7 +110,6 @@ function CalendarioView({
 }: {
   planes?: Array<{ nombre: string; tipo: TipoEvento; proxima_ejecucion: string }>;
 }) {
-  const router = useRouter();
   const hoy = new Date();
   const [fechaActual, setFechaActual] = useState(new Date());
 
@@ -147,7 +126,7 @@ function CalendarioView({
   const celdas = useMemo(() => {
     const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const startOffset = (firstDay.getDay() + 6) % 7; // lunes = 0
+    const startOffset = (firstDay.getDay() + 6) % 7;
 
     const cells: { dia: number | null; eventos: EventoCalendario[] }[] = [];
 
@@ -173,31 +152,35 @@ function CalendarioView({
   const año = fechaActual.getFullYear();
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Calendario de mantenimientos</h2>
+    <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h2 className="font-heading font-bold text-lg sm:text-xl text-gema-primary dark:text-white">
+          Calendario de mantenimientos
+        </h2>
         <Link
           href="/mantenimiento/nuevo"
-          className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nueva orden
+          Nueva OT
         </Link>
       </div>
 
       <div className="flex items-center justify-between mb-6">
         <button
-          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+          type="button"
+          className="p-2 hover:bg-gema-primary/5 dark:hover:bg-white/10 rounded-xl text-gema-primary dark:text-white transition-colors cursor-pointer"
           aria-label="Mes anterior"
           onClick={() => cambiarMes(-1)}
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h3 className="text-lg font-bold text-gray-900 capitalize">
+        <h3 className="font-heading font-bold text-base sm:text-lg text-gema-primary dark:text-white capitalize">
           {mes} {año}
         </h3>
         <button
-          className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+          type="button"
+          className="p-2 hover:bg-gema-primary/5 dark:hover:bg-white/10 rounded-xl text-gema-primary dark:text-white transition-colors cursor-pointer"
           aria-label="Mes siguiente"
           onClick={() => cambiarMes(1)}
         >
@@ -205,9 +188,9 @@ function CalendarioView({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-2xl overflow-hidden border border-gray-200">
+      <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-white/10 rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10">
         {DIAS_SEMANA.map((d) => (
-          <div key={d} className="bg-[#F9FAFB] py-3 text-center text-xs font-bold text-gray-500">
+          <div key={d} className="bg-gray-50 dark:bg-gema-surface-dark-2 py-3 text-center text-xs font-bold text-gema-primary/60 dark:text-white/50">
             {d}
           </div>
         ))}
@@ -220,32 +203,26 @@ function CalendarioView({
           return (
             <div
               key={i}
-              className={`bg-white min-h-[100px] p-2 ${
-                c.dia ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-50'
+              className={`bg-white dark:bg-gema-surface-dark min-h-[100px] p-2 ${
+                c.dia ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : 'bg-gray-50/50 dark:bg-white/[0.02]'
               }`}
             >
               {c.dia && (
                 <>
                   <div className="relative inline-block">
                     <span
-                      className={`text-sm font-semibold ${
-                        esHoy ? 'text-white' : 'text-gray-700'
-                      } relative z-10`}
+                      className={`text-xs font-semibold ${
+                        esHoy ? 'text-gray-900 bg-gema-accent px-2 py-0.5 rounded-full font-bold' : 'text-gema-primary dark:text-white'
+                      }`}
                     >
                       {c.dia}
                     </span>
-                    {esHoy && (
-                      <span
-                        className="absolute inset-0 -m-1 rounded-full bg-[#ECA03C] z-0"
-                        style={{ width: 'calc(100% + 12px)', height: 'calc(90% + 12px)' }}
-                      />
-                    )}
                   </div>
                   <div className="mt-1 space-y-1">
                     {c.eventos.map((ev, evIdx) => (
                       <div
                         key={evIdx}
-                        className={`text-xs px-1.5 py-0.5 rounded border-l-2 truncate ${
+                        className={`text-[11px] px-1.5 py-0.5 rounded border-l-2 truncate ${
                           EVENTO_STYLES[ev.tipo] ?? EVENTO_STYLES.preventivo
                         }`}
                         title={ev.titulo}
@@ -261,18 +238,18 @@ function CalendarioView({
         })}
       </div>
 
-      <div className="flex flex-wrap gap-4 mt-6 text-xs text-gray-600">
+      <div className="flex flex-wrap gap-4 mt-6 text-xs text-gema-primary/70 dark:text-white/60">
         <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-[#1565C0]" /> Preventivo
+          <span className="w-3 h-3 rounded bg-blue-600" /> Preventivo
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-[#E65100]" /> Correctivo
+          <span className="w-3 h-3 rounded bg-amber-600" /> Correctivo
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-[#7B1FA2]" /> Predictivo
+          <span className="w-3 h-3 rounded bg-purple-600" /> Predictivo
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded bg-[#9E9E9E]" /> Cancelado
+          <span className="w-3 h-3 rounded bg-gray-500" /> Cancelado
         </span>
       </div>
     </div>
@@ -285,18 +262,80 @@ export default function OrdenesTrabajoPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<EstadoOT | ''>('');
   const [vista, setVista] = useState<Vista>('ordenes');
 
   const { ordenes, meta, loading, error, empty, eliminarOrden } = useOrdenesTrabajo({
     search: debouncedSearch || undefined,
-    estado: (filtroEstado as never) || undefined,
+    estado: filtroEstado || undefined,
     page,
     perPage: PER_PAGE,
   });
 
+  const { activos: listaActivos } = useActivos({ perPage: 200 });
+  const activoMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const a of listaActivos) {
+      map[a.id] = a.nombre;
+    }
+    return map;
+  }, [listaActivos]);
+
   const { planes } = usePlanesMantenimiento({ activo: true });
   const { resolveNombre } = useUsuariosMap();
+
+  const [summary, setSummary] = useState({
+    abierta: 0,
+    enProceso: 0,
+    cerrada: 0,
+    cancelada: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSummary() {
+      try {
+        const empresaId = await requireEmpresaId();
+        const base = `/v1/empresas/${empresaId}/ordenes-trabajo`;
+        const [abRes, procRes, cerRes, cancRes] = await Promise.all([
+          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=abierta`),
+          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=en_proceso`),
+          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=cerrada`),
+          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=cancelada`),
+        ]);
+        if (cancelled) return;
+        setSummary({
+          abierta: abRes.meta?.total ?? 0,
+          enProceso: procRes.meta?.total ?? 0,
+          cerrada: cerRes.meta?.total ?? 0,
+          cancelada: cancRes.meta?.total ?? 0,
+        });
+      } catch {
+        const counts = ordenes.reduce(
+          (acc, o) => {
+            acc[o.estado] = (acc[o.estado] ?? 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
+        if (!cancelled) {
+          setSummary({
+            abierta: counts['abierta'] ?? 0,
+            enProceso: counts['en_proceso'] ?? 0,
+            cerrada: counts['cerrada'] ?? 0,
+            cancelada: counts['cancelada'] ?? 0,
+          });
+        }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    }
+    fetchSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [ordenes.length]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -320,182 +359,190 @@ export default function OrdenesTrabajoPage() {
 
   const emptyMessage = debouncedSearch
     ? `No se encontraron órdenes para "${debouncedSearch}".`
-    : 'No hay órdenes de trabajo registradas.';
+    : filtroEstado
+      ? `No hay órdenes con estado "${filtroEstado}".`
+      : 'No hay órdenes de trabajo registradas. Crea la primera con el botón "Nueva OT".';
 
-  const stats = useMemo(() => {
-    const counts = ordenes.reduce(
-      (acc, o) => {
-        acc[o.estado] = (acc[o.estado] ?? 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-    return [
-      { label: 'Pendientes', key: 'abierta', count: counts['abierta'] ?? 0, bg: 'bg-[#FFEBEE]', text: 'text-[#C62828]' },
-      { label: 'En progreso', key: 'en_proceso', count: counts['en_proceso'] ?? 0, bg: 'bg-[#FFF3E0]', text: 'text-[#E65100]' },
-      { label: 'Completados', key: 'cerrada', count: counts['cerrada'] ?? 0, bg: 'bg-[#E3F2FD]', text: 'text-[#1565C0]' },
-      { label: 'Cancelados', key: 'cancelada', count: counts['cancelada'] ?? 0, bg: 'bg-[#E8F5E9]', text: 'text-[#2E7D32]' },
-    ];
-  }, [ordenes]);
+  const columns: DataTableColumn<OrdenTrabajo>[] = [
+    {
+      key: 'codigo_ot',
+      header: 'Código OT',
+      render: (orden) => <span className="font-semibold text-gema-primary dark:text-white">{orden.codigo_ot}</span>,
+    },
+    {
+      key: 'activo',
+      header: 'Activo',
+      render: (orden) => (
+        <span className="font-medium text-gema-primary dark:text-white">
+          {activoMap[orden.activo_id] || orden.activo_id || 'Sin activo'}
+        </span>
+      ),
+    },
+    {
+      key: 'tipo',
+      header: 'Tipo',
+      render: (orden) => (
+        <span className="capitalize text-gema-primary/80 dark:text-white/80">
+          {formatTipoMantenimiento(orden.tipo)}
+        </span>
+      ),
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      render: (orden) => <Badge estado={orden.estado as EstadoOT} />,
+    },
+    {
+      key: 'fecha',
+      header: 'Fecha',
+      render: (orden) => (
+        <span className="text-gema-primary/70 dark:text-white/70">
+          {orden.fecha_inicio_trabajo || orden.fecha_apertura || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'tecnico',
+      header: 'Técnico asignado',
+      render: (orden) => (
+        <span className="text-gema-primary/80 dark:text-white/80">
+          {resolveNombre(orden.supervisor_id) || 'Sin asignar'}
+        </span>
+      ),
+    },
+    {
+      key: 'acciones',
+      header: '',
+      className: 'text-right',
+      render: (orden) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/mantenimiento/${orden.id}`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label={`Ver ${orden.codigo_ot}`}
+          >
+            <Eye className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          <Link
+            href={`/mantenimiento/${orden.id}/editar`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label={`Editar ${orden.codigo_ot}`}
+          >
+            <Pencil className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          <button
+            type="button"
+            onClick={() => handleDelete(orden.id, orden.codigo_ot)}
+            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+            aria-label={`Eliminar ${orden.codigo_ot}`}
+          >
+            <Trash className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
-      <PageHeader
-        title="Mantenimiento"
-        subtitle="Gestión de órdenes de trabajo y mantenimientos"
-        variant="activos"
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar orden..."
-        searchLabel="Buscar órdenes"
-        className="mb-8"
-      />
-
-      {/* Tabs */}
-      <VistaTabs vista={vista} onChange={setVista} />
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {stats.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => {
-              setFiltroEstado((prev) => (prev === item.key ? '' : item.key));
-              setPage(1);
-            }}
-            className={`${item.bg} ${item.text} rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-opacity hover:opacity-80 ${
-              filtroEstado === item.key ? 'ring-2 ring-[#ECA03C]' : ''
-            }`}
-          >
-            <span className="text-3xl font-bold">{item.count}</span>
-            <span className="text-sm font-medium mt-1">{item.label}</span>
-          </button>
-        ))}
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+            Mantenimiento
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+            Gestión de órdenes de trabajo y mantenimientos
+          </p>
+        </div>
+        <Link
+          href="/mantenimiento/nuevo"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+        >
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Nueva OT
+        </Link>
       </div>
 
-      {/* Filtro por estado */}
-      <div className="flex items-center gap-3 mb-6">
-        <select
-          value={filtroEstado}
-          onChange={(e) => {
-            setFiltroEstado(e.target.value);
-            setPage(1);
-          }}
-          className="pl-3 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-[#ECA03C] appearance-none cursor-pointer"
-          aria-label="Filtrar por estado"
-        >
-          <option value="">Todos los estados</option>
-          <option value="abierta">Abierta</option>
-          <option value="en_proceso">En progreso</option>
-          <option value="pausada">Pausada</option>
-          <option value="cerrada">Cerrada</option>
-          <option value="cancelada">Cancelada</option>
-        </select>
+      <VistaTabs vista={vista} onChange={setVista} />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <StatCard icon={Clock} value={summary.abierta} label="Abiertas" loading={summaryLoading} tone="default" />
+        <StatCard icon={Wrench} value={summary.enProceso} label="En proceso" loading={summaryLoading} tone="accent" />
+        <StatCard icon={CheckCircle2} value={summary.cerrada} label="Cerradas" loading={summaryLoading} tone="accent" />
+        <StatCard icon={XCircle} value={summary.cancelada} label="Canceladas" loading={summaryLoading} tone="danger" />
       </div>
 
       {vista === 'ordenes' ? (
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Órdenes de trabajo</h2>
-            <Link
-              href="/mantenimiento/nuevo"
-              className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por código de OT o activo..."
+              aria-label="Buscar órdenes de trabajo"
+              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+            />
+            <select
+              value={filtroEstado}
+              onChange={(e) => {
+                setFiltroEstado(e.target.value as EstadoOT | '');
+                setPage(1);
+              }}
+              aria-label="Filtrar por estado"
+              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
             >
-              <Plus className="w-4 h-4" strokeWidth={2.5} />
-              Nueva orden
-            </Link>
+              {ESTADO_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <RequestState
-            loading={loading}
-            error={error}
-            empty={empty}
-            loadingMessage="Cargando órdenes de trabajo..."
-            emptyMessage={emptyMessage}
-          >
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Orden</th>
-                    <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Supervisor</th>
-                    <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Estado</th>
-                    <th className="pb-4 text-sm font-semibold text-gray-900 text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordenes.map((orden) => (
-                    <tr key={orden.id} className="border-b border-gray-100 last:border-0">
-                      <td className="py-5 pr-6">
-                        <p className="font-semibold text-gray-900">{orden.codigo_ot}</p>
-                        <p className="text-sm text-gray-500 mt-0.5">{formatTipoMantenimiento(orden.tipo)}</p>
-                      </td>
-                      <td className="py-5 pr-6 text-gray-700">
-                        {resolveNombre(orden.supervisor_id)}
-                      </td>
-                      <td className="py-5 pr-6">
-                        <EstadoBadge estado={formatEstadoOT(orden.estado)} />
-                      </td>
-                      <td className="py-5">
-                        <div className="flex items-center justify-end gap-3">
-                          <Link
-                            href={`/mantenimiento/${orden.id}`}
-                            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                            aria-label={`Ver ${orden.codigo_ot}`}
-                          >
-                            <Eye className="w-5 h-5" strokeWidth={1.5} />
-                          </Link>
-                          <Link
-                            href={`/mantenimiento/${orden.id}/editar`}
-                            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                            aria-label={`Editar ${orden.codigo_ot}`}
-                          >
-                            <Pencil className="w-5 h-5" strokeWidth={1.5} />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(orden.id, orden.codigo_ot)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            aria-label={`Eliminar ${orden.codigo_ot}`}
-                          >
-                            <Trash className="w-5 h-5" strokeWidth={1.5} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {error && empty ? (
+            <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              {error}
             </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={ordenes}
+              keyExtractor={(orden) => orden.id}
+              loading={loading}
+              emptyMessage={emptyMessage}
+            />
+          )}
 
-            {!loading && !empty && meta.lastPage > 1 && (
-              <nav
-                className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600"
-                aria-label="Paginación"
-              >
-                <p>
-                  Página {meta.page} de {meta.lastPage} — {meta.total} órdenes
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={meta.page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    type="button"
-                    disabled={meta.page >= meta.lastPage}
-                    onClick={() => setPage((p) => p + 1)}
-                    className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </nav>
-            )}
-          </RequestState>
+          {!loading && !empty && meta.lastPage > 1 && (
+            <nav
+              className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+              aria-label="Paginación de órdenes"
+            >
+              <p>
+                Página {meta.page} de {meta.lastPage} — {meta.total} órdenes
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={meta.page <= 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={meta.page >= meta.lastPage}
+                  onClick={() => setPage((current) => current + 1)}
+                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </nav>
+          )}
         </div>
       ) : (
         <CalendarioView planes={planes} />
@@ -503,3 +550,4 @@ export default function OrdenesTrabajoPage() {
     </div>
   );
 }
+
