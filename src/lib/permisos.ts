@@ -3,6 +3,7 @@ import type { UsuarioPermiso } from '@/types/usuario';
 export const PERMISOS_UI = [
   { id: 'dashboard', nombre: 'Acceso dashboard' },
   { id: 'activos', nombre: 'Gestión de activos' },
+  { id: 'ubicaciones', nombre: 'Gestión de ubicaciones' },
   { id: 'inventario', nombre: 'Gestión de inventario' },
   { id: 'mantenimiento', nombre: 'Gestión de mantenimiento' },
   { id: 'reportes', nombre: 'Gestión de reportes' },
@@ -24,7 +25,7 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
 
     if (permiso.id === 'dashboard') {
       activo = true;
-    } else if (permiso.id === 'activos') {
+    } else if (permiso.id === 'activos' || permiso.id === 'ubicaciones') {
       activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'inventario') {
       activo = OPERATIONAL.has(normalized);
@@ -63,6 +64,7 @@ export function rolSlugFromLabel(rol: string): string {
 
 export const MODULOS_RBAC = {
   ACTIVOS: 'activos',
+  UBICACIONES: 'ubicaciones',
   MANTENIMIENTO: 'mantenimiento',
   INVENTARIO: 'inventario',
   REPORTES: 'reportes',
@@ -74,3 +76,4 @@ export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
 
 export type ModuloRBAC = (typeof MODULOS_RBAC)[keyof typeof MODULOS_RBAC];
 export type AccionRBAC = (typeof ACCIONES_RBAC)[number];
+

@@ -10,10 +10,11 @@ import type { PermisoGranular, Rol } from '@/types/rol';
 
 const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   activos: 'Activos',
+  ubicaciones: 'Ubicaciones',
   mantenimiento: 'Mantenimiento',
   inventario: 'Inventario',
   reportes: 'Reportes',
-  administracion: 'Administracion',
+  administracion: 'Administración',
   preferencias: 'Preferencias',
 };
 

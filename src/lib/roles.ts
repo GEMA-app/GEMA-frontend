@@ -58,7 +58,7 @@ export function permisosToApi(permisos: PermisoGranular[]): Array<{
   can_edit: boolean;
   can_delete: boolean;
 }> {
-  const modules = ['activos', 'mantenimiento', 'inventario', 'reportes', 'administracion', 'preferencias'];
+  const modules = Object.values(MODULOS_RBAC);
   return modules.map(m => {
     const p = permisos.find(x => x.modulo === m);
     const acciones = p ? p.acciones : [];
