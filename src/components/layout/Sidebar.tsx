@@ -1,4 +1,4 @@
-Ôªø'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -44,13 +44,13 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     label: 'Recursos',
     items: [
-      { icon: Boxes, label: 'Inventario', href: '/configuracion/repuestos' },
+      { icon: Boxes, label: 'Inventario', href: '/repuestos' },
       { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
       { icon: Truck, label: 'Proveedores', href: '/proveedores' },
     ],
   },
   {
-    label: 'An√°lisis',
+    label: 'An·lisis',
     items: [
       { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
       { icon: History, label: 'Historial', href: '/historial' },
@@ -60,7 +60,7 @@ const MENU_SECTIONS: MenuSection[] = [
     label: 'Admin',
     items: [
       { icon: Users, label: 'Usuarios', href: '/usuarios' },
-      { icon: Settings, label: 'Configuraci√≥n', href: '/configuracion' },
+      { icon: Settings, label: 'ConfiguraciÛn', href: '/configuracion' },
     ],
   },
 ];
@@ -74,7 +74,7 @@ export default function Sidebar() {
       try {
         await fetchWithAuth('/v1/auth/cerrar-sesion', { method: 'POST' });
       } catch {
-        // cerrar sesi√≥n igual aunque falle el request
+        // cerrar sesiÛn igual aunque falle el request
       }
     }
     clearSession();
@@ -90,7 +90,7 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={() => setIsCollapsed((v) => !v)}
-        aria-label={isCollapsed ? 'Expandir men√∫' : 'Contraer men√∫'}
+        aria-label={isCollapsed ? 'Expandir men˙' : 'Contraer men˙'}
         className="hidden cursor-pointer items-center justify-center gap-3 px-4 py-6 md:flex"
       >
         <img
@@ -111,7 +111,7 @@ export default function Sidebar() {
 
       <nav
         className="flex-1 space-y-6 overflow-y-auto px-2 py-2 md:px-3"
-        aria-label="Navegaci√≥n principal"
+        aria-label="NavegaciÛn principal"
       >
         {MENU_SECTIONS.map((section) => (
           <div key={section.label}>
@@ -164,13 +164,13 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={handleLogout}
-          aria-label="Cerrar sesi√≥n"
-          title="Cerrar sesi√≥n"
+          aria-label="Cerrar sesiÛn"
+          title="Cerrar sesiÛn"
           className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white md:justify-start"
         >
           <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
           <span className={`text-sm ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
-            Cerrar sesi√≥n
+            Cerrar sesiÛn
           </span>
         </button>
       </div>
