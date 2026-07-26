@@ -1,4 +1,4 @@
-import type { EstadoUbicacion } from '@/types/ubicacion';
+export type EstadoUbicacion = 'completado' | 'en_progreso' | 'pendiente';
 
 const ESTADO_STYLES: Record<EstadoUbicacion, { label: string; dotClassName: string }> = {
   completado: {
@@ -29,3 +29,4 @@ export function EstadoIndicator({ estado }: EstadoIndicatorProps) {
     </span>
   );
 }
+

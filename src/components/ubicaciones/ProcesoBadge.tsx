@@ -1,4 +1,4 @@
-import type { ProcesoUbicacion } from '@/types/ubicacion';
+export type ProcesoUbicacion = 'alta' | 'media' | 'baja';
 
 const PROCESO_STYLES: Record<ProcesoUbicacion, { label: string; className: string }> = {
   alta: {
@@ -28,3 +28,4 @@ export function ProcesoBadge({ proceso }: ProcesoBadgeProps) {
     </span>
   );
 }
+

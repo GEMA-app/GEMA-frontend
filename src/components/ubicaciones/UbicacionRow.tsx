@@ -1,7 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Ubicacion } from '@/types/ubicacion';
-import { ProcesoBadge } from './ProcesoBadge';
-import { EstadoIndicator } from './EstadoIndicator';
 
 interface UbicacionRowProps {
   ubicacion: Ubicacion;
@@ -45,28 +43,22 @@ export function UbicacionRow({
           )}
           <div className="min-w-0 flex-1">
             <p className="font-bold text-gray-800 text-sm leading-tight">{ubicacion.nombre}</p>
-            <p className="text-xs text-gray-500 mt-1 leading-snug">{ubicacion.jerarquia}</p>
+            {ubicacion.descripcion && (
+              <p className="text-xs text-gray-500 mt-1 leading-snug">{ubicacion.descripcion}</p>
+            )}
           </div>
         </div>
 
         <dl className="grid grid-cols-1 gap-2 text-sm">
           <div className="flex justify-between gap-4">
             <dt className="text-xs font-bold uppercase tracking-wide text-gray-500">Tipo</dt>
-            <dd className="text-gray-700 text-right">{ubicacion.tipo}</dd>
-          </div>
-          <div className="flex justify-between items-center gap-4">
-            <dt className="text-xs font-bold uppercase tracking-wide text-gray-500">Proceso</dt>
-            <dd><ProcesoBadge proceso={ubicacion.proceso} /></dd>
-          </div>
-          <div className="flex justify-between items-center gap-4">
-            <dt className="text-xs font-bold uppercase tracking-wide text-gray-500">Estado</dt>
-            <dd><EstadoIndicator estado={ubicacion.estado} /></dd>
+            <dd className="text-gray-700 text-right capitalize">{ubicacion.tipo}</dd>
           </div>
         </dl>
       </div>
 
       <div className="hidden md:grid grid-cols-12 gap-4 items-center">
-        <div className="col-span-4 min-w-0" style={{ paddingLeft }}>
+        <div className="col-span-6 min-w-0" style={{ paddingLeft }}>
           <div className="flex items-start gap-2">
             {hasChildren ? (
               <button
@@ -86,23 +78,17 @@ export function UbicacionRow({
               <div className="font-bold text-gray-800 text-sm leading-tight truncate">
                 {ubicacion.nombre}
               </div>
-              <div className="text-xs text-gray-500 mt-1 leading-snug">
-                {ubicacion.jerarquia}
-              </div>
+              {ubicacion.descripcion && (
+                <div className="text-xs text-gray-500 mt-1 leading-snug truncate">
+                  {ubicacion.descripcion}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="col-span-3 text-sm font-medium text-gray-700 leading-snug">
+        <div className="col-span-6 text-sm font-medium text-gray-700 leading-snug capitalize">
           {ubicacion.tipo}
-        </div>
-
-        <div className="col-span-2">
-          <ProcesoBadge proceso={ubicacion.proceso} />
-        </div>
-
-        <div className="col-span-3">
-          <EstadoIndicator estado={ubicacion.estado} />
         </div>
       </div>
 
@@ -114,3 +100,4 @@ export function UbicacionRow({
     </article>
   );
 }
+
