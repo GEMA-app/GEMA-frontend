@@ -2,6 +2,7 @@ import type { PaginationMeta } from '@/types/common';
 
 export type TipoMantenimientoOT = 'preventivo' | 'correctivo' | 'predictivo';
 export type EstadoOrdenTrabajo = 'abierta' | 'en_proceso' | 'pausada' | 'cerrada' | 'cancelada';
+export type EstadoOT = EstadoOrdenTrabajo;
 
 export interface OrdenTrabajo {
   id: string;
@@ -53,13 +54,13 @@ export interface ActualizarOrdenTrabajoInput {
   costo_estimado?: number | null;
   costo_real?: number | null;
   moneda?: string;
-  version: number;
+  version?: number;
 }
 
 export interface CambiarEstadoOTInput {
   estado: EstadoOrdenTrabajo;
   motivo?: string;
-  version: number;
+  version?: number;
 }
 
 export interface AsignarTecnicoInput {
@@ -73,6 +74,7 @@ export interface OrdenTrabajoQuery {
   tipo?: TipoMantenimientoOT;
   activo_id?: string;
   supervisor_id?: string;
+  search?: string;
 }
 
 export interface OrdenesTrabajoResponse {

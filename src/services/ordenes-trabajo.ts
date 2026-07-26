@@ -29,6 +29,7 @@ export async function getOrdenesTrabajo(params: OrdenTrabajoQuery = {}): Promise
   if (params.tipo) queryParams.set('tipo', params.tipo);
   if (params.activo_id) queryParams.set('activo_id', params.activo_id);
   if (params.supervisor_id) queryParams.set('supervisor_id', params.supervisor_id);
+  if (params.search) queryParams.set('search', params.search);
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
   const payload = await fetchWithAuth<unknown>(url + queryString);
@@ -152,3 +153,5 @@ export async function getHistorialEstadosOT(id: string): Promise<HistorialEstado
   return resources.map(mapHistorialFromApi);
 }
 
+
+export const updateOrden = updateOrdenTrabajo;
