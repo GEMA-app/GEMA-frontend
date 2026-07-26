@@ -13,6 +13,7 @@ import {
   History,
   Users,
   Settings,
+  ShieldCheck,
   LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -60,6 +61,7 @@ const MENU_SECTIONS: MenuSection[] = [
     label: 'Admin',
     items: [
       { icon: Users, label: 'Usuarios', href: '/usuarios' },
+      { icon: ShieldCheck, label: 'Roles y Permisos', href: '/configuracion/roles' },
       { icon: Settings, label: 'Configuración', href: '/configuracion' },
     ],
   },
