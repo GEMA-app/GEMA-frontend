@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+
 import { ArrowLeft, FileText, Calendar, Users, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { createOrden, asignarTecnico } from '@/services/ordenes-trabajo';
@@ -26,10 +27,21 @@ const labelClass = 'block text-[13px] font-semibold text-gema-primary dark:text-
 const inputClass =
   'w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent/40';
 
-export default function NuevaOrdenPage() {
+function NuevaOrdenContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fechaParam = searchParams.get('fecha');
+
   const { activos, loading: loadingActivos } = useActivos({ perPage: 200 });
   const { usuarios, loading: loadingUsuarios } = useUsuarios();
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  useEffect(() => {
+    if (fechaParam) {
+      setFormData((prev) => ({ ...prev, fecha_inicio_trabajo: fechaParam }));
+    }
+  }, [fechaParam]);
 
   const supervisores = useMemo(
     () => {
@@ -53,7 +65,6 @@ export default function NuevaOrdenPage() {
     [usuarios],
   );
 
-  const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -312,3 +323,10 @@ export default function NuevaOrdenPage() {
   );
 }
 
+export default function NuevaOrdenPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gema-primary/50 dark:text-white/50">Cargando...</div>}>
+      <NuevaOrdenContent />
+    </Suspense>
+  );
+}

@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
 import {
   Plus,
   Eye,
@@ -110,6 +112,7 @@ function CalendarioView({
 }: {
   planes?: Array<{ nombre: string; tipo: TipoEvento; proxima_ejecucion: string }>;
 }) {
+  const router = useRouter();
   const hoy = new Date();
   const [fechaActual, setFechaActual] = useState(new Date());
 
@@ -122,6 +125,13 @@ function CalendarioView({
   const year = fechaActual.getFullYear();
   const month = fechaActual.getMonth();
   const eventosDelMes = useMemo(() => planToEventos(planes, year, month), [planes, year, month]);
+
+  const handleDayClick = (dia: number) => {
+    const monthStr = String(month + 1).padStart(2, '0');
+    const diaStr = String(dia).padStart(2, '0');
+    const fechaStr = `${year}-${monthStr}-${diaStr}`;
+    router.push(`/mantenimiento/nuevo?fecha=${fechaStr}`);
+  };
 
   const celdas = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -157,13 +167,6 @@ function CalendarioView({
         <h2 className="font-heading font-bold text-lg sm:text-xl text-gema-primary dark:text-white">
           Calendario de mantenimientos
         </h2>
-        <Link
-          href="/mantenimiento/nuevo"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nueva OT
-        </Link>
       </div>
 
       <div className="flex items-center justify-between mb-6">
@@ -203,8 +206,9 @@ function CalendarioView({
           return (
             <div
               key={i}
+              onClick={() => c.dia && handleDayClick(c.dia)}
               className={`bg-white dark:bg-gema-surface-dark min-h-[100px] p-2 ${
-                c.dia ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5' : 'bg-gray-50/50 dark:bg-white/[0.02]'
+                c.dia ? 'cursor-pointer hover:bg-gema-accent/10 dark:hover:bg-gema-accent/10 transition-colors' : 'bg-gray-50/50 dark:bg-white/[0.02]'
               }`}
             >
               {c.dia && (
