@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Pencil } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { RequestState } from '@/components/ui/RequestState';
+import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/repuestos';
-import { stockBajo } from '@/lib/repuestos';
+import { Badge } from '@/components/ui/Badge';
+import { getEstadoRepuesto } from '../page';
 import type { Repuesto, MovimientoInventario, TipoMovimiento } from '@/types/repuesto';
+
+const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
+const inputClass =
+  'px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent/40';
 
 export default function RepuestoDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +24,7 @@ export default function RepuestoDetallePage() {
   const [tipoMov, setTipoMov] = useState<TipoMovimiento>('entrada');
   const [reason, setReason] = useState('');
   const [movError, setMovError] = useState<string | null>(null);
+  const [submittingMov, setSubmittingMov] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -42,133 +46,227 @@ export default function RepuestoDetallePage() {
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
-  const handleMovimiento = useCallback(async () => {
+  const handleMovimiento = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!id || !Number(cantidad)) return;
     setMovError(null);
+    setSubmittingMov(true);
     try {
       await createMovimiento(id, {
         movement_type: tipoMov,
         quantity: Number(cantidad),
-        reason: reason || undefined,
+        reason: reason.trim() || undefined,
       });
       setCantidad('1');
       setReason('');
       await fetchData();
     } catch (err) {
       setMovError(err instanceof Error ? err.message : 'Error al registrar movimiento');
+    } finally {
+      setSubmittingMov(false);
     }
   }, [id, cantidad, tipoMov, reason, fetchData]);
 
-  return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-[#F3F4F6] p-8 w-full font-sans">
-      <PageHeader title="Repuestos / Ficha de repuesto" variant="configuracion" />
+  if (loading) {
+    return (
+      <div>
+        <div className="mb-6">
+          <Link
+            href="/repuestos"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a repuestos
+          </Link>
+        </div>
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-8 text-center text-gema-primary/60 dark:text-white/50">
+          Cargando repuesto...
+        </div>
+      </div>
+    );
+  }
 
-      <div className="mb-6">
-        <Link href="/repuestos" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+  if (error || !repuesto) {
+    return (
+      <div>
+        <div className="mb-6">
+          <Link
+            href="/repuestos"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a repuestos
+          </Link>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          {error || 'Repuesto no encontrado'}
+        </div>
+      </div>
+    );
+  }
+
+  const estadoRep = getEstadoRepuesto(repuesto.stock_actual, repuesto.stock_minimo);
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Link
+          href="/repuestos"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+        >
           <ArrowLeft className="w-4 h-4" />
           Volver a repuestos
         </Link>
+        <Link
+          href={`/repuestos/${repuesto.id}/editar`}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+        >
+          <Pencil className="w-4 h-4" strokeWidth={2} />
+          Editar repuesto
+        </Link>
       </div>
 
-      <RequestState loading={loading} error={error} empty={!loading && !error && !repuesto}
-        loadingMessage="Cargando repuesto..." emptyMessage="Repuesto no encontrado."
-      >
-        {repuesto && (
-          <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-            <div className="flex flex-col gap-3 border-b border-[#2E4365]/20 pb-4">
-              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-2xl font-bold text-gray-900">{repuesto.articulo_id}</h2>
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    stockBajo(repuesto) ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-                  }`}>
-                    {stockBajo(repuesto) ? 'Stock bajo' : 'Stock OK'}
-                  </span>
-                </div>
-                <Link href={`/repuestos/${repuesto.id}/editar`}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
-                  <Pencil className="w-4 h-4" strokeWidth={2} />
-                  Editar
-                </Link>
+      <div className="flex flex-col gap-6">
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100 dark:border-white/10">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="font-heading font-bold text-xl sm:text-2xl text-gema-primary dark:text-white">
+                  Repuesto: {repuesto.articulo_id}
+                </h1>
+                <Badge estado={estadoRep} />
               </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { label: 'Stock actual', value: repuesto.stock_actual, border: '#0A8E71' },
-                  { label: 'Stock mínimo', value: repuesto.stock_minimo, border: '#FF0000' },
-                  { label: 'Precio unitario', value: `${repuesto.moneda} ${repuesto.precio_unitario}`, border: '#0066FF' },
-                ].map(item => (
-                  <div key={item.label} className="rounded-[20px] bg-[#EBDDC5] p-6 flex flex-col justify-between min-h-[120px] shadow-md" style={{ border: `2px solid ${item.border}` }}>
-                    <p className="text-[10px] font-bold text-gray-900 tracking-wider uppercase">{item.label}</p>
-                    <p className="text-4xl font-bold text-black">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700 mt-2">
-                <div><p className="text-xs text-gray-500 mb-1">Ubicación</p><p className="font-semibold">{repuesto.ubicacion_almacen}</p></div>
-                <div><p className="text-xs text-gray-500 mb-1">Proveedor</p><p className="font-semibold">{repuesto.proveedor_id || 'Sin proveedor'}</p></div>
-                <div><p className="text-xs text-gray-500 mb-1">Moneda</p><p className="font-semibold">{repuesto.moneda}</p></div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 text-sm mb-4">Registrar movimiento</h3>
-              <div className="flex items-end gap-4 flex-wrap">
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500">Tipo</label>
-                  <select value={tipoMov} onChange={e => setTipoMov(e.target.value as TipoMovimiento)}
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm outline-none">
-                    <option value="entrada">Entrada</option>
-                    <option value="salida">Salida</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500">Cantidad</label>
-                  <input type="number" min="1" value={cantidad} onChange={e => setCantidad(e.target.value)}
-                    className="w-24 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm outline-none" />
-                </div>
-                <div className="space-y-1 flex-1 min-w-[200px]">
-                  <label className="text-xs text-gray-500">Motivo</label>
-                  <input value={reason} onChange={e => setReason(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm outline-none" />
-                </div>
-                <button onClick={handleMovimiento}
-                  className="px-5 py-2 rounded-xl bg-[#E59D12] text-black font-semibold text-sm">
-                  Registrar
-                </button>
-              </div>
-              {movError && <p className="text-xs text-red-600 mt-2">{movError}</p>}
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-gray-900 text-sm">Historial de movimientos</h3>
-              {movimientos.length === 0 ? (
-                <p className="text-sm text-gray-500">Sin movimientos registrados.</p>
-              ) : (
-                <div className="space-y-2">
-                  {movimientos.map(m => (
-                    <div key={m.id} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          m.movement_type === 'entrada' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
-                        }`}>
-                          {m.movement_type === 'entrada' ? '+ENT' : '-SAL'}
-                        </span>
-                        <span className="text-sm text-gray-900 font-medium">{m.quantity} unidades</span>
-                        {m.reason && <span className="text-sm text-gray-500">{m.reason}</span>}
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {m.fecha_movimiento ? new Date(m.fecha_movimiento).toLocaleString('es-VE') : '—'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+                Almacén: {repuesto.ubicacion_almacen || 'Sin asignación'}
+              </p>
             </div>
           </div>
-        )}
-      </RequestState>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+              <p className="text-xs text-gema-primary/60 dark:text-white/50 mb-1">Stock actual</p>
+              <p className="text-2xl font-extrabold text-gema-primary dark:text-white">{repuesto.stock_actual}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+              <p className="text-xs text-gema-primary/60 dark:text-white/50 mb-1">Stock mínimo</p>
+              <p className="text-2xl font-extrabold text-gema-primary dark:text-white">{repuesto.stock_minimo}</p>
+            </div>
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+              <p className="text-xs text-gema-primary/60 dark:text-white/50 mb-1">Precio unitario</p>
+              <p className="text-2xl font-extrabold text-gema-primary dark:text-white">
+                {repuesto.moneda} {repuesto.precio_unitario.toLocaleString('es-VE')}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gema-primary/80 dark:text-white/80">
+            <div>
+              <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Ubicación</span>
+              <span className="font-semibold">{repuesto.ubicacion_almacen}</span>
+            </div>
+            <div>
+              <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Proveedor ID</span>
+              <span className="font-semibold">{repuesto.proveedor_id || 'Sin proveedor'}</span>
+            </div>
+            <div>
+              <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Moneda</span>
+              <span className="font-semibold">{repuesto.moneda}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
+          <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
+            Registrar movimiento de stock
+          </h2>
+          <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className={labelClass}>Tipo</label>
+              <select
+                value={tipoMov}
+                onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
+                className={inputClass}
+              >
+                <option value="entrada">Entrada (+)</option>
+                <option value="salida">Salida (-)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className={labelClass}>Cantidad</label>
+              <input
+                type="number"
+                min="1"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                className={`${inputClass} w-28`}
+              />
+            </div>
+
+            <div className="flex-1 min-w-[200px]">
+              <label className={labelClass}>Motivo / Observación</label>
+              <input
+                type="text"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Ej: Reposición de inventario / Ajuste"
+                className={`${inputClass} w-full`}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingMov}
+              className="px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
+            >
+              {submittingMov ? 'Registrando...' : 'Registrar'}
+            </button>
+          </form>
+          {movError && (
+            <p className="text-xs text-red-600 dark:text-red-400 mt-2">{movError}</p>
+          )}
+        </div>
+
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
+          <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
+            Historial de movimientos
+          </h2>
+          {movimientos.length === 0 ? (
+            <p className="text-sm text-gema-primary/50 dark:text-white/40">Sin movimientos registrados.</p>
+          ) : (
+            <div className="space-y-3">
+              {movimientos.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-3 text-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        m.movement_type === 'entrada'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'
+                      }`}
+                    >
+                      {m.movement_type === 'entrada' ? '+ ENTRADA' : '- SALIDA'}
+                    </span>
+                    <span className="font-semibold text-gema-primary dark:text-white">
+                      {m.quantity} unidades
+                    </span>
+                    {m.reason && (
+                      <span className="text-gema-primary/60 dark:text-white/50">— {m.reason}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gema-primary/40 dark:text-white/40">
+                    {m.fecha_movimiento ? new Date(m.fecha_movimiento).toLocaleString('es-VE') : '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

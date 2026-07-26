@@ -4,9 +4,15 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { PageHeader } from '@/components/layout/PageHeader';
+import Swal from 'sweetalert2';
 import { getRepuestoById, updateRepuesto } from '@/services/repuestos';
 import type { Repuesto } from '@/types/repuesto';
+
+const MONEDAS = ['USD', 'VES', 'EUR'];
+
+const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
+const inputClass =
+  'w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none box-border focus:ring-2 focus:ring-gema-accent/40';
 
 export default function EditarRepuestoPage() {
   const params = useParams();
@@ -20,8 +26,7 @@ export default function EditarRepuestoPage() {
   const [stockMinimo, setStockMinimo] = useState('0');
   const [precio, setPrecio] = useState('0');
   const [moneda, setMoneda] = useState('USD');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitStatus, setSubmitStatus] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -36,7 +41,7 @@ export default function EditarRepuestoPage() {
         setPrecio(String(r.precio_unitario));
         setMoneda(r.moneda);
       } catch (err) {
-        setSubmitStatus(err instanceof Error ? err.message : 'Error al cargar');
+        setError(err instanceof Error ? err.message : 'Error al cargar el repuesto');
       } finally {
         setLoadingAsset(false);
       }
@@ -47,25 +52,33 @@ export default function EditarRepuestoPage() {
     e.preventDefault();
     if (!repuesto) return;
 
-    const next: Record<string, string> = {};
-    if (!ubicacion.trim()) next.ubicacion = 'La ubicación es obligatoria.';
-    setErrors(next);
-    if (Object.keys(next).length > 0) { setSubmitStatus('Corrige los errores.'); return; }
+    if (!ubicacion.trim()) {
+      setError('La ubicación en almacén es obligatoria.');
+      return;
+    }
 
     setIsSubmitting(true);
-    setSubmitStatus('Guardando...');
+    setError(null);
     try {
       await updateRepuesto(id, {
         proveedor_id: proveedorId || undefined,
-        ubicacion_almacen: ubicacion,
+        ubicacion_almacen: ubicacion.trim(),
         stock_minimo: Number(stockMinimo),
         precio_unitario: Number(precio),
         moneda,
         version: repuesto.version,
       });
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Repuesto actualizado',
+        text: 'Los datos del repuesto se guardaron correctamente.',
+        confirmButtonColor: '#ECA03C',
+      });
+
       router.push(`/repuestos/${id}`);
     } catch (err) {
-      setSubmitStatus(err instanceof Error ? err.message : 'Error al guardar');
+      setError(err instanceof Error ? err.message : 'Error al guardar los cambios');
     } finally {
       setIsSubmitting(false);
     }
@@ -73,92 +86,139 @@ export default function EditarRepuestoPage() {
 
   if (loadingAsset) {
     return (
-      <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-        <PageHeader title="Repuestos / Editar repuesto" variant="configuracion" />
-        <p className="text-gray-500 text-sm mt-8">Cargando datos del repuesto...</p>
+      <div>
+        <div className="mb-6">
+          <Link
+            href={`/repuestos/${id}`}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al detalle
+          </Link>
+        </div>
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-8 text-center text-gema-primary/60 dark:text-white/50">
+          Cargando repuesto...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Repuestos / Editar repuesto" variant="configuracion" />
-
+    <div>
       <div className="mb-6">
-        <Link href={`/repuestos/${id}`} className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+        <Link
+          href={`/repuestos/${id}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+        >
           <ArrowLeft className="w-4 h-4" />
           Volver al detalle
         </Link>
       </div>
 
-      <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-        <div className="flex justify-between items-start border-b-2 border-[#2E4365]/20 pb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Editar repuesto</h2>
-            <p className="text-gray-500 text-xs mt-1">{repuesto?.articulo_id}</p>
+      <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white mb-6 sm:mb-8">
+        Editar repuesto
+      </h1>
+
+      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
+        {error && (
+          <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+            {error}
           </div>
-          <div className="flex gap-3">
-            <Link href={`/repuestos/${id}`} className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+        )}
+
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label className={labelClass}>Artículo ID</label>
+            <input
+              type="text"
+              disabled
+              value={repuesto?.articulo_id ?? ''}
+              className={`${inputClass} opacity-60 cursor-not-allowed`}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Stock actual</label>
+            <input
+              type="text"
+              disabled
+              value={repuesto?.stock_actual ?? '0'}
+              className={`${inputClass} opacity-60 cursor-not-allowed`}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Proveedor ID</label>
+            <input
+              type="text"
+              value={proveedorId}
+              onChange={(e) => setProveedorId(e.target.value)}
+              placeholder="ID del proveedor"
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Ubicación en almacén*</label>
+            <input
+              type="text"
+              value={ubicacion}
+              onChange={(e) => setUbicacion(e.target.value)}
+              required
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Stock mínimo</label>
+            <input
+              type="number"
+              min="0"
+              value={stockMinimo}
+              onChange={(e) => setStockMinimo(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Precio unitario</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className={labelClass}>Moneda</label>
+            <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputClass}>
+              {MONEDAS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">
+            <Link
+              href={`/repuestos/${id}`}
+              className="px-6 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            >
               Cancelar
             </Link>
-            <button type="submit" form="editar-repuesto-form" disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
+            >
+              <Save className="w-4 h-4" strokeWidth={2.5} />
               {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
             </button>
           </div>
-        </div>
-
-        <form id="editar-repuesto-form" onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Artículo</label>
-              <p className="text-sm font-semibold text-gray-900 border-b border-gray-400 py-1.5">{repuesto?.articulo_id}</p>
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Stock actual</label>
-              <p className="text-sm font-semibold text-gray-900 border-b border-gray-400 py-1.5">{repuesto?.stock_actual}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1" htmlFor="proveedorId">Proveedor ID</label>
-              <input id="proveedorId" type="text" value={proveedorId} onChange={e => setProveedorId(e.target.value)}
-                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1" htmlFor="moneda">Moneda</label>
-              <select id="moneda" value={moneda} onChange={e => setMoneda(e.target.value)}
-                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                <option value="USD">USD</option>
-                <option value="VES">VES</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1" htmlFor="ubicacion">Ubicación</label>
-              <input id="ubicacion" type="text" value={ubicacion} onChange={e => setUbicacion(e.target.value)}
-                className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.ubicacion ? 'border-red-500' : 'border-gray-400'}`} />
-              {errors.ubicacion && <p className="text-xs text-red-600 mt-1">{errors.ubicacion}</p>}
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1" htmlFor="stockMinimo">Stock mínimo</label>
-              <input id="stockMinimo" type="number" min="0" value={stockMinimo} onChange={e => setStockMinimo(e.target.value)}
-                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1" htmlFor="precio">Precio unitario</label>
-              <input id="precio" type="number" min="0" step="0.01" value={precio} onChange={e => setPrecio(e.target.value)}
-                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-            </div>
-          </div>
-
-          {submitStatus && (
-            <p className={`text-sm ${submitStatus.includes('Error') || submitStatus.includes('error') ? 'text-red-600' : 'text-emerald-700'}`}>{submitStatus}</p>
-          )}
         </form>
       </div>
     </div>
