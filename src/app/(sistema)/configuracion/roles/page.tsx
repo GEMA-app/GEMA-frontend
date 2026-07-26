@@ -3,6 +3,8 @@
 import { useCallback, useState } from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useRoles } from '@/hooks/useRoles';
 import { buildPermisosMatrix, matrixToPermisos } from '@/lib/roles';
 import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos';
@@ -10,13 +12,11 @@ import type { PermisoGranular, Rol } from '@/types/rol';
 
 const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   activos: 'Activos',
-  ubicaciones: 'Ubicaciones',
   mantenimiento: 'Mantenimiento',
   inventario: 'Inventario',
   reportes: 'Reportes',
   administracion: 'Administración',
   preferencias: 'Preferencias',
-  proveedores: 'Proveedores',
 };
 
 const ACCIONES_LABELS: Record<AccionRBAC, string> = {
@@ -80,6 +80,7 @@ export default function RolesPage() {
   const [editingRol, setEditingRol] = useState<Rol | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [nombre, setNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
   const [matrix, setMatrix] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
 
@@ -88,6 +89,7 @@ export default function RolesPage() {
 
   const resetForm = useCallback(() => {
     setNombre('');
+    setDescripcion('');
     setMatrix({});
     setEditingRol(null);
     setShowCreate(false);
@@ -96,6 +98,7 @@ export default function RolesPage() {
   const handleEdit = useCallback((rol: Rol) => {
     setEditingRol(rol);
     setNombre(rol.nombre);
+    setDescripcion(rol.descripcion ?? '');
     setMatrix(buildPermisosMatrix(rol.permisos));
     setShowCreate(true);
   }, []);
@@ -106,15 +109,17 @@ export default function RolesPage() {
     try {
       const permisos = matrixToPermisos(matrix);
       if (editingRol) {
-        await editarRol(editingRol.id, { nombre, permisos, version: editingRol.version });
+        await editarRol(editingRol.id, { nombre, descripcion, permisos, version: editingRol.version });
       } else {
-        await crearRol({ nombre, permisos });
+        await crearRol({ nombre, descripcion, permisos });
       }
       resetForm();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al guardar el rol.');
     } finally {
       setSaving(false);
     }
-  }, [nombre, matrix, editingRol, crearRol, editarRol, resetForm]);
+  }, [nombre, descripcion, matrix, editingRol, crearRol, editarRol, resetForm]);
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Eliminar este rol?')) return;
@@ -127,7 +132,8 @@ export default function RolesPage() {
   }, []);
 
   return (
-    <div className="flex-1 bg-white p-6 sm:p-8 overflow-y-auto">
+    <AuthGuard roleRequired={['admin']}>
+      <div className="flex-1 bg-white p-6 sm:p-8 overflow-y-auto">
       <PageHeader
         title="Roles y Permisos"
         subtitle="*Administrador*"
@@ -136,13 +142,15 @@ export default function RolesPage() {
       />
 
       <div className="mb-6 flex justify-end">
-        <button
-          type="button"
-          onClick={() => { resetForm(); setShowCreate(true); }}
-          className="bg-[#E5A93D] hover:bg-[#d19730] text-black font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer transition-colors text-sm"
-        >
-          + Crear rol
-        </button>
+        <PermissionGuard module="administracion" action="create">
+          <button
+            type="button"
+            onClick={() => { resetForm(); setShowCreate(true); }}
+            className="bg-[#E5A93D] hover:bg-[#d19730] text-black font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer transition-colors text-sm"
+          >
+            + Crear rol
+          </button>
+        </PermissionGuard>
       </div>
 
       {showCreate && (
@@ -159,6 +167,19 @@ export default function RolesPage() {
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
+              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="rol-descripcion" className="block text-sm font-semibold text-gray-700 mb-1">
+              Descripción
+            </label>
+            <textarea
+              id="rol-descripcion"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={2}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             />
           </div>
@@ -238,5 +259,6 @@ export default function RolesPage() {
         </div>
       </RequestState>
     </div>
+    </AuthGuard>
   );
 }

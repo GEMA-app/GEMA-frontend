@@ -25,7 +25,7 @@ export async function createRol(input: NuevoRolInput): Promise<Rol | null> {
     method: 'POST',
     contentType: 'json-api',
     json: {
-      data: { type: 'roles', attributes: { nombre: input.nombre, permisos: permisosToApi(input.permisos) } },
+      data: { type: 'roles', attributes: { nombre: input.nombre, descripcion: input.descripcion || '', permisos: permisosToApi(input.permisos) } },
     },
   });
   return extractRolFromResponse(payload);
@@ -35,6 +35,7 @@ export async function updateRol(id: string, input: ActualizarRolInput): Promise<
   const url = await baseUrl();
   const attrs: Record<string, unknown> = { version: input.version };
   if (input.nombre !== undefined) attrs.nombre = input.nombre;
+  if (input.descripcion !== undefined) attrs.descripcion = input.descripcion;
   if (input.permisos !== undefined) attrs.permisos = permisosToApi(input.permisos);
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',

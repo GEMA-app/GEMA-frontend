@@ -3,13 +3,11 @@ import type { UsuarioPermiso } from '@/types/usuario';
 export const PERMISOS_UI = [
   { id: 'dashboard', nombre: 'Acceso dashboard' },
   { id: 'activos', nombre: 'Gestión de activos' },
-  { id: 'ubicaciones', nombre: 'Gestión de ubicaciones' },
   { id: 'inventario', nombre: 'Gestión de inventario' },
   { id: 'mantenimiento', nombre: 'Gestión de mantenimiento' },
   { id: 'reportes', nombre: 'Gestión de reportes' },
   { id: 'preferencias', nombre: 'Preferencias' },
   { id: 'administracion', nombre: 'Administración del sistema' },
-  { id: 'proveedores', nombre: 'Gestión de proveedores' },
   { id: 'configuracion', nombre: 'Edición de configuración' },
 ] as const;
 
@@ -18,6 +16,7 @@ const ALL_USERS = new Set(['admin', 'supervisor', 'tecnico', 'reporter']);
 const OPERATIONAL = new Set(['admin', 'supervisor', 'tecnico']);
 const READ_REPORTS = new Set(['admin', 'supervisor', 'reporter']);
 
+/** @deprecated Usar el sistema RBAC granular (MODULOS_RBAC + ACCIONES_RBAC) en su lugar. */
 export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
   const normalized = rolSlug.trim().toLowerCase();
 
@@ -26,7 +25,7 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
 
     if (permiso.id === 'dashboard') {
       activo = true;
-    } else if (permiso.id === 'activos' || permiso.id === 'ubicaciones') {
+    } else if (permiso.id === 'activos') {
       activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'inventario') {
       activo = OPERATIONAL.has(normalized);
@@ -38,8 +37,6 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
       activo = ALL_USERS.has(normalized);
     } else if (permiso.id === 'administracion') {
       activo = FULL_ACCESS.has(normalized);
-    } else if (permiso.id === 'proveedores') {
-      activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'configuracion') {
       activo = FULL_ACCESS.has(normalized);
     }
@@ -52,6 +49,7 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
   });
 }
 
+/** @deprecated Usar el sistema RBAC granular en su lugar. */
 export function rolSlugFromLabel(rol: string): string {
   const normalized = rol.trim().toLowerCase();
   if (normalized.includes('admin')) return 'admin';
@@ -64,13 +62,11 @@ export function rolSlugFromLabel(rol: string): string {
 // ── Constantes RBAC (alineadas con PermissionModule del backend) ──
 export const MODULOS_RBAC = {
   ACTIVOS: 'activos',
-  UBICACIONES: 'ubicaciones',
   MANTENIMIENTO: 'mantenimiento',
   INVENTARIO: 'inventario',
   REPORTES: 'reportes',
   ADMINISTRACION: 'administracion',
   PREFERENCIAS: 'preferencias',
-  PROVEEDORES: 'proveedores',
 } as const;
 
 export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
