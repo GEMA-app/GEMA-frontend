@@ -15,10 +15,11 @@ export default function SistemaLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem(THEME_STORAGE_KEY) !== 'light';
-  });
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    setIsDark(localStorage.getItem(THEME_STORAGE_KEY) !== 'light');
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

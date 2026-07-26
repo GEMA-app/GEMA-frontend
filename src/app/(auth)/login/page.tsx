@@ -59,7 +59,7 @@ export default function LoginPage() {
       const perfil = await perfilResponse.json();
       const attrs = perfil.data?.attributes;
 
-      if (attrs?.empresa_id) localStorage.setItem('empresa_id', attrs.empresa_id);
+      if (attrs?.empresa_id) localStorage.setItem('empresaId', attrs.empresa_id);
       if (attrs?.roles && attrs.roles.length > 0) {
         localStorage.setItem('roles', JSON.stringify(attrs.roles));
       }

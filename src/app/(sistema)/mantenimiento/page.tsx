@@ -420,7 +420,7 @@ export default function MantenimientoPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const empresaId = localStorage.getItem('empresa_id');
+    const empresaId = localStorage.getItem('empresaId');
 
     if (!token || !empresaId) {
       window.location.href = '/login';

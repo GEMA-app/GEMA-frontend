@@ -166,15 +166,19 @@ export async function requireEmpresaId(): Promise<string> {
   const data = profile.data as Record<string, unknown> | undefined;
   const attributes = data?.attributes as Record<string, unknown> | undefined;
   const usuario = profile.usuario as Record<string, unknown> | undefined;
+  function str(v: unknown): string {
+    return v != null ? String(v) : '';
+  }
+
   const resolved =
-    (typeof profile.empresa_id === 'string' && profile.empresa_id) ||
-    (typeof profile.empresaId === 'string' && profile.empresaId) ||
-    (typeof data?.empresa_id === 'string' && data.empresa_id) ||
-    (typeof data?.empresaId === 'string' && data.empresaId) ||
-    (typeof attributes?.empresa_id === 'string' && attributes.empresa_id) ||
-    (typeof attributes?.empresaId === 'string' && attributes.empresaId) ||
-    (typeof usuario?.empresa_id === 'string' && usuario.empresa_id) ||
-    (typeof usuario?.empresaId === 'string' && usuario.empresaId) ||
+    str(profile.empresa_id) ||
+    str(profile.empresaId) ||
+    str(data?.empresa_id) ||
+    str(data?.empresaId) ||
+    str(attributes?.empresa_id) ||
+    str(attributes?.empresaId) ||
+    str(usuario?.empresa_id) ||
+    str(usuario?.empresaId) ||
     null;
 
   if (!resolved) {

@@ -66,7 +66,7 @@ export default function CalendarPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const empresaId = localStorage.getItem('empresa_id');
+      const empresaId = localStorage.getItem('empresaId');
 
       if (!token || !empresaId) {
         throw new Error('No se pudo identificar la sesión del usuario.');
@@ -155,7 +155,7 @@ export default function CalendarPage() {
 
       try {
         const token = localStorage.getItem('token');
-        const empresaId = localStorage.getItem('empresa_id');
+        const empresaId = localStorage.getItem('empresaId');
 
         if (!token || !empresaId) {
           throw Object.assign(
