@@ -6,6 +6,8 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, FileText, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { getProveedor } from '@/services/proveedores';
 import type { ProveedorDetalle } from '@/types/proveedor';
 
@@ -32,19 +34,29 @@ function ProveedorDetalleContent() {
     return () => { cancelled = true; };
   }, [proveedorId]);
 
+  const formatDate = (dateStr: string | null): string => {
+    if (!dateStr) return '—';
+    try {
+      return new Date(dateStr).toLocaleDateString('es-VE', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-[#F3F4F6] p-8 w-full font-sans">
       <PageHeader
         title="Proveedores / Ficha de proveedor"
-        variant="activos"
-        searchPlaceholder="Buscar proveedor..."
-        searchLabel="Buscar proveedores"
+        variant="proveedores"
       />
 
       <div className="mb-6">
         <Link href="/proveedores" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
           <ArrowLeft className="w-4 h-4" />
-          Volver al inicio
+          Volver al listado
         </Link>
       </div>
 
@@ -62,13 +74,15 @@ function ProveedorDetalleContent() {
                 <h2 className="text-2xl font-bold text-gray-900">{supplier?.name || 'Sin nombre'}</h2>
               </div>
               {supplier && (
-                <Link
-                  href={`/proveedores/${supplier.id}/editar`}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all"
-                >
-                  <Pencil className="w-4 h-4" strokeWidth={2} />
-                  Editar
-                </Link>
+                <PermissionGuard module="administracion" action="edit">
+                  <Link
+                    href={`/proveedores/${supplier.id}/editar`}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#E59D12] text-black font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all"
+                  >
+                    <Pencil className="w-4 h-4" strokeWidth={2} />
+                    Editar
+                  </Link>
+                </PermissionGuard>
               )}
             </div>
 
@@ -78,13 +92,12 @@ function ProveedorDetalleContent() {
                 Información del Proveedor
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div><p className="text-xs text-gray-500 mb-1">ID</p><p className="font-semibold break-all">{supplier?.id || '—'}</p></div>
                 <div><p className="text-xs text-gray-500 mb-1">RIF</p><p className="font-semibold">{supplier?.rif || '—'}</p></div>
                 <div><p className="text-xs text-gray-500 mb-1">Teléfono</p><p className="font-semibold">{supplier?.phone || '—'}</p></div>
                 <div><p className="text-xs text-gray-500 mb-1">Email</p><p className="font-semibold">{supplier?.email || '—'}</p></div>
                 <div><p className="text-xs text-gray-500 mb-1">Persona de Contacto</p><p className="font-semibold">{supplier?.contact || '—'}</p></div>
-                <div><p className="text-xs text-gray-500 mb-1">Creado</p><p className="font-semibold">{supplier?.created_at || '—'}</p></div>
-                <div><p className="text-xs text-gray-500 mb-1">Actualizado</p><p className="font-semibold">{supplier?.updated_at || '—'}</p></div>
+                <div><p className="text-xs text-gray-500 mb-1">Creado</p><p className="font-semibold">{formatDate(supplier?.created_at ?? null)}</p></div>
+                <div><p className="text-xs text-gray-500 mb-1">Actualizado</p><p className="font-semibold">{formatDate(supplier?.updated_at ?? null)}</p></div>
               </div>
             </div>
           </div>
@@ -95,5 +108,9 @@ function ProveedorDetalleContent() {
 }
 
 export default function ProveedorDetallePage() {
-  return <ProveedorDetalleContent />;
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <ProveedorDetalleContent />
+    </AuthGuard>
+  );
 }

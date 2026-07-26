@@ -16,6 +16,7 @@ const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   reportes: 'Reportes',
   administracion: 'Administración',
   preferencias: 'Preferencias',
+  proveedores: 'Proveedores',
 };
 
 const ACCIONES_LABELS: Record<AccionRBAC, string> = {

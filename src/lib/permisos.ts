@@ -9,6 +9,7 @@ export const PERMISOS_UI = [
   { id: 'reportes', nombre: 'Gestión de reportes' },
   { id: 'preferencias', nombre: 'Preferencias' },
   { id: 'administracion', nombre: 'Administración del sistema' },
+  { id: 'proveedores', nombre: 'Gestión de proveedores' },
   { id: 'configuracion', nombre: 'Edición de configuración' },
 ] as const;
 
@@ -37,6 +38,8 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
       activo = ALL_USERS.has(normalized);
     } else if (permiso.id === 'administracion') {
       activo = FULL_ACCESS.has(normalized);
+    } else if (permiso.id === 'proveedores') {
+      activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'configuracion') {
       activo = FULL_ACCESS.has(normalized);
     }
@@ -59,9 +62,6 @@ export function rolSlugFromLabel(rol: string): string {
 }
 
 // ── Constantes RBAC (alineadas con PermissionModule del backend) ──
-// Estos módulos corresponden 1:1 con los PermissionModule del backend.
-// Usar en PermissionGuard y en hasPermission() cuando se implemente en Fase 8.
-
 export const MODULOS_RBAC = {
   ACTIVOS: 'activos',
   UBICACIONES: 'ubicaciones',
@@ -70,10 +70,10 @@ export const MODULOS_RBAC = {
   REPORTES: 'reportes',
   ADMINISTRACION: 'administracion',
   PREFERENCIAS: 'preferencias',
+  PROVEEDORES: 'proveedores',
 } as const;
 
 export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
 
 export type ModuloRBAC = (typeof MODULOS_RBAC)[keyof typeof MODULOS_RBAC];
 export type AccionRBAC = (typeof ACCIONES_RBAC)[number];
-
