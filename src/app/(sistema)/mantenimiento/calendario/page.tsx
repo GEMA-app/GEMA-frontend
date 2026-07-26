@@ -1,35 +1,30 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { extractResourceList } from '@/lib/jsonapi';
+import { createOrdenTrabajo } from '@/services/ordenes-trabajo';
 
 const defaultAssets = [
   { value: '', label: 'Seleccione un equipo...' },
-];
-
-const priorities = [
-  { value: 'baja', label: 'Baja' },
-  { value: 'media', label: 'Media' },
-  { value: 'alta', label: 'Alta' },
 ];
 
 const defaultTechnicians = [
   { value: '', label: 'Seleccione técnico' },
 ];
 
-export default function CalendarPage() {
+function CalendarPageContent() {
   const [serviceType, setServiceType] = useState<'correctivo' | 'preventivo'>('correctivo');
   const [asset, setAsset] = useState('');
-  const [priority, setPriority] = useState('baja');
   const [technician, setTechnician] = useState('');
   const [assetOpen, setAssetOpen] = useState(false);
-  const [priorityOpen, setPriorityOpen] = useState(false);
   const [technicianOpen, setTechnicianOpen] = useState(false);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [activos, setActivos] = useState(defaultAssets);
   const [techniciansList, setTechniciansList] = useState(defaultTechnicians);
   const [submissionMessage, setSubmissionMessage] = useState<string | null>(null);
@@ -56,74 +51,25 @@ export default function CalendarPage() {
       return;
     }
 
-    if (!technician) {
-      setSubmissionMessage('Asigne un técnico para continuar.');
-      return;
-    }
-
     setIsSubmitting(true);
     setSubmissionMessage(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const empresaId = localStorage.getItem('empresaId');
+      const fechaApertura = `${scheduledDate}T${scheduledTime}:00`;
+      const created = await createOrdenTrabajo({
+        activo_id: asset,
+        tipo: serviceType,
+        descripcion_trabajo: notes || undefined,
+        supervisor_id: technician || undefined,
+        fecha_apertura: fechaApertura,
+      });
 
-      if (!token || !empresaId) {
-        throw new Error('No se pudo identificar la sesión del usuario.');
+      if (!created) {
+        throw new Error('No se pudo crear la orden de trabajo.');
       }
 
-      const activoLabel = activos.find((item) => item.value === asset)?.label ?? asset;
-      const technicianLabel = techniciansList.find((item) => item.value === technician)?.label ?? technician;
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/ordenes-trabajo`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/vnd.api+json',
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.api+json',
-          },
-          body: JSON.stringify({
-            data: {
-              type: 'ordenes-trabajo',
-              attributes: {
-                tipo: serviceType,
-                descripcion_trabajo: notes,
-                fecha_apertura: `${scheduledDate}T${scheduledTime}`,
-                activo_id: asset,
-                supervisor_id: technician,
-                prioridad: priority,
-              },
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        const detail = (errBody as any)?.errors?.[0]?.detail ?? `Error ${response.status}`;
-        throw new Error(detail);
-      }
-
-      const reportData = {
-        equipoNombre: activoLabel,
-        tipoServicio: serviceType === 'correctivo' ? 'Correctivo' : 'Preventivo',
-        codigoInventario: asset,
-        referenciasFalla: notes || 'Sin detalles adicionales',
-        resumenActividades: `Agendado servicio ${serviceType === 'correctivo' ? 'correctivo' : 'preventivo'} para ${activoLabel} el ${scheduledDate} a las ${scheduledTime}.`,
-        fechaApertura: `${scheduledDate} ${scheduledTime}`,
-        fechaCierre: 'Pendiente',
-        tecnicoResponsable: technicianLabel,
-        supervisorResponsable: 'Supervisor GEMA',
-        costoTotal: '$0.00',
-      };
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem('gemaOrdenReporte', JSON.stringify(reportData));
-      }
-
-      router.push('/mantenimiento/orden');
+      setSubmissionMessage('Orden de trabajo agendada correctamente.');
+      setTimeout(() => router.push('/mantenimiento'), 800);
     } catch (err: unknown) {
       console.error('Error creando orden', err);
       const message = err instanceof Error ? err.message : 'No se pudo agendar la orden. Intente nuevamente.';
@@ -136,10 +82,8 @@ export default function CalendarPage() {
   const handleCancel = () => {
     setServiceType('correctivo');
     setAsset('');
-    setPriority('baja');
     setTechnician('');
     setAssetOpen(false);
-    setPriorityOpen(false);
     setTechnicianOpen(false);
     setScheduledDate('');
     setScheduledTime('');
@@ -154,54 +98,29 @@ export default function CalendarPage() {
       setDataLoadMessage(null);
 
       try {
-        const token = localStorage.getItem('token');
-        const empresaId = localStorage.getItem('empresaId');
+        const empresaId = await requireEmpresaId();
 
-        if (!token || !empresaId) {
-          throw Object.assign(
-            new Error('No hay sesión activa. Inicie sesión para cargar activos y técnicos.'),
-            { status: 401 }
-          );
-        }
-
-        setEmpresaId(empresaId);
-
-        const activosRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/activos`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.api+json' } }
-        );
-        if (activosRes.ok && mounted) {
-          const activosData = await activosRes.json();
-          const activosMapped = (activosData.data ?? []).map((a: Record<string, any>) => ({
+        const activosPayload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/activos`);
+        if (mounted && activosPayload) {
+          const rawActivos = extractResourceList(activosPayload) as Array<{ id: string; attributes: Record<string, unknown> }>;
+          const activosMapped = rawActivos.map((a) => ({
             value: a.id,
-            label: a.attributes?.nombre ?? a.id,
+            label: (a.attributes?.nombre as string) ?? (a.attributes?.codigo_activo as string) ?? a.id,
           }));
-          if (activosMapped.length) setActivos(activosMapped);
+          if (activosMapped.length) setActivos([{ value: '', label: 'Seleccione un equipo...' }, ...activosMapped]);
         }
 
-        const usuariosRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/usuarios`,
-          { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.api+json' } }
-        );
-        if (usuariosRes.ok && mounted) {
-          const usuariosData = await usuariosRes.json();
-          const usuariosMapped = (usuariosData.data ?? []).map((u: Record<string, any>) => ({
+        const usuariosPayload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios`);
+        if (mounted && usuariosPayload) {
+          const rawUsuarios = extractResourceList(usuariosPayload) as Array<{ id: string; attributes: Record<string, unknown> }>;
+          const usuariosMapped = rawUsuarios.map((u) => ({
             value: u.id,
-            label: u.attributes?.nombre ?? u.attributes?.email ?? u.id,
+            label: (u.attributes?.nombre as string) ?? (u.attributes?.email as string) ?? u.id,
           }));
-          if (usuariosMapped.length) setTechniciansList(usuariosMapped);
+          if (usuariosMapped.length) setTechniciansList([{ value: '', label: 'Seleccione técnico' }, ...usuariosMapped]);
         }
-      } catch (err: any) {
-        const status = err?.status;
-        if (status === 401) {
-          setDataLoadMessage('No hay sesión activa o esta expiró. Inicie sesión para cargar los datos del sistema.');
-        } else if (status === 400) {
-          setDataLoadMessage('No se pudieron cargar los datos de la empresa. Revise la configuración del backend.');
-        } else if (status === 422) {
-          setDataLoadMessage('Los datos recibidos por el sistema no son válidos.');
-        } else {
-          setDataLoadMessage(err?.message || 'No se pudo conectar con el servidor. Verifique que el backend esté disponible.');
-        }
+      } catch (err: unknown) {
+        setDataLoadMessage(err instanceof Error ? err.message : 'No se pudo conectar con el servidor.');
       } finally {
         if (mounted) setIsLoadingData(false);
       }
@@ -249,9 +168,9 @@ export default function CalendarPage() {
             <div className="relative">
               <div
                 className="flex items-center justify-between rounded-md border border-[#D1D5DB]  bg-[#F2F2F3] px-4 py-3 text-sm text-[#000000] shadow-[0_4px_12px_#F2F2F3] cursor-pointer"
-                onClick={() => setAssetOpen((prev) => !prev)}
+                onClick={() => setAssetOpen((prev: boolean) => !prev)}
               >
-                <span>{activos.find((item) => item.value === asset)?.label ?? 'Seleccione un equipo...'}</span>
+                <span>{activos.find((item: { value: string; label: string }) => item.value === asset)?.label ?? 'Seleccione un equipo...'}</span>
                 <span className="text-sm">▼</span>
               </div>
 
@@ -358,25 +277,25 @@ export default function CalendarPage() {
               </div>
 
               <div className="space-y-3">
-                <label className="block text-sm font-semibold text-[#000000] ">Prioridad</label>
+                <label className="block text-sm font-semibold text-[#000000]">Supervisor / Técnico</label>
                 <div className="relative">
                   <div
-                    className="flex items-center justify-between rounded-md border border-[#D1D5DB] bg-[#F2F2F3]  px-4 py-3 text-sm text-[#000000] shadow-[0_4px_12px_#F2F2F3] cursor-pointer"
-                    onClick={() => setPriorityOpen((prev) => !prev)}
+                    className="flex items-center justify-between rounded-md border border-[#D1D5DB]  bg-[#F2F2F3]  px-4 py-3 text-sm text-[#000000] shadow-[0_4px_12px_#F2F2F3] cursor-pointer"
+                    onClick={() => setTechnicianOpen((prev: boolean) => !prev)}
                   >
-                    <span>{priorities.find((item) => item.value === priority)?.label ?? 'Seleccione prioridad'}</span>
+                    <span>{techniciansList.find((item: { value: string; label: string }) => item.value === technician)?.label ?? 'Seleccione supervisor/técnico'}</span>
                     <span className="text-sm">▼</span>
                   </div>
 
-                  {priorityOpen && (
+                  {technicianOpen && (
                     <ul className="absolute z-10 w-full mt-1 bg-[#F2F2F3] border border-[#D1D5DB] rounded-md shadow-lg overflow-hidden">
-                      {priorities.map((item) => (
+                      {techniciansList.map((item: { value: string; label: string }) => (
                         <li
                           key={item.value}
                           className="cursor-pointer px-4 py-3 text-sm text-[#000000] hover:bg-[#F3D58D] hover:text-[#000000]"
                           onClick={() => {
-                            setPriority(item.value);
-                            setPriorityOpen(false);
+                            setTechnician(item.value);
+                            setTechnicianOpen(false);
                           }}
                         >
                           {item.label}
@@ -390,41 +309,11 @@ export default function CalendarPage() {
           </section>
 
           <section className="space-y-3">
-            <label className="block text-sm font-semibold text-[#000000]">Técnico asignado</label>
-            <div className="relative">
-              <div
-                className="flex items-center justify-between rounded-md border border-[#D1D5DB]  bg-[#F2F2F3]  px-4 py-3 text-sm text-[#000000] shadow-[0_4px_12px_#F2F2F3] cursor-pointer"
-                onClick={() => setTechnicianOpen((prev) => !prev)}
-              >
-                <span>{techniciansList.find((item) => item.value === technician)?.label ?? 'Seleccione técnico'}</span>
-                <span className="text-sm">▼</span>
-              </div>
-
-              {technicianOpen && (
-                <ul className="absolute z-10 w-full mt-1 bg-[#F2F2F3] border border-[#D1D5DB] rounded-md shadow-lg overflow-hidden">
-                  {techniciansList.map((item: { value: string; label: string }) => (
-                    <li
-                      key={item.value}
-                      className="cursor-pointer px-4 py-3 text-sm text-[#000000] hover:bg-[#F3D58D] hover:text-[#000000]"
-                      onClick={() => {
-                        setTechnician(item.value);
-                        setTechnicianOpen(false);
-                      }}
-                    >
-                      {item.label}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-3">
             <label className="block text-sm font-semibold text-[#000000]">Notas adicionales / instrucciones</label>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Notes..."
+              placeholder="Notas de trabajo..."
               rows={6}
               className="w-full rounded-md border border-[#D1D5DB] bg-[#F2F2F3] px-4 py-4 text-sm text-[#000000] outline-none resize-none shadow-[0_4px_12px_rgba(242,242,243,1)]"
             />
@@ -439,59 +328,30 @@ export default function CalendarPage() {
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <button
               type="button"
-             onClick={() => window.location.href = '/mantenimiento'}
-               className="rounded-full bg-[#F3D58D] px-8 py-3.5 text-base font-semibold text-[#000000] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:brightness-90 transition duration-200"            >
+              onClick={() => router.push('/mantenimiento')}
+              className="rounded-full bg-[#F3D58D] px-8 py-3.5 text-base font-semibold text-[#000000] shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:brightness-90 transition duration-200"
+            >
               Cancelar
             </button>
             <button
               type="button"
               onClick={handleSchedule}
-              ////
-              disabled={!empresaId || isSubmitting}
+              disabled={isSubmitting}
               className="inline-flex items-center justify-center rounded-full bg-[#E59D2C] px-8 py-3.5 text-base font-semibold text-[#000000] shadow-[0_4px_12px_rgba(0,0,0,0.08)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Procesando…' : '+ Agendar orden'}
             </button>
           </div>
         </form>
-        <style jsx global>{`
-          input.custom-picker {
-            background: #F2F2F3;
-            border-radius: 0.375rem;
-            color: #000000;
-            box-shadow: 0 4px 12px #F2F2F3;
-            accent-color: #E59D2C;
-            color-scheme: light;
-          }
-
-          input.custom-picker:hover {
-            border-color: #E59D2C;
-            box-shadow: 0 4px 12px #F3D58D;
-          }
-
-          input.custom-picker:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px #E59D2C, 0 4px 12px #F3D58D;
-          }
-
-          input.custom-picker::-webkit-calendar-picker-indicator,
-          input.custom-picker::-webkit-clear-button,
-          input.custom-picker::-webkit-inner-spin-button {
-            cursor: pointer;
-            filter: invert(34%) sepia(78%) saturate(517%) hue-rotate(1deg) brightness(96%) contrast(90%);
-          }
-
-          input.custom-picker::-webkit-calendar-picker-indicator:hover,
-          input.custom-picker::-webkit-clear-button:hover,
-          input.custom-picker::-webkit-inner-spin-button:hover {
-            filter: invert(76%) sepia(41%) saturate(437%) hue-rotate(1deg) brightness(101%) contrast(101%);
-          }
-
-          input.custom-picker::-webkit-clear-button {
-            display: none;
-          }
-        `}</style>
       </div>
     </div>
   );
 }
+
+export default function CalendarPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico']}>
+      <CalendarPageContent />
+    </AuthGuard>
+  );
+}

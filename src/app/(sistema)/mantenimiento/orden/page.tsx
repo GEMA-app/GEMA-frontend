@@ -31,7 +31,9 @@ const initialReport: ReportData = {
   costoTotal: '',
 };
 
-export default function MantenimientoOrdenPage() {
+import { AuthGuard } from '@/components/auth/AuthGuard';
+
+function MantenimientoOrdenPageContent() {
   const [report, setReport] = useState<ReportData>(initialReport);
   const [loaded, setLoaded] = useState(false);
   const [hasReport, setHasReport] = useState(false);
@@ -302,3 +304,12 @@ export default function MantenimientoOrdenPage() {
     </main>
   );
 }
+
+export default function MantenimientoOrdenPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <MantenimientoOrdenPageContent />
+    </AuthGuard>
+  );
+}
+

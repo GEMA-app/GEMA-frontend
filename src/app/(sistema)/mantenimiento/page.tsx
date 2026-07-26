@@ -165,6 +165,15 @@ function OrdenesView({
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">Ordenes de trabajo</h2>
+          <PermissionGuard module="mantenimiento" action="create">
+            <Link
+              href="/mantenimiento/calendario"
+              className="inline-flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Nueva orden
+            </Link>
+          </PermissionGuard>
         </div>
 
         {loading && (
@@ -413,7 +422,10 @@ function CalendarioView({ planes }: { planes: Array<{ nombre: string; tipo: Tipo
   );
 }
 
-export default function MantenimientoPage() {
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+
+function MantenimientoPageContent() {
   const [vista, setVista] = useState<Vista>('ordenes');
   const { ordenes: rawOrdenes, loading: loadingOrdenes, error: errorOrdenes } = useOrdenesTrabajo({ page: 1, perPage: 50 });
   const { planes } = usePlanesMantenimiento({ activo: true });
@@ -451,3 +463,12 @@ export default function MantenimientoPage() {
     </div>
   );
 }
+
+export default function MantenimientoPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <MantenimientoPageContent />
+    </AuthGuard>
+  );
+}
+

@@ -3,15 +3,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
 import {
+  asignarTecnicoOT,
   cambiarEstadoOT,
   createOrdenTrabajo,
   deleteOrdenTrabajo,
   getHistorialEstadosOT,
   getOrdenesTrabajo,
+  removerTecnicoOT,
   updateOrdenTrabajo,
+  validarOrdenTrabajo,
 } from '@/services/ordenes-trabajo';
 import type {
   ActualizarOrdenTrabajoInput,
+  AsignarTecnicoInput,
   CambiarEstadoOTInput,
   HistorialEstadoOT,
   NuevaOrdenTrabajoInput,
@@ -23,7 +27,7 @@ import type { PaginationMeta } from '@/types/common';
 const DEFAULT_META: PaginationMeta = { page: 1, perPage: 15, total: 0, lastPage: 1 };
 
 export function useOrdenesTrabajo(params: OrdenTrabajoQuery = {}) {
-  const { page = 1, perPage = 15 } = params;
+  const { page = 1, perPage = 15, estado, tipo, activo_id, supervisor_id } = params;
   const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const [loading, setLoading] = useState(true);
@@ -33,7 +37,7 @@ export function useOrdenesTrabajo(params: OrdenTrabajoQuery = {}) {
     setLoading(true);
     setError(null);
     try {
-      const res = await getOrdenesTrabajo({ page, perPage });
+      const res = await getOrdenesTrabajo({ page, perPage, estado, tipo, activo_id, supervisor_id });
       setOrdenes(res.ordenes);
       setMeta(res.meta);
     } catch (err) {
@@ -41,7 +45,7 @@ export function useOrdenesTrabajo(params: OrdenTrabajoQuery = {}) {
     } finally {
       setLoading(false);
     }
-  }, [page, perPage]);
+  }, [page, perPage, estado, tipo, activo_id, supervisor_id]);
 
   useEffect(() => { void fetchOrdenes(); }, [fetchOrdenes]);
 
@@ -70,10 +74,26 @@ export function useOrdenesTrabajo(params: OrdenTrabajoQuery = {}) {
     return orden;
   }, [refetch]);
 
+  const validarOrden = useCallback(async (id: string) => {
+    const orden = await validarOrdenTrabajo(id);
+    await refetch();
+    return orden;
+  }, [refetch]);
+
+  const asignarTecnico = useCallback(async (id: string, input: AsignarTecnicoInput) => {
+    await asignarTecnicoOT(id, input);
+    await refetch();
+  }, [refetch]);
+
+  const removerTecnico = useCallback(async (id: string, tecnicoId: string) => {
+    await removerTecnicoOT(id, tecnicoId);
+    await refetch();
+  }, [refetch]);
+
   return {
     ordenes, meta, loading, error,
     empty: !loading && ordenes.length === 0,
-    refetch, crearOrden, editarOrden, eliminarOrden, cambiarEstado,
+    refetch, crearOrden, editarOrden, eliminarOrden, cambiarEstado, validarOrden, asignarTecnico, removerTecnico,
   };
 }
 

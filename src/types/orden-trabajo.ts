@@ -9,7 +9,7 @@ export interface OrdenTrabajo {
   activo_id: string;
   tipo: TipoMantenimientoOT;
   estado: EstadoOrdenTrabajo;
-  descripcion_trabajo: string;
+  descripcion_trabajo: string | null;
   supervisor_id: string | null;
   reporte_id: string | null;
   plan_id: string | null;
@@ -37,7 +37,7 @@ export interface HistorialEstadoOT {
 export interface NuevaOrdenTrabajoInput {
   activo_id: string;
   tipo: TipoMantenimientoOT;
-  descripcion_trabajo: string;
+  descripcion_trabajo?: string | null;
   supervisor_id?: string;
   reporte_id?: string;
   plan_id?: string;
@@ -48,7 +48,7 @@ export interface NuevaOrdenTrabajoInput {
 
 export interface ActualizarOrdenTrabajoInput {
   tipo?: TipoMantenimientoOT;
-  descripcion_trabajo?: string;
+  descripcion_trabajo?: string | null;
   supervisor_id?: string | null;
   costo_estimado?: number | null;
   costo_real?: number | null;
@@ -63,7 +63,7 @@ export interface CambiarEstadoOTInput {
 }
 
 export interface AsignarTecnicoInput {
-  usuario_id: string;
+  tecnico_id: string;
 }
 
 export interface OrdenTrabajoQuery {
@@ -71,6 +71,8 @@ export interface OrdenTrabajoQuery {
   perPage?: number;
   estado?: EstadoOrdenTrabajo;
   tipo?: TipoMantenimientoOT;
+  activo_id?: string;
+  supervisor_id?: string;
 }
 
 export interface OrdenesTrabajoResponse {
