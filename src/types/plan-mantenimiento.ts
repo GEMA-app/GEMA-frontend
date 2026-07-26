@@ -1,9 +1,10 @@
-import type { PaginationMeta } from '@/types/common';
+﻿import type { PaginationMeta } from '@/types/common';
 
 export type TipoMantenimiento = 'preventivo' | 'correctivo' | 'predictivo';
 
 export interface PlanMantenimiento {
   id: string;
+  empresa_id: string;
   activo_id: string;
   nombre: string;
   tipo: TipoMantenimiento;
@@ -13,13 +14,10 @@ export interface PlanMantenimiento {
   descripcion_tareas: string | null;
   activo: boolean;
   es_urgente: boolean;
-  ejecuciones: EjecucionResumen[];
-}
-
-export interface EjecucionResumen {
-  work_order_id: string;
-  execution_date: string;
-  observations: string | null;
+  version: number;
+  created_at: string | null;
+  updated_at: string | null;
+  ejecuciones: EjecucionPlan[];
 }
 
 export interface PlanesQuery {
@@ -53,6 +51,7 @@ export interface ActualizarPlanInput {
   tecnico_responsable_id?: string;
   descripcion_tareas?: string;
   activo?: boolean;
+  version?: number;
 }
 
 export interface EjecucionPlan {

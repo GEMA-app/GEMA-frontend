@@ -24,7 +24,10 @@ const TIPO_STYLES: Record<string, string> = {
 
 const PER_PAGE = 15;
 
-export default function PlanesPage() {
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+
+function PlanesPageContent() {
   const [page, setPage] = useState(1);
   const [filtroActivoId, setFiltroActivoId] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
@@ -67,11 +70,13 @@ export default function PlanesPage() {
               className="pl-9 pr-3 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:border-[#E59D12] w-48" />
           </div>
         </div>
-        <Link href="/mantenimiento/planes/nuevo"
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nuevo plan
-        </Link>
+        <PermissionGuard module="mantenimiento" action="create">
+          <Link href="/mantenimiento/planes/nuevo"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo plan
+          </Link>
+        </PermissionGuard>
       </div>
 
       <RequestState loading={loading} error={error} empty={empty}
@@ -86,7 +91,7 @@ export default function PlanesPage() {
                 <th className="text-left px-4 py-3 font-semibold">Tipo</th>
                 <th className="text-center px-4 py-3 font-semibold">Intervalo (días)</th>
                 <th className="text-center px-4 py-3 font-semibold">Próxima ejecución</th>
-                <th className="text-center px-4 py-3 font-semibold">Activo</th>
+                <th className="text-center px-4 py-3 font-semibold">Vigente</th>
                 <th className="text-center px-4 py-3 font-semibold">Acciones</th>
               </tr>
             </thead>
@@ -107,13 +112,17 @@ export default function PlanesPage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      <Link href={`/mantenimiento/planes/${p.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                        <Pencil className="w-4 h-4 text-gray-500" />
-                      </Link>
-                      <button type="button" onClick={() => handleDelete(p.id, p.nombre)}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                        <Trash className="w-4 h-4 text-red-400" />
-                      </button>
+                      <PermissionGuard module="mantenimiento" action="edit">
+                        <Link href={`/mantenimiento/planes/${p.id}`} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+                          <Pencil className="w-4 h-4 text-gray-500" />
+                        </Link>
+                      </PermissionGuard>
+                      <PermissionGuard module="mantenimiento" action="delete">
+                        <button type="button" onClick={() => handleDelete(p.id, p.nombre)}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                          <Trash className="w-4 h-4 text-red-400" />
+                        </button>
+                      </PermissionGuard>
                     </div>
                   </td>
                 </tr>
@@ -136,5 +145,13 @@ export default function PlanesPage() {
         )}
       </RequestState>
     </div>
+  );
+}
+
+export default function PlanesPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <PlanesPageContent />
+    </AuthGuard>
   );
 }

@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import {
   LayoutDashboard,
   Box,
   Wrench,
+  CalendarClock,
   Boxes,
   MapPin,
   Truck,
@@ -37,6 +38,7 @@ const MENU_SECTIONS: MenuSection[] = [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
       { icon: Box, label: 'Activos', href: '/activos' },
       { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
+      { icon: CalendarClock, label: 'Planes', href: '/mantenimiento/planes' },
     ],
   },
   {
@@ -89,16 +91,14 @@ export default function Sidebar() {
         type="button"
         onClick={() => setIsCollapsed((v) => !v)}
         aria-label={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
-        className="hidden cursor-pointer items-center justify-start gap-3 px-4 py-6 md:flex"
+        className="hidden cursor-pointer items-center justify-center gap-3 px-4 py-6 md:flex"
       >
         <img
           src="/GEMA%20Logo%20Perlado.png"
           alt="GEMA"
           className="h-9 w-auto shrink-0 object-contain"
         />
-        <span className={`font-heading text-lg font-bold text-white ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
-          GEMA
-        </span>
+
       </button>
 
       <div className="flex items-center justify-center py-4 md:hidden">
@@ -125,8 +125,13 @@ export default function Sidebar() {
             <div className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const isActive = (() => {
+                  if (item.href === '/mantenimiento') {
+                    return pathname === '/mantenimiento' ||
+                      (pathname.startsWith('/mantenimiento/') && !pathname.startsWith('/mantenimiento/planes'));
+                  }
+                  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+                })();
                 return (
                   <Link
                     key={item.href}

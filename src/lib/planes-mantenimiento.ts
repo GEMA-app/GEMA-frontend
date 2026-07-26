@@ -1,7 +1,7 @@
-import { extractResource, extractResourceList, getAttr, getAttrBoolean, getAttrNumber, type JsonApiResource } from '@/lib/jsonapi';
+﻿import { extractResource, extractResourceList, getAttr, getAttrBoolean, getAttrNumber, type JsonApiResource } from '@/lib/jsonapi';
 import { extractMetaFromResponse } from '@/lib/pagination';
 import type { PaginationMeta } from '@/types/common';
-import type { EjecucionResumen, PlanMantenimiento } from '@/types/plan-mantenimiento';
+import type { EjecucionPlan, PlanMantenimiento } from '@/types/plan-mantenimiento';
 import type { TipoMantenimiento } from '@/types/plan-mantenimiento';
 
 const TIPOS: TipoMantenimiento[] = ['preventivo', 'correctivo', 'predictivo'];
@@ -11,14 +11,17 @@ function normalizeTipo(raw: string): TipoMantenimiento {
   return TIPOS.includes(v) ? v : 'preventivo';
 }
 
-function mapEjecuciones(raw: unknown): EjecucionResumen[] {
+function mapEjecuciones(raw: unknown): EjecucionPlan[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((e) => {
     const item = (e ?? {}) as Record<string, unknown>;
     return {
+      id: String(item.id ?? ''),
+      plan_id: String(item.plan_id ?? ''),
       work_order_id: String(item.work_order_id ?? ''),
       execution_date: String(item.execution_date ?? ''),
       observations: (item.observations as string) ?? null,
+      created_at: (item.created_at as string) ?? null,
     };
   });
 }
@@ -26,6 +29,7 @@ function mapEjecuciones(raw: unknown): EjecucionResumen[] {
 export function mapPlanFromApi(resource: JsonApiResource): PlanMantenimiento {
   return {
     id: resource.id,
+    empresa_id: getAttr(resource, 'empresa_id'),
     activo_id: getAttr(resource, 'activo_id'),
     nombre: getAttr(resource, 'nombre'),
     tipo: normalizeTipo(getAttr(resource, 'tipo', 'preventivo')),
@@ -35,6 +39,9 @@ export function mapPlanFromApi(resource: JsonApiResource): PlanMantenimiento {
     descripcion_tareas: getAttr(resource, 'descripcion_tareas') || null,
     activo: getAttrBoolean(resource, 'activo', true),
     es_urgente: getAttrBoolean(resource, 'es_urgente'),
+    version: getAttrNumber(resource, 'version', 1),
+    created_at: getAttr(resource, 'created_at') || null,
+    updated_at: getAttr(resource, 'updated_at') || null,
     ejecuciones: mapEjecuciones(resource.attributes.ejecuciones),
   };
 }

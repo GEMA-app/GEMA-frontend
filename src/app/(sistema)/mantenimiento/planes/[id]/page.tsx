@@ -1,170 +1,184 @@
-'use client';
+﻿'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash, Calendar, AlertTriangle } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
-import { getPlanById } from '@/services/planes-mantenimiento';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { getPlanById } from '@/services/planes-mantenimiento';
 import type { PlanMantenimiento } from '@/types/plan-mantenimiento';
 
-const TIPOS = [
-  { value: 'preventivo', label: 'Preventivo' },
-  { value: 'correctivo', label: 'Correctivo' },
-  { value: 'predictivo', label: 'Predictivo' },
-];
+const TIPO_STYLES: Record<string, string> = {
+  preventivo: 'bg-[#E3F2FD] text-[#1565C0]',
+  correctivo: 'bg-[#FFF3E0] text-[#E65100]',
+  predictivo: 'bg-[#F3E5F5] text-[#7B1FA2]',
+};
 
-export default function EditarPlanPage() {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{value}</p>
+    </div>
+  );
+}
+
+function DetallePlanPageContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { editarPlan } = usePlanesMantenimiento();
+  const { eliminarPlan } = usePlanesMantenimiento();
   const { activos } = useActivos();
   const { usuarios } = useUsuarios();
-  const tecnicos = usuarios.filter(u => u.roles.some(r => r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('tecnico')));
 
   const [plan, setPlan] = useState<PlanMantenimiento | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const [activoId, setActivoId] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [tipo, setTipo] = useState('preventivo');
-  const [intervaloDias, setIntervaloDias] = useState('');
-  const [proximaEjecucion, setProximaEjecucion] = useState('');
-  const [tecnicoId, setTecnicoId] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [activo, setActivo] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getPlanById(id)
-      .then(p => {
-        setPlan(p);
-        setActivoId(p.activo_id);
-        setNombre(p.nombre);
-        setTipo(p.tipo);
-        setIntervaloDias(String(p.intervalo_dias));
-        setProximaEjecucion(p.proxima_ejecucion);
-        setTecnicoId(p.tecnico_responsable_id ?? '');
-        setDescripcion(p.descripcion_tareas ?? '');
-        setActivo(p.activo);
-      })
-      .catch(err => setLoadError(err instanceof Error ? err.message : 'Error al cargar plan'))
+      .then(setPlan)
+      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar plan'))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    const dias = Number(intervaloDias);
-    if (!nombre || !tipo || !dias || !proximaEjecucion) {
-      setSaveError('Completa todos los campos obligatorios.');
-      return;
-    }
-    if (dias <= 0) {
-      setSaveError('El intervalo debe ser mayor a 0.');
-      return;
-    }
-    setSaving(true);
-    setSaveError(null);
+  const activoNombre = activos.find(a => a.id === plan?.activo_id)?.nombre ?? plan?.activo_id ?? '—';
+  const tecnicoNombre = usuarios.find(u => u.id === plan?.tecnico_responsable_id)?.nombre ?? plan?.tecnico_responsable_id ?? '—';
+
+  const handleDelete = async () => {
+    if (!plan || !window.confirm(`¿Eliminar el plan "${plan.nombre}"?`)) return;
     try {
-      await editarPlan(id, {
-        nombre,
-        tipo: tipo as 'preventivo' | 'correctivo' | 'predictivo',
-        intervalo_dias: dias,
-        proxima_ejecucion: proximaEjecucion,
-        tecnico_responsable_id: tecnicoId || undefined,
-        descripcion_tareas: descripcion || undefined,
-        activo,
-      });
+      await eliminarPlan(plan.id);
       router.push('/mantenimiento/planes');
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Error al guardar.');
-    } finally {
-      setSaving(false);
-    }
-  }, [id, nombre, tipo, intervaloDias, proximaEjecucion, tecnicoId, descripcion, activo, editarPlan, router]);
+    } catch { alert('Error al eliminar el plan.'); }
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Editar plan de mantenimiento" />
+      <PageHeader title="Detalle del plan de mantenimiento" />
 
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link href="/mantenimiento/planes" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
           <ArrowLeft className="w-4 h-4" />
           Volver
         </Link>
+        <div className="flex items-center gap-2">
+          <PermissionGuard module="mantenimiento" action="edit">
+            <Link href={`/mantenimiento/planes/${id}/editar`}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50 transition-all">
+              <Pencil className="w-4 h-4" />
+              Editar
+            </Link>
+          </PermissionGuard>
+          <PermissionGuard module="mantenimiento" action="delete">
+            <button onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 border border-red-200 rounded-full text-sm text-red-600 hover:bg-red-50 transition-all cursor-pointer">
+              <Trash className="w-4 h-4" />
+              Eliminar
+            </button>
+          </PermissionGuard>
+        </div>
       </div>
 
-      <RequestState loading={loading} error={loadError} empty={!loading && !loadError && !plan}
+      <RequestState loading={loading} error={error} empty={!loading && !error && !plan}
         loadingMessage="Cargando plan..." emptyMessage="Plan no encontrado."
       >
         {plan && (
-          <form onSubmit={handleSubmit} className="max-w-2xl rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-6"
-            style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Activo</label>
-                <select value={activoId} onChange={e => setActivoId(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                  {activos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                </select>
+          <>
+            <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-6"
+              style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
+              <div className="flex items-center justify-between border-b-2 border-[#2E4365]/20 pb-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-gray-900">{plan.nombre}</h2>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${TIPO_STYLES[plan.tipo] || ''}`}>
+                    {plan.tipo}
+                  </span>
+                  {plan.es_urgente && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                      <AlertTriangle className="w-3 h-3" />
+                      Urgente
+                    </span>
+                  )}
+                  <span className={`inline-block w-3 h-3 rounded-full ${plan.activo ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                    title={plan.activo ? 'Activo' : 'Inactivo'} />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Nombre *</label>
-                <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <DetailRow label="Activo" value={activoNombre} />
+                <DetailRow label="Intervalo" value={`${plan.intervalo_dias} días`} />
+                <DetailRow label="Próxima ejecución" value={plan.proxima_ejecucion} />
+                <DetailRow label="Técnico responsable" value={tecnicoNombre} />
+                <DetailRow label="Creado" value={plan.created_at ? new Date(plan.created_at).toLocaleDateString('es-VE') : '—'} />
+                <DetailRow label="Actualizado" value={plan.updated_at ? new Date(plan.updated_at).toLocaleDateString('es-VE') : '—'} />
               </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Tipo *</label>
-                <select value={tipo} onChange={e => setTipo(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                  {TIPOS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Intervalo (días) *</label>
-                <input type="number" min="1" value={intervaloDias} onChange={e => setIntervaloDias(e.target.value)} required
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Próxima ejecución *</label>
-                <input type="date" value={proximaEjecucion} onChange={e => setProximaEjecucion(e.target.value)} required
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Técnico responsable</label>
-                <select value={tecnicoId} onChange={e => setTecnicoId(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                  <option value="">Seleccionar...</option>
-                  {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>)}
-                </select>
-              </div>
+
+              {plan.descripcion_tareas && (
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Descripción de tareas</label>
+                  <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300 whitespace-pre-wrap">{plan.descripcion_tareas}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Descripción de tareas</label>
-              <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={3}
-                className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400 resize-none" />
+
+            {/* Ejecuciones */}
+            <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-4 mt-8"
+              style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
+              <div className="border-b-2 border-[#2E4365]/20 pb-4">
+                <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-gray-800">Ejecuciones</span>
+                </div>
+              </div>
+
+              {plan.ejecuciones.length === 0 ? (
+                <p className="text-sm text-gray-400 py-4 text-center">Sin ejecuciones registradas.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-white/50 text-gray-600 uppercase tracking-wider text-xs">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-semibold">Fecha</th>
+                        <th className="text-left px-4 py-3 font-semibold">OT</th>
+                        <th className="text-left px-4 py-3 font-semibold">Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {plan.ejecuciones.map((eje) => (
+                        <tr key={eje.id} className="hover:bg-white/50 transition-colors">
+                          <td className="px-4 py-3 text-gray-700">
+                            {new Date(eje.execution_date).toLocaleDateString('es-VE')}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link href={`/mantenimiento/${eje.work_order_id}`}
+                              className="text-[#E59D12] hover:underline font-medium">
+                              {eje.work_order_id.slice(0, 8)}...
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{eje.observations || '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} className="accent-[#E59D12]" />
-              Plan activo
-            </label>
-            {saveError && <p className="text-sm text-red-600">{saveError}</p>}
-            <div className="flex justify-end">
-              <button type="submit" disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-                <Save className="w-4 h-4" strokeWidth={2.5} />
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
-            </div>
-          </form>
+          </>
         )}
       </RequestState>
     </div>
+  );
+}
+
+export default function DetallePlanPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <DetallePlanPageContent />
+    </AuthGuard>
   );
 }
