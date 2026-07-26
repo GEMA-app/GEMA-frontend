@@ -15,22 +15,13 @@ import { getRepuestos } from '@/services/repuestos';
 import { getArticulos } from '@/services/catalogo';
 import { createRepuestoUtilizado, deleteRepuestoUtilizado } from '@/services/repuestos-utilizados';
 import { formatEstadoOT, transicionesValidas } from '@/lib/orden-trabajo';
+
 import type { EstadoOT, OrdenTrabajo } from '@/types/orden-trabajo';
 import type { Repuesto } from '@/types/repuesto';
 import type { ArticuloCatalogo } from '@/services/catalogo';
+import { Badge } from '@/components/ui/Badge';
 
-const badgeStyles: Record<string, string> = {
-  Abierta: 'bg-[#E3F2FD] text-[#1565C0]',
-  'En progreso': 'bg-[#FFF3E0] text-[#E65100]',
-  Pausada: 'bg-[#F3E5F5] text-[#6A1B9A]',
-  Cerrada: 'bg-[#E8F5E9] text-[#2E7D32]',
-  Cancelada: 'bg-[#FCE4EC] text-[#C62828]',
-};
 
-function EstadoBadge({ estado }: { estado: string }) {
-  const s = badgeStyles[estado] || 'bg-gray-100 text-gray-600';
-  return <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${s}`}>{estado}</span>;
-}
 
 export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -158,8 +149,9 @@ export default function OrdenDetallePage() {
           <div className="flex justify-between items-start border-b-2 border-[#2E4365]/20 pb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-gray-900">{orden?.codigo_ot || 'Sin código'}</h2>
-              {orden && <EstadoBadge estado={formatEstadoOT(orden.estado)} />}
+              {orden && <Badge estado={orden.estado} />}
             </div>
+
             <button onClick={handleSave} disabled={saving || !orden}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
               <Save className="w-4 h-4 text-black" strokeWidth={2.5} />

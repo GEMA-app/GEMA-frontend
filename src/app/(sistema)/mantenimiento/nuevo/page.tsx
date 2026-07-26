@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+
 import { ArrowLeft, FileText, Calendar, Users, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { createOrden, asignarTecnico } from '@/services/ordenes-trabajo';
@@ -23,10 +23,25 @@ const initialFormState = {
   fecha_cierre: '',
 };
 
-export default function NuevaOrdenPage() {
+const labelClass = 'block text-[13px] font-semibold text-gema-primary dark:text-white/80 mb-1.5';
+const inputClass =
+  'w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent/40';
+
+function NuevaOrdenContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fechaParam = searchParams.get('fecha');
+
   const { activos, loading: loadingActivos } = useActivos({ perPage: 200 });
   const { usuarios, loading: loadingUsuarios } = useUsuarios();
+
+  const [formData, setFormData] = useState(initialFormState);
+
+  useEffect(() => {
+    if (fechaParam) {
+      setFormData((prev) => ({ ...prev, fecha_inicio_trabajo: fechaParam }));
+    }
+  }, [fechaParam]);
 
   const supervisores = useMemo(
     () => {
@@ -50,7 +65,6 @@ export default function NuevaOrdenPage() {
     [usuarios],
   );
 
-  const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,94 +116,111 @@ export default function NuevaOrdenPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Mantenimiento / Nueva orden" variant="activos" />
-
+    <div>
       <div className="mb-6">
-        <Link href="/mantenimiento" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+        <Link
+          href="/mantenimiento"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+        >
           <ArrowLeft className="w-4 h-4" />
-          Volver al inicio
+          Volver a mantenimiento
         </Link>
       </div>
 
-      <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-        <div className="flex justify-between items-start border-b-2 border-[#2E4365]/20 pb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">NUEVA ORDEN</h2>
-            <p className="text-gray-500 text-xs mt-1">Agendar servicio de mantenimiento</p>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/mantenimiento" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">Cancelar</Link>
-            <button type="submit" form="nueva-orden-form" disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-              {isSubmitting ? 'Guardando...' : 'Crear orden'}
-            </button>
-          </div>
-        </div>
+      <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white mb-6 sm:mb-8">
+        Nueva orden de trabajo
+      </h1>
 
+      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-4xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <form id="nueva-orden-form" onSubmit={handleSubmit} className="lg:col-span-2 space-y-8">
+          <form id="nueva-orden-form" onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
 
             {/* Información del activo */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gema-accent font-semibold text-base">
                 <FileText className="w-5 h-5" />
-                <span className="text-gray-800">Información del activo</span>
+                <span className="text-gema-primary dark:text-white">Información del activo</span>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1" htmlFor="activo_id">Activo *</label>
-                <select id="activo_id" name="activo_id" value={formData.activo_id} onChange={handleInputChange}
+                <label className={labelClass} htmlFor="activo_id">Activo*</label>
+                <select
+                  id="activo_id"
+                  name="activo_id"
+                  value={formData.activo_id}
+                  onChange={handleInputChange}
                   disabled={loadingActivos}
-                  className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.activo_id ? 'border-red-500' : 'border-gray-400'}`}>
+                  className={`${inputClass} ${errors.activo_id ? 'border-red-500' : ''}`}
+                >
                   <option value="">{loadingActivos ? 'Cargando activos...' : 'Seleccione un activo'}</option>
                   {activos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                 </select>
-                {errors.activo_id && <p className="text-xs text-red-600 mt-1">{errors.activo_id}</p>}
+                {errors.activo_id && <p className="text-xs text-red-500 mt-1">{errors.activo_id}</p>}
               </div>
             </div>
 
             {/* Programación */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gema-accent font-semibold text-base">
                 <Calendar className="w-5 h-5" />
-                <span className="text-gray-800">Programación</span>
+                <span className="text-gema-primary dark:text-white">Programación</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="fecha_inicio_trabajo">Fecha de inicio</label>
-                  <input id="fecha_inicio_trabajo" name="fecha_inicio_trabajo" type="date" value={formData.fecha_inicio_trabajo} onChange={handleInputChange}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+                  <label className={labelClass} htmlFor="fecha_inicio_trabajo">Fecha de inicio</label>
+                  <input
+                    id="fecha_inicio_trabajo"
+                    name="fecha_inicio_trabajo"
+                    type="date"
+                    value={formData.fecha_inicio_trabajo}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="fecha_cierre">Fecha de fin</label>
-                  <input id="fecha_cierre" name="fecha_cierre" type="date" value={formData.fecha_cierre} onChange={handleInputChange}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+                  <label className={labelClass} htmlFor="fecha_cierre">Fecha de fin</label>
+                  <input
+                    id="fecha_cierre"
+                    name="fecha_cierre"
+                    type="date"
+                    value={formData.fecha_cierre}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Asignación */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gema-accent font-semibold text-base">
                 <Users className="w-5 h-5" />
-                <span className="text-gray-800">Asignación</span>
+                <span className="text-gema-primary dark:text-white">Asignación</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="supervisor_id">Supervisor</label>
-                  <select id="supervisor_id" name="supervisor_id" value={formData.supervisor_id} onChange={handleInputChange}
+                  <label className={labelClass} htmlFor="supervisor_id">Supervisor</label>
+                  <select
+                    id="supervisor_id"
+                    name="supervisor_id"
+                    value={formData.supervisor_id}
+                    onChange={handleInputChange}
                     disabled={loadingUsuarios}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
+                    className={inputClass}
+                  >
                     <option value="">{loadingUsuarios ? 'Cargando usuarios...' : 'Sin supervisor'}</option>
                     {supervisores.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="tecnico_id">Técnico</label>
-                  <select id="tecnico_id" name="tecnico_id" value={formData.tecnico_id} onChange={handleInputChange}
+                  <label className={labelClass} htmlFor="tecnico_id">Técnico</label>
+                  <select
+                    id="tecnico_id"
+                    name="tecnico_id"
+                    value={formData.tecnico_id}
+                    onChange={handleInputChange}
                     disabled={loadingUsuarios}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
+                    className={inputClass}
+                  >
                     <option value="">{loadingUsuarios ? 'Cargando usuarios...' : 'Sin técnico asignado'}</option>
                     {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
                   </select>
@@ -197,29 +228,52 @@ export default function NuevaOrdenPage() {
               </div>
             </div>
 
-            {/* Notas adicionales / instrucciones */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
+            {/* Notas adicionales */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-gema-accent font-semibold text-base">
                 <FileText className="w-5 h-5" />
-                <span className="text-gray-800">Notas adicionales / instrucciones</span>
+                <span className="text-gema-primary dark:text-white">Notas adicionales / instrucciones</span>
               </div>
               <div>
-                <textarea id="notas" name="notas" rows={4}
-                  value={formData.notas} onChange={handleInputChange}
-                  className="w-full rounded-xl border border-gray-300 bg-transparent p-4 outline-none focus:border-[#E59D12] transition-colors text-sm resize-none shadow-inner" />
+                <textarea
+                  id="notas"
+                  name="notas"
+                  rows={4}
+                  value={formData.notas}
+                  onChange={handleInputChange}
+                  placeholder="Escribe instrucciones o detalles adicionales de la orden..."
+                  className={`${inputClass} resize-none`}
+                />
               </div>
             </div>
 
             {submitStatus && (
-              <p className={`text-sm ${Object.keys(errors).length > 0 ? 'text-red-600' : 'text-emerald-700'}`}>{submitStatus}</p>
+              <p className={`text-sm ${Object.keys(errors).length > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{submitStatus}</p>
             )}
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-white/10">
+              <Link
+                href="/mantenimiento"
+                className="px-6 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </Link>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
+              >
+                <Save className="w-4 h-4" strokeWidth={2.5} />
+                {isSubmitting ? 'Guardando...' : 'Crear orden'}
+              </button>
+            </div>
           </form>
 
           {/* Panel lateral: tipo de mantenimiento y prioridad */}
-          <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100 h-fit space-y-8">
+          <div className="rounded-2xl p-5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 space-y-6">
             <div>
-              <h3 className="text-gray-800 font-bold text-base mb-5">Tipo de Mantenimiento</h3>
-              <div className="space-y-3">
+              <h3 className="text-gema-primary dark:text-white font-bold text-sm mb-4">Tipo de Mantenimiento*</h3>
+              <div className="space-y-2">
                 {['preventivo', 'correctivo', 'predictivo'].map(t => (
                   <button
                     key={t}
@@ -228,27 +282,36 @@ export default function NuevaOrdenPage() {
                       setFormData(prev => ({ ...prev, tipo: t as TipoMantenimiento }));
                       setErrors(prev => ({ ...prev, tipo: '' }));
                     }}
-                    className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer text-left transition-all ${formData.tipo === t ? 'border-[#ECA03C] bg-amber-50/10' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                    className={`w-full flex items-center gap-3 rounded-xl border px-4 py-2.5 cursor-pointer text-left transition-all text-sm ${
+                      formData.tipo === t
+                        ? 'border-gema-accent bg-gema-accent/10 text-gema-primary dark:text-white font-semibold'
+                        : 'border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5'
+                    }`}
                   >
-                    <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${formData.tipo === t ? 'bg-[#8B4513]' : 'bg-transparent border border-gray-300'}`} />
-                    <span className="text-sm text-gray-700 capitalize">{t}</span>
+                    <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${formData.tipo === t ? 'bg-gema-accent' : 'bg-transparent border border-gray-300 dark:border-white/30'}`} />
+                    <span className="capitalize">{t}</span>
                   </button>
                 ))}
               </div>
+              {errors.tipo && <p className="text-xs text-red-500 mt-2">{errors.tipo}</p>}
             </div>
 
             <div>
-              <h3 className="text-gray-800 font-bold text-base mb-5">Prioridad</h3>
-              <div className="space-y-3">
+              <h3 className="text-gema-primary dark:text-white font-bold text-sm mb-4">Prioridad</h3>
+              <div className="space-y-2">
                 {(['baja', 'media', 'alta'] as Prioridad[]).map(p => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, prioridad: p }))}
-                    className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer text-left transition-all ${formData.prioridad === p ? 'border-[#ECA03C] bg-amber-50/10' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                    className={`w-full flex items-center gap-3 rounded-xl border px-4 py-2.5 cursor-pointer text-left transition-all text-sm ${
+                      formData.prioridad === p
+                        ? 'border-gema-accent bg-gema-accent/10 text-gema-primary dark:text-white font-semibold'
+                        : 'border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark text-gema-primary/70 dark:text-white/70 hover:bg-gray-50 dark:hover:bg-white/5'
+                    }`}
                   >
-                    <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${formData.prioridad === p ? 'bg-[#8B4513]' : 'bg-transparent border border-gray-300'}`} />
-                    <span className="text-sm text-gray-700 capitalize">{p}</span>
+                    <span className={`w-3.5 h-3.5 rounded-full shrink-0 ${formData.prioridad === p ? 'bg-gema-accent' : 'bg-transparent border border-gray-300 dark:border-white/30'}`} />
+                    <span className="capitalize">{p}</span>
                   </button>
                 ))}
               </div>
@@ -257,5 +320,13 @@ export default function NuevaOrdenPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NuevaOrdenPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-gema-primary/50 dark:text-white/50">Cargando...</div>}>
+      <NuevaOrdenContent />
+    </Suspense>
   );
 }
