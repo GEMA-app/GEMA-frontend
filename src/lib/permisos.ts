@@ -6,7 +6,6 @@ export const PERMISOS_UI = [
   { id: 'inventario', nombre: 'Gestión de inventario' },
   { id: 'mantenimiento', nombre: 'Gestión de mantenimiento' },
   { id: 'reportes', nombre: 'Gestión de reportes' },
-  { id: 'preferencias', nombre: 'Preferencias' },
   { id: 'administracion', nombre: 'Administración del sistema' },
   { id: 'configuracion', nombre: 'Edición de configuración' },
 ] as const;
@@ -33,8 +32,6 @@ export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
       activo = OPERATIONAL.has(normalized);
     } else if (permiso.id === 'reportes') {
       activo = READ_REPORTS.has(normalized);
-    } else if (permiso.id === 'preferencias') {
-      activo = ALL_USERS.has(normalized);
     } else if (permiso.id === 'administracion') {
       activo = FULL_ACCESS.has(normalized);
     } else if (permiso.id === 'configuracion') {
@@ -66,7 +63,6 @@ export const MODULOS_RBAC = {
   INVENTARIO: 'inventario',
   REPORTES: 'reportes',
   ADMINISTRACION: 'administracion',
-  PREFERENCIAS: 'preferencias',
 } as const;
 
 export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;

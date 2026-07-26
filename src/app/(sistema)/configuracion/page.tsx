@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Clock, Users, Hammer, Building2 } from 'lucide-react';
+import { Clock, Users, ShieldCheck, Hammer, Building2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function ConfiguracionPage() {
@@ -18,6 +18,12 @@ export default function ConfiguracionPage() {
       description: 'Administrar accesos, rol y permisos del personal',
       icon: Users,
       href: '/configuracion/usuarios',
+    },
+    {
+      title: 'Roles y Permisos',
+      description: 'Configurar roles del sistema y matriz de permisos',
+      icon: ShieldCheck,
+      href: '/configuracion/roles',
     },
     {
       title: 'Empresa',

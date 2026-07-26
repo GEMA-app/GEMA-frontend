@@ -30,11 +30,6 @@ export function hasPermission(module: ModuloRBAC, action: AccionRBAC): boolean {
     return false; // create/edit/delete solo admin
   }
 
-  // ── Preferencias: todos los autenticados ──
-  if (module === 'preferencias') {
-    return true;
-  }
-
   // ── Modulos operativos (activos, mantenimiento, inventario) ──
   if (action === 'delete') {
     return false; // solo admin

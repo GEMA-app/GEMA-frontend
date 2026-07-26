@@ -10,13 +10,14 @@ import { buildPermisosMatrix, matrixToPermisos } from '@/lib/roles';
 import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos';
 import type { PermisoGranular, Rol } from '@/types/rol';
 
+const ADMIN_ROLES: string[] = ['admin'];
+
 const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   activos: 'Activos',
   mantenimiento: 'Mantenimiento',
   inventario: 'Inventario',
   reportes: 'Reportes',
   administracion: 'Administración',
-  preferencias: 'Preferencias',
 };
 
 const ACCIONES_LABELS: Record<AccionRBAC, string> = {
@@ -30,6 +31,7 @@ function RolRow({ rol, onEdit, onDelete }: { rol: Rol; onEdit: (rol: Rol) => voi
   const matrix = buildPermisosMatrix(rol.permisos);
   const modulos = Object.values(MODULOS_RBAC);
   const acciones = [...ACCIONES_RBAC];
+  const isSystemAdmin = rol.nombre.toLowerCase() === 'administrador';
 
   return (
     <tr className="border-b border-[#EBE2D5] hover:bg-white/50">
@@ -55,20 +57,26 @@ function RolRow({ rol, onEdit, onDelete }: { rol: Rol; onEdit: (rol: Rol) => voi
       ))}
       <td className="px-4 py-3 text-right">
         <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            onClick={() => onEdit(rol)}
-            className="text-xs text-blue-600 hover:underline cursor-pointer"
-          >
-            Editar
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(rol.id)}
-            className="text-xs text-red-600 hover:underline cursor-pointer"
-          >
-            Eliminar
-          </button>
+          {isSystemAdmin ? (
+            <span className="text-xs text-gray-400 italic">Sistema</span>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(rol)}
+                className="text-xs text-blue-600 hover:underline cursor-pointer"
+              >
+                Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(rol.id)}
+                className="text-xs text-red-600 hover:underline cursor-pointer"
+              >
+                Eliminar
+              </button>
+            </>
+          )}
         </div>
       </td>
     </tr>
@@ -123,7 +131,11 @@ export default function RolesPage() {
 
   const handleDelete = useCallback(async (id: string) => {
     if (!confirm('Eliminar este rol?')) return;
-    await eliminarRol(id);
+    try {
+      await eliminarRol(id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar el rol.');
+    }
   }, [eliminarRol]);
 
   const togglePermiso = useCallback((modulo: string, accion: string) => {
@@ -132,7 +144,7 @@ export default function RolesPage() {
   }, []);
 
   return (
-    <AuthGuard roleRequired={['admin']}>
+    <AuthGuard roleRequired={ADMIN_ROLES}>
       <div className="flex-1 bg-white p-6 sm:p-8 overflow-y-auto">
       <PageHeader
         title="Roles y Permisos"
