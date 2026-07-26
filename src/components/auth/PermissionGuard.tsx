@@ -17,9 +17,27 @@ export function hasPermission(module: ModuloRBAC, action: AccionRBAC): boolean {
     return true;
   }
 
-  if (action === 'delete') {
-    // Solo administradores pueden realizar eliminaciones
+  // ── Administracion: solo admin ──
+  if (module === 'administracion') {
     return false;
+  }
+
+  // ── Reportes: view para admin/supervisor/reporter, write solo admin ──
+  if (module === 'reportes') {
+    if (action === 'view') {
+      return roles.some((r) => r === 'supervisor' || r === 'reporter');
+    }
+    return false; // create/edit/delete solo admin
+  }
+
+  // ── Preferencias: todos los autenticados ──
+  if (module === 'preferencias') {
+    return true;
+  }
+
+  // ── Modulos operativos (activos, mantenimiento, inventario) ──
+  if (action === 'delete') {
+    return false; // solo admin
   }
 
   if (action === 'create' || action === 'edit') {

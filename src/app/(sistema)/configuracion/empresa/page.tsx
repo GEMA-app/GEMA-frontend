@@ -1,67 +1,55 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Save, Building2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
-import { getEmpresa, updateEmpresa } from '@/services/empresa';
-import type { Empresa } from '@/types/empresa';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { useEmpresa } from '@/hooks/useEmpresa';
 
-export default function EmpresaPage() {
-  const router = useRouter();
-  const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const RIF_REGEX = /^[JVEGjveg]\d{6,10}$/;
+
+function EmpresaPageContent() {
+  const { empresa, loading, error, saving, saveError, saveOk, guardarEmpresa, refetch } = useEmpresa();
   const [nombre, setNombre] = useState('');
   const [rif, setRif] = useState('');
   const [email, setEmail] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveOk, setSaveOk] = useState(false);
+  const [rifError, setRifError] = useState('');
 
   useEffect(() => {
-    setLoading(true);
-    getEmpresa()
-      .then(e => {
-        setEmpresa(e);
-        setNombre(e.nombre);
-        setRif(e.rif ?? '');
-        setEmail(e.email_contacto ?? '');
-      })
-      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar empresa'))
-      .finally(() => setLoading(false));
+    if (empresa) {
+      setNombre(empresa.nombre);
+      setRif(empresa.rif ?? '');
+      setEmail(empresa.email_contacto ?? '');
+    }
+  }, [empresa]);
+
+  const validateRif = useCallback((value: string): boolean => {
+    if (!value) return true; // RIF es opcional
+    if (!RIF_REGEX.test(value)) {
+      setRifError('Formato inválido. Ej: J-123456789');
+      return false;
+    }
+    setRifError('');
+    return true;
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!empresa) return;
-    setSaving(true);
-    setSaveError(null);
-    setSaveOk(false);
+    if (!empresa || !nombre.trim()) return;
+    if (!validateRif(rif)) return;
     try {
-      const updated = await updateEmpresa({
-        nombre,
-        rif: rif || undefined,
-        email_contacto: email || undefined,
+      await guardarEmpresa({
+        nombre: nombre.trim(),
+        rif: rif.trim() || undefined,
+        email_contacto: email.trim() || undefined,
         version: empresa.version,
       });
-      setEmpresa(updated);
-      setNombre(updated.nombre);
-      setRif(updated.rif ?? '');
-      setEmail(updated.email_contacto ?? '');
-      setSaveOk(true);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al guardar';
-      if (msg.includes('ERR_STALE_DATA') || msg.includes('409')) {
-        setSaveError('recargar');
-      } else {
-        setSaveError(msg);
-      }
-    } finally {
-      setSaving(false);
+    } catch {
+      // Manejado por useEmpresa
     }
-  }, [empresa, nombre, rif, email]);
+  }, [empresa, nombre, rif, email, guardarEmpresa, validateRif]);
 
   return (
     <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
@@ -74,8 +62,12 @@ export default function EmpresaPage() {
         </Link>
       </div>
 
-      <RequestState loading={loading} error={error} empty={!loading && !error && !empresa}
-        loadingMessage="Cargando datos de la empresa..." emptyMessage="Empresa no encontrada."
+      <RequestState
+        loading={loading}
+        error={error}
+        empty={!loading && !error && !empresa}
+        loadingMessage="Cargando datos de la empresa..."
+        emptyMessage="Empresa no encontrada."
       >
         {empresa && (
           <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8 max-w-3xl" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
@@ -87,28 +79,53 @@ export default function EmpresaPage() {
                   <p className="text-gray-500 text-xs mt-1">Slug: {empresa.slug} — Estado: {empresa.estado}</p>
                 </div>
               </div>
-              <button type="button" onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-                <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
+              
+              <PermissionGuard module="administracion" action="edit">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving || !nombre.trim()}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                >
+                  <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
+                  {saving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </PermissionGuard>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Nombre de la empresa</label>
-                <input id="nombre" type="text" value={nombre} onChange={e => setNombre(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+                <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Nombre de la empresa *</label>
+                <input
+                  id="nombre"
+                  type="text"
+                  required
+                  value={nombre}
+                  onChange={e => setNombre(e.target.value)}
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1" htmlFor="rif">RIF</label>
-                <input id="rif" type="text" value={rif} onChange={e => setRif(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+                <label className="block text-xs text-gray-500 mb-1" htmlFor="rif">RIF (ej: J-123456789)</label>
+                <input
+                  id="rif"
+                  type="text"
+                  value={rif}
+                  onChange={e => { setRif(e.target.value); setRifError(''); }}
+                  onBlur={() => validateRif(rif)}
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                />
+                {rifError && <p className="text-xs text-red-600 mt-1">{rifError}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Email de contacto</label>
-                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                />
               </div>
             </div>
 
@@ -119,7 +136,20 @@ export default function EmpresaPage() {
             </div>
 
             {saveOk && <p className="text-sm text-emerald-700">Datos guardados correctamente.</p>}
-            {saveError && (
+            {saveError === 'recargar' && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-center justify-between" role="alert">
+                <span>Los datos de la empresa cambiaron en el servidor.</span>
+                <button
+                  type="button"
+                  onClick={() => { void refetch(); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-200 hover:bg-amber-300 rounded-lg font-semibold transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} />
+                  Recargar datos
+                </button>
+              </div>
+            )}
+            {saveError && saveError !== 'recargar' && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
                 {saveError}
               </div>
@@ -128,5 +158,13 @@ export default function EmpresaPage() {
         )}
       </RequestState>
     </div>
+  );
+}
+
+export default function EmpresaPage() {
+  return (
+    <AuthGuard roleRequired="admin">
+      <EmpresaPageContent />
+    </AuthGuard>
   );
 }

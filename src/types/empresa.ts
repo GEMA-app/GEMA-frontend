@@ -16,5 +16,6 @@ export interface ActualizarEmpresaInput {
   nombre?: string;
   rif?: string;
   email_contacto?: string;
+  estado?: EstadoEmpresa;
   version: number;
 }
