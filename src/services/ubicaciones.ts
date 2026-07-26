@@ -1,25 +1,7 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { extractResource, extractResourceList } from '@/lib/jsonapi';
-import type { JsonApiResource } from '@/lib/jsonapi';
-import type { NuevaUbicacionForm, Ubicacion } from '@/types/ubicacion';
-
-function mapTreeResource(resource: JsonApiResource): Ubicacion {
-  const attrs = resource.attributes;
-  const children = Array.isArray(attrs.children)
-    ? attrs.children.map((child: unknown) => mapTreeResource(child as JsonApiResource))
-    : undefined;
-  return {
-    id: resource.id,
-    nombre: (attrs.nombre as string) || '',
-    tipo: (attrs.tipo as string) || '',
-    descripcion: (attrs.descripcion as string) || null,
-    jerarquia: (attrs.jerarquia as string) || '',
-    proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
-    estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
-    parentId: (attrs.parent_id as string) || null,
-    hijos: children,
-  };
-}
+import { mapTreeResource, mapUbicacionFromApi } from '@/lib/ubicaciones';
+import type { ActualizarUbicacionForm, NuevaUbicacionForm, Ubicacion } from '@/types/ubicacion';
 
 export async function getUbicaciones(): Promise<Ubicacion[]> {
   const empresaId = await requireEmpresaId();
@@ -33,17 +15,7 @@ export async function getUbicacion(id: string): Promise<Ubicacion> {
   const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/ubicaciones/${id}`);
   const resource = extractResource(payload);
   if (!resource) throw new Error('Ubicación no encontrada');
-  const attrs = resource.attributes;
-  return {
-    id: resource.id,
-    nombre: (attrs.nombre as string) || '',
-    tipo: (attrs.tipo as string) || '',
-    descripcion: (attrs.descripcion as string) || null,
-    jerarquia: (attrs.jerarquia as string) || '',
-    proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
-    estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
-    parentId: (attrs.parent_id as string) || null,
-  };
+  return mapUbicacionFromApi(resource);
 }
 
 export async function createUbicacion(data: NuevaUbicacionForm): Promise<void> {
@@ -65,13 +37,14 @@ export async function createUbicacion(data: NuevaUbicacionForm): Promise<void> {
   });
 }
 
-export async function updateUbicacion(id: string, data: Partial<NuevaUbicacionForm>): Promise<void> {
+export async function updateUbicacion(id: string, data: Partial<ActualizarUbicacionForm>): Promise<void> {
   const empresaId = await requireEmpresaId();
   const attrs: Record<string, unknown> = {};
   if (data.nombre !== undefined) attrs.nombre = data.nombre;
   if (data.tipo !== undefined) attrs.tipo = data.tipo;
   if (data.parentId !== undefined) attrs.parent_id = data.parentId || null;
   if (data.descripcion !== undefined) attrs.descripcion = data.descripcion || null;
+  if (data.version !== undefined) attrs.version = data.version;
   await fetchWithAuth(`/v1/empresas/${empresaId}/ubicaciones/${id}`, {
     method: 'PATCH',
     contentType: 'json-api',
@@ -88,17 +61,6 @@ export async function getUbicacionChildren(id: string): Promise<Ubicacion[]> {
   const empresaId = await requireEmpresaId();
   const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/ubicaciones/${id}/hijos`);
   const resources = extractResourceList(payload);
-  return resources.map(r => {
-    const attrs = r.attributes;
-    return {
-      id: r.id,
-      nombre: (attrs.nombre as string) || '',
-      tipo: (attrs.tipo as string) || '',
-      descripcion: (attrs.descripcion as string) || null,
-      jerarquia: (attrs.jerarquia as string) || '',
-      proceso: (attrs.proceso as Ubicacion['proceso']) || 'media',
-      estado: (attrs.estado as Ubicacion['estado']) || 'pendiente',
-      parentId: (attrs.parent_id as string) || null,
-    };
-  });
+  return resources.map(mapUbicacionFromApi);
 }
+

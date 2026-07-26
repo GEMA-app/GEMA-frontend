@@ -1,27 +1,34 @@
-import type { Ubicacion } from '@/types/ubicacion';
+import type { Ubicacion, TipoUbicacion } from '@/types/ubicacion';
+import type { JsonApiResource } from '@/lib/jsonapi';
 
-export function buildUbicacionTree(flatList: Ubicacion[]): Ubicacion[] {
-  const nodes = new Map<string, Ubicacion>();
-  const roots: Ubicacion[] = [];
-
-  for (const item of flatList) {
-    nodes.set(item.id, { ...item, hijos: [] });
-  }
-
-  for (const item of flatList) {
-    const node = nodes.get(item.id);
-    if (!node) continue;
-
-    if (item.parentId && nodes.has(item.parentId)) {
-      const parent = nodes.get(item.parentId)!;
-      parent.hijos = [...(parent.hijos ?? []), node];
-    } else {
-      roots.push(node);
-    }
-  }
-
-  return roots;
+export function mapTreeResource(resource: JsonApiResource): Ubicacion {
+  const attrs = resource.attributes;
+  const children = Array.isArray(attrs.children)
+    ? attrs.children.map((child: unknown) => mapTreeResource(child as JsonApiResource))
+    : undefined;
+  return {
+    id: resource.id,
+    nombre: (attrs.nombre as string) || '',
+    tipo: (attrs.tipo as TipoUbicacion) || 'sede',
+    descripcion: (attrs.descripcion as string) || null,
+    version: (attrs.version as number) || 1,
+    parentId: (attrs.parent_id as string) || null,
+    hijos: children,
+  };
 }
+
+export function mapUbicacionFromApi(resource: JsonApiResource): Ubicacion {
+  const attrs = resource.attributes;
+  return {
+    id: resource.id,
+    nombre: (attrs.nombre as string) || '',
+    tipo: (attrs.tipo as TipoUbicacion) || 'sede',
+    descripcion: (attrs.descripcion as string) || null,
+    version: (attrs.version as number) || 1,
+    parentId: (attrs.parent_id as string) || null,
+  };
+}
+
 
 export function flattenUbicacionesForSelect(
   ubicaciones: Ubicacion[],

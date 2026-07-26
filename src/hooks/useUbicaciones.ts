@@ -8,7 +8,7 @@ import {
   getUbicaciones,
   updateUbicacion as updateUbicacionRequest,
 } from '@/services/ubicaciones';
-import type { NuevaUbicacionForm, Ubicacion } from '@/types/ubicacion';
+import type { ActualizarUbicacionForm, NuevaUbicacionForm, Ubicacion } from '@/types/ubicacion';
 
 export function useUbicaciones() {
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
@@ -62,7 +62,7 @@ export function useUbicaciones() {
   );
 
   const updateUbicacion = useCallback(
-    async (id: string, data: Partial<NuevaUbicacionForm>) => {
+    async (id: string, data: Partial<ActualizarUbicacionForm>) => {
       setIsMutating(true);
       setError(null);
 
@@ -117,3 +117,4 @@ export function useUbicaciones() {
     deleteUbicacion,
   };
 }
+
