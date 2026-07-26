@@ -6,6 +6,8 @@ import { Plus, Eye, Pencil, Trash, ChevronRight, ChevronDown } from 'lucide-reac
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { filterUbicaciones, flattenVisibleRows, type FlatUbicacionRow } from '@/lib/ubicaciones';
 
 const tipoStyles: Record<string, string> = {
@@ -24,7 +26,7 @@ function TipoBadge({ tipo }: { tipo: string }) {
   );
 }
 
-export default function UbicacionesPage() {
+function UbicacionesPageContent() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -102,10 +104,12 @@ export default function UbicacionesPage() {
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">Árbol de ubicaciones</h2>
-          <Link href="/ubicaciones/nuevo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Agregar ubicación
-          </Link>
+          <PermissionGuard module="administracion" action="create">
+            <Link href="/ubicaciones/nuevo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Agregar ubicación
+            </Link>
+          </PermissionGuard>
         </div>
 
         <RequestState
@@ -166,20 +170,24 @@ export default function UbicacionesPage() {
                         >
                           <Eye className="w-5 h-5" strokeWidth={1.5} />
                         </Link>
-                        <Link
-                          href={`/ubicaciones/${row.ubicacion.id}/editar`}
-                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Editar ${row.ubicacion.nombre}`}
-                        >
-                          <Pencil className="w-5 h-5" strokeWidth={1.5} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(row.ubicacion.id, row.ubicacion.nombre)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label={`Eliminar ${row.ubicacion.nombre}`}
-                        >
-                          <Trash className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
+                        <PermissionGuard module="administracion" action="edit">
+                          <Link
+                            href={`/ubicaciones/${row.ubicacion.id}/editar`}
+                            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label={`Editar ${row.ubicacion.nombre}`}
+                          >
+                            <Pencil className="w-5 h-5" strokeWidth={1.5} />
+                          </Link>
+                        </PermissionGuard>
+                        <PermissionGuard module="administracion" action="delete">
+                          <button
+                            onClick={() => handleDelete(row.ubicacion.id, row.ubicacion.nombre)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            aria-label={`Eliminar ${row.ubicacion.nombre}`}
+                          >
+                            <Trash className="w-5 h-5" strokeWidth={1.5} />
+                          </button>
+                        </PermissionGuard>
                       </div>
                     </td>
                   </tr>
@@ -192,3 +200,12 @@ export default function UbicacionesPage() {
     </div>
   );
 }
+
+export default function UbicacionesPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <UbicacionesPageContent />
+    </AuthGuard>
+  );
+}
+

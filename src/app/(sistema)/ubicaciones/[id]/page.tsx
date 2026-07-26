@@ -9,7 +9,7 @@ import { RequestState } from '@/components/ui/RequestState';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
-import { getUbicacion } from '@/services/ubicaciones';
+import { getUbicacion, getUbicacionChildren } from '@/services/ubicaciones';
 import type { Ubicacion } from '@/types/ubicacion';
 
 const tipoLabels: Record<string, string> = {
@@ -23,6 +23,7 @@ function UbicacionDetail() {
   const { id: ubicacionId } = useParams<{ id: string }>();
   const { ubicaciones } = useUbicaciones();
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(null);
+  const [children, setChildren] = useState<Ubicacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +45,11 @@ function UbicacionDetail() {
     (async () => {
       try {
         const u = await getUbicacion(ubicacionId);
-        if (!cancelled) setUbicacion(u);
+        const childList = await getUbicacionChildren(ubicacionId).catch(() => []);
+        if (!cancelled) {
+          setUbicacion(u);
+          setChildren(childList);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar ubicación');
       } finally {
@@ -108,6 +113,27 @@ function UbicacionDetail() {
                   <div><p className="text-xs text-gray-500 mb-1">Descripción</p><p className="font-semibold">{ubicacion?.descripcion || '—'}</p></div>
                 </div>
               </div>
+
+              {children.length > 0 && (
+                <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
+                  <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm mb-4">
+                    <MapPin className="w-4 h-4 text-[#E5920C]" />
+                    Sububicaciones Hijas ({children.length})
+                  </div>
+                  <ul className="divide-y divide-gray-100 text-sm">
+                    {children.map((child) => (
+                      <li key={child.id} className="py-2 flex items-center justify-between">
+                        <Link href={`/ubicaciones/${child.id}`} className="font-semibold text-gray-900 hover:text-[#E5920C] transition-colors">
+                          {child.nombre}
+                        </Link>
+                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+                          {child.tipo}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>
