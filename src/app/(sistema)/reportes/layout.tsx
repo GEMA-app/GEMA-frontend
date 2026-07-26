@@ -1,4 +1,4 @@
-import { AuthGuard } from '@/components/auth/AuthGuard';
+﻿import { AuthGuard } from '@/components/auth/AuthGuard';
 
 export default function ReportesLayout({
   children,
@@ -6,6 +6,6 @@ export default function ReportesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard roleRequired={['administrador', 'supervisor de activos', 'supervisor de operaciones']}>{children}</AuthGuard>
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>{children}</AuthGuard>
   );
 }
