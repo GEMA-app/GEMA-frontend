@@ -20,12 +20,13 @@ export default function SistemaLayout({
     return localStorage.getItem(THEME_STORAGE_KEY) !== 'light';
   });
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.replace('/login');
-    }
-  }, [router]);
+  // ponytail: auth guard disabled for now, re-enable when needed
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token');
+  //   if (!token) {
+  //     router.replace('/login');
+  //   }
+  // }, [router]);
 
   const toggleTheme = () => {
     setIsDark((prev) => {

@@ -6,17 +6,19 @@ import type { RepuestoUtilizado } from '@/types/repuesto-utilizado';
 
 export function mapRepuestoUtilizado(raw: unknown): RepuestoUtilizado {
   const item = (raw ?? {}) as Record<string, unknown>;
+  const attrs = (item.attributes ?? item) as Record<string, unknown>;
+  const id = String(item.id ?? attrs.id ?? '');
   const toNumber = (v: unknown): number | null =>
     typeof v === 'number' ? v : typeof v === 'string' && v !== '' ? Number(v) : null;
   return {
-    id: String(item.id ?? ''),
-    intervencion_id: String(item.intervencion_id ?? ''),
-    repuesto_id: String(item.repuesto_id ?? ''),
-    cantidad_usada: typeof item.cantidad_usada === 'number' ? item.cantidad_usada : 0,
-    precio_unitario: toNumber(item.precio_unitario),
-    moneda: String(item.moneda ?? 'USD'),
-    precio_total: toNumber(item.precio_total),
-    created_at: (item.created_at as string) ?? null,
+    id,
+    intervencion_id: String(attrs.intervencion_id ?? ''),
+    repuesto_id: String(attrs.repuesto_id ?? ''),
+    cantidad_usada: typeof attrs.cantidad_usada === 'number' ? attrs.cantidad_usada : 0,
+    precio_unitario: toNumber(attrs.precio_unitario),
+    moneda: String(attrs.moneda ?? 'USD'),
+    precio_total: toNumber(attrs.precio_total),
+    created_at: (attrs.created_at as string) ?? null,
   };
 }
 
