@@ -13,7 +13,7 @@ import {
   FileWarning,
 } from 'lucide-react';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
-import { getReportesResumen } from '@/services/reportes';
+import { getReportes } from '@/services/reportes';
 import { StatCard } from '@/components/ui/StatCard';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
@@ -122,8 +122,8 @@ export default function DashboardPage() {
 
         let reportesPendientes = 0;
         try {
-          const resumen = await getReportesResumen();
-          reportesPendientes = resumen.enProceso;
+          const { meta: reportesMeta } = await getReportes({ status: 'pendiente', perPage: 1 });
+          reportesPendientes = reportesMeta.total;
         } catch {
           // ponytail: non-critical, show 0
         }

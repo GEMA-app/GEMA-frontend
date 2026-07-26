@@ -46,13 +46,16 @@ export default function CatalogoPage() {
       <PageHeader title="Catálogo de Artículos" variant="activos"
         searchPlaceholder="Buscar por nombre..." searchLabel="Buscar"
         searchValue={search} onSearchChange={setSearch}
-      >
+        className="mb-6"
+      />
+
+      <div className="flex justify-end mb-6">
         <Link href="/catalogo/nuevo"
           className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           Nuevo artículo
         </Link>
-      </PageHeader>
+      </div>
 
       <RequestState loading={loading} error={error} empty={!loading && !error && articulos.length === 0}
         loadingMessage="Cargando catálogo..." emptyMessage="No hay artículos en el catálogo."
