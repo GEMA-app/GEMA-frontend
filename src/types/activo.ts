@@ -14,6 +14,9 @@ export interface Activo {
   serial: string;
   ubicacion: string;
   estado: ActivoEstado;
+  articuloId?: string | null;
+  valorMonetario?: number | null;
+  moneda?: string;
 }
 
 export interface ActivoDetalle extends Activo {
