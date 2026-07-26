@@ -11,6 +11,7 @@ import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useActivo } from '@/hooks/useActivos';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { getRoles } from '@/lib/auth';
 
 function normalizeEstadoDisplay(estado: string): string {
   const map: Record<string, string> = {
@@ -148,33 +149,35 @@ function FichaDeActivoContent() {
             </div>
           </div>
 
-          <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
-            <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm mb-4">
-              <History className="w-4 h-4 text-[#E5920C]" />
-              Historial de estados
-            </div>
-            {loading ? (
-              <p className="text-sm text-gray-400">Cargando historial...</p>
-            ) : historial.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin cambios de estado registrados.</p>
-            ) : (
-              <div className="space-y-3">
-                {historial.map((log) => (
-                  <div key={log.id} className="relative pl-6 border-l-2 border-[#E59D12]/30 last:border-l-0 last:pl-6">
-                    <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full bg-[#E59D12]" />
-                    <p className="text-xs text-gray-400">{new Date(log.fecha_cambio).toLocaleString('es')}</p>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">{log.estado_anterior ? normalizeEstadoDisplay(log.estado_anterior) : '—'}</span>
-                      {' → '}
-                      <span className="font-semibold">{normalizeEstadoDisplay(log.estado_nuevo)}</span>
-                    </p>
-                    {log.motivo && <p className="text-xs text-gray-500 italic">"{log.motivo}"</p>}
-                    <p className="text-xs text-gray-400 mt-0.5">{usuarioMap[log.usuario_id ?? '']?.nombre ?? 'Sistema'}</p>
-                  </div>
-                ))}
+          {getRoles().includes('admin') && (
+            <div className="rounded-3xl p-5 bg-white shadow-sm border border-gray-100">
+              <div className="flex items-center gap-2 text-gray-900 font-semibold text-sm mb-4">
+                <History className="w-4 h-4 text-[#E5920C]" />
+                Historial de estados
               </div>
-            )}
-          </div>
+              {loading ? (
+                <p className="text-sm text-gray-400">Cargando historial...</p>
+              ) : historial.length === 0 ? (
+                <p className="text-sm text-gray-400">Sin cambios de estado registrados.</p>
+              ) : (
+                <div className="space-y-3">
+                  {historial.map((log) => (
+                    <div key={log.id} className="relative pl-6 border-l-2 border-[#E59D12]/30 last:border-l-0 last:pl-6">
+                      <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full bg-[#E59D12]" />
+                      <p className="text-xs text-gray-400">{new Date(log.fecha_cambio).toLocaleString('es')}</p>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-semibold">{log.estado_anterior ? normalizeEstadoDisplay(log.estado_anterior) : '—'}</span>
+                        {' → '}
+                        <span className="font-semibold">{normalizeEstadoDisplay(log.estado_nuevo)}</span>
+                      </p>
+                      {log.motivo && <p className="text-xs text-gray-500 italic">"{log.motivo}"</p>}
+                      <p className="text-xs text-gray-400 mt-0.5">{usuarioMap[log.usuario_id ?? '']?.nombre ?? 'Sistema'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </RequestState>
     </div>
