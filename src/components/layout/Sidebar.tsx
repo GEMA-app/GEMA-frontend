@@ -1,4 +1,4 @@
-'use client';
+Ôªø'use client';
 
 import React, { useState } from 'react';
 import {
@@ -50,7 +50,7 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    label: 'An·lisis',
+    label: 'An√°lisis',
     items: [
       { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
       { icon: History, label: 'Historial', href: '/historial' },
@@ -60,7 +60,7 @@ const MENU_SECTIONS: MenuSection[] = [
     label: 'Admin',
     items: [
       { icon: Users, label: 'Usuarios', href: '/usuarios' },
-      { icon: Settings, label: 'ConfiguraciÛn', href: '/configuracion' },
+      { icon: Settings, label: 'Configuraci√≥n', href: '/configuracion' },
     ],
   },
 ];
@@ -74,7 +74,7 @@ export default function Sidebar() {
       try {
         await fetchWithAuth('/v1/auth/cerrar-sesion', { method: 'POST' });
       } catch {
-        // cerrar sesiÛn igual aunque falle el request
+        // cerrar sesi√≥n igual aunque falle el request
       }
     }
     clearSession();
@@ -90,7 +90,7 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={() => setIsCollapsed((v) => !v)}
-        aria-label={isCollapsed ? 'Expandir men˙' : 'Contraer men˙'}
+        aria-label={isCollapsed ? 'Expandir men√∫' : 'Contraer men√∫'}
         className="hidden cursor-pointer items-center justify-center gap-3 px-4 py-6 md:flex"
       >
         <img
@@ -111,7 +111,7 @@ export default function Sidebar() {
 
       <nav
         className="flex-1 space-y-6 overflow-y-auto px-2 py-2 md:px-3"
-        aria-label="NavegaciÛn principal"
+        aria-label="Navegaci√≥n principal"
       >
         {MENU_SECTIONS.map((section) => (
           <div key={section.label}>
@@ -164,16 +164,17 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={handleLogout}
-          aria-label="Cerrar sesiÛn"
-          title="Cerrar sesiÛn"
+          aria-label="Cerrar sesi√≥n"
+          title="Cerrar sesi√≥n"
           className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white md:justify-start"
         >
           <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
           <span className={`text-sm ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
-            Cerrar sesiÛn
+            Cerrar sesi√≥n
           </span>
         </button>
       </div>
     </aside>
   );
 }
+
