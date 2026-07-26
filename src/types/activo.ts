@@ -10,20 +10,45 @@ export type ActivoEstado =
 // ── Interfaces de UI ──
 export interface Activo {
   id: string;
-  nombre: string;
-  serial: string;
+  empresaId: string;
+  articuloId: string;
+  serialInterno: string;
+  codigoActivo: string;
   ubicacion: string;
+  ubicacionId: string | null;
   estado: ActivoEstado;
+  // Aliases de compatibilidad semántica para UI
+  nombre: string; // Mapa a serialInterno
+  serial: string; // Mapa a codigoActivo
 }
 
 export interface ActivoDetalle extends Activo {
-  ubicacionId: string | null;
-  codigoActivo: string;
-  articuloId: string;
   fechaAdquisicion: string | null;
   valorMonetario: number | null;
   moneda: string;
   version: number;
+}
+
+// ── Response Schemas backend API ──
+export interface ActivoResponse {
+  id: string;
+  empresa_id: string;
+  articulo_id: string;
+  serial_interno: string;
+  codigo_activo: string;
+  estado: ActivoEstado;
+  ubicacion_id: string | null;
+  fecha_adquisicion: string | null;
+  valor_monetario: number | null;
+  moneda: string;
+  version: number;
+}
+
+export interface CatalogArticleResponse {
+  id: string;
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
 }
 
 // ── Query y Meta ──
@@ -40,24 +65,37 @@ export interface ActivosResponse {
   meta: PaginationMeta;
 }
 
-// ── Inputs ──
-export interface NuevoActivoInput {
+// ── Form Inputs ──
+export interface CreateActivoForm {
   nombre: string;
   codigo: string;
-  marca: string;
-  ubicacion: string;
-  fechaCompra: string;
-  valorMonetario: string;
-  moneda: string;
+  marca?: string;
+  ubicacion?: string;
+  fechaCompra?: string;
+  valorMonetario?: string;
+  moneda?: string;
   estadoInicial: ActivoEstado | string;
 }
 
+export interface NuevoActivoInput {
+  serialInterno: string;
+  codigoActivo: string;
+  articuloId?: string;
+  ubicacionId?: string;
+  fechaAdquisicion?: string;
+  valorMonetario?: number;
+  moneda?: string;
+  estado: ActivoEstado;
+}
+
 export interface ActualizarActivoInput {
-  nombre?: string;
-  codigo?: string;
-  ubicacion?: string;
-  fechaCompra?: string;
-  estadoInicial?: ActivoEstado | string;
+  serialInterno?: string;
+  codigoActivo?: string;
+  ubicacionId?: string;
+  fechaAdquisicion?: string;
+  valorMonetario?: number;
+  moneda?: string;
+  estado?: ActivoEstado;
   version: number;
 }
 

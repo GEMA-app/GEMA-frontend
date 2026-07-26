@@ -9,10 +9,10 @@ import type { Activo, ActivoEstado } from '@/types/activo';
 // ── Normalizadores ──
 
 const ESTADO_MAP: Record<string, ActivoEstado> = {
-  'operativo': 'operativo',
-  'en_mantenimiento': 'en_mantenimiento',
-  'fuera_de_servicio': 'fuera_de_servicio',
-  'dado_de_baja': 'dado_de_baja',
+  operativo: 'operativo',
+  en_mantenimiento: 'en_mantenimiento',
+  fuera_de_servicio: 'fuera_de_servicio',
+  dado_de_baja: 'dado_de_baja',
 };
 
 export function normalizeAssetStatus(raw: string): ActivoEstado {
@@ -21,10 +21,10 @@ export function normalizeAssetStatus(raw: string): ActivoEstado {
 }
 
 const ESTADO_LABELS: Record<ActivoEstado, string> = {
-  'operativo': 'Operativo',
-  'en_mantenimiento': 'En mantenimiento',
-  'fuera_de_servicio': 'Fuera de servicio',
-  'dado_de_baja': 'Dado de baja',
+  operativo: 'Operativo',
+  en_mantenimiento: 'En mantenimiento',
+  fuera_de_servicio: 'Fuera de servicio',
+  dado_de_baja: 'Dado de baja',
 };
 
 export function formatEstadoActivo(estado: string): string {
@@ -36,13 +36,20 @@ export function formatEstadoActivo(estado: string): string {
 export function mapActivoFromApi(resource: JsonApiResource): Activo {
   const attrs = resource.attributes;
   const ubiId = (attrs.ubicacion_id as string) || null;
+  const serialInterno = (attrs.serial_interno as string) || 'Sin nombre';
+  const codigoActivo = (attrs.codigo_activo as string) || 'N/A';
 
   return {
     id: resource.id,
-    nombre: (attrs.serial_interno as string) || 'Sin nombre',
-    serial: (attrs.codigo_activo as string) || 'N/A',
-    ubicacion: ubiId || 'N/A', // El hook resuelve el nombre vía useUbicaciones
+    empresaId: (attrs.empresa_id as string) || '',
+    articuloId: (attrs.articulo_id as string) || '',
+    serialInterno,
+    codigoActivo,
+    ubicacionId: ubiId,
+    ubicacion: ubiId || 'N/A',
     estado: normalizeAssetStatus((attrs.estado as string) || 'operativo'),
+    nombre: serialInterno,
+    serial: codigoActivo,
   };
 }
 

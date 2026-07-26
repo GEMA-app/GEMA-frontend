@@ -2,23 +2,19 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash, Filter } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useActivos } from '@/hooks/useActivos';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
+import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { formatEstadoActivo } from '@/lib/activos';
+import type { Activo, ActivoEstado } from '@/types/activo';
 
 function normalizeEstadoDisplay(estado: string): string {
   return formatEstadoActivo(estado);
-}
-
-interface Activo {
-  id: string;
-  nombre: string;
-  serial: string;
-  ubicacion: string;
-  estado: string;
 }
 
 const badgeStyles: Record<string, string> = {
@@ -39,18 +35,26 @@ function EstadoBadge({ estado }: { estado: string }) {
 
 const PER_PAGE = 15;
 
-export default function ActivosPage() {
+function ActivosPageContent() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<ActivoEstado | ''>('');
+  const [filtroUbicacion, setFiltroUbicacion] = useState('');
   const [page, setPage] = useState(1);
 
   const { activos, meta, loading, error, empty, eliminarActivo } = useActivos({
     search: debouncedSearch,
+    estado: filtroEstado || undefined,
+    ubicacionId: filtroUbicacion || undefined,
     page,
     perPage: PER_PAGE,
   });
 
   const { ubicaciones } = useUbicaciones();
+  const ubicacionOptions = useMemo(
+    () => flattenUbicacionesForSelect(ubicaciones),
+    [ubicaciones],
+  );
 
   const ubicacionMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -68,7 +72,7 @@ export default function ActivosPage() {
     () =>
       activos.map((a) => ({
         ...a,
-        ubicacion: ubicacionMap[a.ubicacion] || a.ubicacion || 'N/A',
+        ubicacion: ubicacionMap[a.ubicacionId || ''] || a.ubicacion || 'N/A',
       })),
     [activos, ubicacionMap],
   );
@@ -93,8 +97,8 @@ export default function ActivosPage() {
     [eliminarActivo],
   );
 
-  const emptyMessage = debouncedSearch
-    ? `No se encontraron activos para "${debouncedSearch}".`
+  const emptyMessage = debouncedSearch || filtroEstado || filtroUbicacion
+    ? 'No se encontraron activos para los filtros seleccionados.'
     : 'No hay activos registrados.';
 
   return (
@@ -111,12 +115,61 @@ export default function ActivosPage() {
       />
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl font-bold text-gray-900">Inventario de activos</h2>
-          <Link href="/activos/nuevo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Agregar activo
-          </Link>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filtro por estado */}
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700">
+              <Filter className="w-3.5 h-3.5 text-gray-400" />
+              <select
+                value={filtroEstado}
+                onChange={(e) => {
+                  setFiltroEstado(e.target.value as ActivoEstado | '');
+                  setPage(1);
+                }}
+                className="bg-transparent outline-none cursor-pointer"
+                aria-label="Filtrar por estado"
+              >
+                <option value="">Todos los estados</option>
+                <option value="operativo">Operativo</option>
+                <option value="en_mantenimiento">En mantenimiento</option>
+                <option value="fuera_de_servicio">Fuera de servicio</option>
+                <option value="dado_de_baja">Dado de baja</option>
+              </select>
+            </div>
+
+            {/* Filtro por ubicación */}
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs text-gray-700">
+              <select
+                value={filtroUbicacion}
+                onChange={(e) => {
+                  setFiltroUbicacion(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-transparent outline-none cursor-pointer max-w-[160px] truncate"
+                aria-label="Filtrar por ubicación"
+              >
+                <option value="">Todas las ubicaciones</option>
+                {ubicacionOptions.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Botón Agregar Activo condicionado por permiso */}
+            <PermissionGuard module="activos" action="create">
+              <Link
+                href="/activos/nuevo"
+                className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+              >
+                <Plus className="w-4 h-4" strokeWidth={2.5} />
+                Agregar activo
+              </Link>
+            </PermissionGuard>
+          </div>
         </div>
 
         <RequestState
@@ -137,8 +190,9 @@ export default function ActivosPage() {
                       aria-label="Seleccionar todos"
                     />
                   </th>
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Activo</th>
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Área/ubicación</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Serial Interno</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Código Activo</th>
+                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Área / Ubicación</th>
                   <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Estado</th>
                   <th className="pb-4 text-sm font-semibold text-gray-900 text-right">Acciones</th>
                 </tr>
@@ -150,12 +204,14 @@ export default function ActivosPage() {
                       <input
                         type="checkbox"
                         className="w-4 h-4 rounded border-gray-300 accent-[#ECA03C]"
-                        aria-label={`Seleccionar ${activo.nombre}`}
+                        aria-label={`Seleccionar ${activo.serialInterno}`}
                       />
                     </td>
                     <td className="py-5 pr-6">
-                      <p className="font-semibold text-gray-900">{activo.nombre}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{activo.serial}</p>
+                      <p className="font-semibold text-gray-900">{activo.serialInterno}</p>
+                    </td>
+                    <td className="py-5 pr-6 text-sm text-gray-600 font-mono">
+                      {activo.codigoActivo}
                     </td>
                     <td className="py-5 pr-6 text-gray-700">{activo.ubicacion}</td>
                     <td className="py-5 pr-6">
@@ -166,24 +222,30 @@ export default function ActivosPage() {
                         <Link
                           href={`/activos/${activo.id}`}
                           className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Ver ${activo.nombre}`}
+                          aria-label={`Ver ${activo.serialInterno}`}
                         >
                           <Eye className="w-5 h-5" strokeWidth={1.5} />
                         </Link>
-                        <Link
-                          href={`/activos/${activo.id}/editar`}
-                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Editar ${activo.nombre}`}
-                        >
-                          <Pencil className="w-5 h-5" strokeWidth={1.5} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(activo.id, activo.nombre)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label={`Eliminar ${activo.nombre}`}
-                        >
-                          <Trash className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
+                        
+                        <PermissionGuard module="activos" action="edit">
+                          <Link
+                            href={`/activos/${activo.id}/editar`}
+                            className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label={`Editar ${activo.serialInterno}`}
+                          >
+                            <Pencil className="w-5 h-5" strokeWidth={1.5} />
+                          </Link>
+                        </PermissionGuard>
+
+                        <PermissionGuard module="activos" action="delete">
+                          <button
+                            onClick={() => handleDelete(activo.id, activo.serialInterno)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            aria-label={`Eliminar ${activo.serialInterno}`}
+                          >
+                            <Trash className="w-5 h-5" strokeWidth={1.5} />
+                          </button>
+                        </PermissionGuard>
                       </div>
                     </td>
                   </tr>
@@ -223,5 +285,13 @@ export default function ActivosPage() {
         </RequestState>
       </div>
     </div>
+  );
+}
+
+export default function ActivosPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico', 'reporter']}>
+      <ActivosPageContent />
+    </AuthGuard>
   );
 }

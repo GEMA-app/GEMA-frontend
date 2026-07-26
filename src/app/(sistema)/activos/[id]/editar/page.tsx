@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, FileText, MapPin, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { useActivo, useActivos } from '@/hooks/useActivos';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
-import { getActivo, getCatalogArticle, updateActivo } from '@/services/activos';
 
-export default function EditarActivoPage() {
+function EditarActivoContent() {
   const params = useParams();
   const activoId = params.id as string;
   const { ubicaciones, loading: loadingUbicaciones, error: ubicacionesError } = useUbicaciones();
@@ -18,6 +20,8 @@ export default function EditarActivoPage() {
     [ubicaciones],
   );
   const router = useRouter();
+  const { activo: asset, catalog, loading: loadingAsset } = useActivo(activoId ?? '');
+  const { editarActivo } = useActivos();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -28,53 +32,29 @@ export default function EditarActivoPage() {
     estadoInicial: 'Operativo',
     version: 0,
   });
-  const [articuloId, setArticuloId] = useState<string>('');
-  const [articuloNombre, setArticuloNombre] = useState<string>('');
-  const [loadingAsset, setLoadingAsset] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Poblar formulario cuando se cargan los datos
   useEffect(() => {
-    if (!activoId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const a = await getActivo(activoId);
-        if (cancelled) return;
-        let marca = '';
-        let catName = '';
-        try {
-          const c = await getCatalogArticle(a.articulo_id);
-          if (!cancelled) { marca = c.manufacturer || ''; catName = c.name; }
-        } catch { /* ignore */ }
-        const estadoMap: Record<string, string> = {
-          'operativo': 'Operativo',
-          'en_mantenimiento': 'En mantenimiento',
-          'fuera_de_servicio': 'Fuera de servicio',
-          'dado_de_baja': 'Dado de baja',
-        };
-        if (!cancelled) {
-          setArticuloId(a.articulo_id);
-          setArticuloNombre(catName);
-          setFormData({
-            nombre: a.serial_interno,
-            codigo: a.codigo_activo,
-            marca,
-            ubicacion: a.ubicacion_id || '',
-            fechaCompra: a.fecha_adquisicion || '',
-            estadoInicial: estadoMap[a.estado] || 'Operativo',
-            version: a.version,
-          });
-        }
-      } catch (err) {
-        if (!cancelled) setSubmitStatus(err instanceof Error ? err.message : 'Error al cargar activo');
-      } finally {
-        if (!cancelled) setLoadingAsset(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [activoId]);
+    if (!asset) return;
+    const estadoMap: Record<string, string> = {
+      'operativo': 'Operativo',
+      'en_mantenimiento': 'En mantenimiento',
+      'fuera_de_servicio': 'Fuera de servicio',
+      'dado_de_baja': 'Dado de baja',
+    };
+    setFormData({
+      nombre: asset.serial_interno,
+      codigo: asset.codigo_activo,
+      marca: catalog?.manufacturer || '',
+      ubicacion: asset.ubicacion_id || '',
+      fechaCompra: asset.fecha_adquisicion || '',
+      estadoInicial: estadoMap[asset.estado] || 'Operativo',
+      version: asset.version,
+    });
+  }, [asset, catalog]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -85,8 +65,8 @@ export default function EditarActivoPage() {
 
   const validateForm = () => {
     const next: Record<string, string> = {};
-    if (!formData.nombre.trim()) next.nombre = 'El nombre del activo es obligatorio.';
-    if (!formData.codigo.trim()) next.codigo = 'El código de inventario es obligatorio.';
+    if (!formData.nombre.trim()) next.nombre = 'El serial interno (nombre) es obligatorio.';
+    if (!formData.codigo.trim()) next.codigo = 'El código de activo es obligatorio.';
     return next;
   };
 
@@ -101,7 +81,14 @@ export default function EditarActivoPage() {
     setIsSubmitting(true);
     setSubmitStatus('Guardando...');
     try {
-      await updateActivo(activoId, formData);
+      await editarActivo(activoId, {
+        serial_interno: formData.nombre,
+        codigo_activo: formData.codigo,
+        ubicacion_id: formData.ubicacion || null,
+        fecha_adquisicion: formData.fechaCompra || null,
+        estado: formData.estadoInicial.toLowerCase().replace(/\s+/g, '_'),
+        version: formData.version,
+      });
       setSubmitStatus('Activo actualizado correctamente.');
       setTimeout(() => router.push(`/activos/${activoId}`), 800);
     } catch (err) {
@@ -143,18 +130,20 @@ export default function EditarActivoPage() {
             <p className="text-gray-500 text-xs mt-1">Modifique los datos del equipo en el inventario.</p>
           </div>
           <div className="flex gap-3">
-            <Link href="/activos" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
+            <Link href={`/activos/${activoId}`} className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
               Cancelar
             </Link>
-            <button
-              type="submit"
-              form="editar-activo-form"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-            >
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-              {isSubmitting ? 'Guardando...' : 'guardar cambios'}
-            </button>
+            <PermissionGuard module="activos" action="edit">
+              <button
+                type="submit"
+                form="editar-activo-form"
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+              >
+                <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
+                {isSubmitting ? 'Guardando...' : 'guardar cambios'}
+              </button>
+            </PermissionGuard>
           </div>
         </div>
 
@@ -167,7 +156,7 @@ export default function EditarActivoPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Nombre del Activo</label>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Serial Interno (Nombre)</label>
                   <input
                     id="nombre" name="nombre" type="text"
                     value={formData.nombre} onChange={handleInputChange}
@@ -178,25 +167,17 @@ export default function EditarActivoPage() {
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Artículo (catálogo)</label>
                   <p className="text-sm py-1.5 border-b border-gray-300">
-                    {articuloNombre ? <Link href={`/catalogo/${articuloId}`} className="text-[#E59D12] hover:underline">{articuloNombre}</Link> : '—'}
+                    {catalog?.name ? <Link href={`/catalogo/${asset?.articulo_id}`} className="text-[#E59D12] hover:underline">{catalog.name}</Link> : '—'}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="codigo">Código Inventario</label>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="codigo">Código de Activo</label>
                   <input
                     id="codigo" name="codigo" type="text"
                     value={formData.codigo} onChange={handleInputChange}
                     className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.codigo ? 'border-red-500' : 'border-gray-400'}`}
                   />
                   {errors.codigo && <p className="text-xs text-red-600 mt-1">{errors.codigo}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="marca">Marca / Fabricante</label>
-                  <input
-                    id="marca" name="marca" type="text"
-                    value={formData.marca} onChange={handleInputChange}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="ubicacion">Ubicación Física</label>
@@ -225,7 +206,7 @@ export default function EditarActivoPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="fechaCompra">Fecha de Compra</label>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="fechaCompra">Fecha de Adquisición</label>
                   <input
                     id="fechaCompra" name="fechaCompra" type="date"
                     value={formData.fechaCompra} onChange={handleInputChange}
@@ -260,12 +241,16 @@ export default function EditarActivoPage() {
           </div>
         </div>
       </div>
-      <style jsx global>{`
-        input.date-input::-webkit-calendar-picker-indicator { display: none; }
-        input.date-input::-webkit-inner-spin-button,
-        input.date-input::-webkit-clear-button { display: none; }
-        input.date-input::-moz-focus-inner { border: 0; }
-      `}</style>
     </div>
+  );
+}
+
+export default function EditarActivoPage() {
+  return (
+    <AuthGuard roleRequired={['admin', 'supervisor', 'tecnico']}>
+      <PermissionGuard module="activos" action="edit">
+        <EditarActivoContent />
+      </PermissionGuard>
+    </AuthGuard>
   );
 }
