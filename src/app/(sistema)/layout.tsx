@@ -15,7 +15,7 @@ export default function SistemaLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     setIsDark(localStorage.getItem(THEME_STORAGE_KEY) !== 'light');
