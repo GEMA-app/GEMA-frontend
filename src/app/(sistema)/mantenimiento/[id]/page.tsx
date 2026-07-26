@@ -134,7 +134,7 @@ export default function OrdenDetallePage() {
     try {
       await createRepuestoUtilizado(id, intervencionId, { repuesto_id: selRepuesto, cantidad_usada: Number(cantidad) });
       setAddingRepuesto(null); setSelRepuesto(''); setCantidad('');
-      window.location.reload();
+      await refetchInt();
     } catch (err) { alert(err instanceof Error ? err.message : 'Error al agregar repuesto.'); }
   };
 
