@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sora, Inter } from "next/font/google";
+import { sora, inter } from "@/lib/fonts";
 import { motion, AnimatePresence, easeOut } from "framer-motion";
 import {
   Menu,
@@ -35,20 +35,6 @@ import {
   Globe,
   ClipboardList,
 } from "lucide-react";
-
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-sora",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },

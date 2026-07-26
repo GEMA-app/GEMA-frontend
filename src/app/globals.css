@@ -38,6 +38,10 @@
   --color-gema-surface-dark-2: #2A3B54;
   --color-gema-bg-light: #F5F6F8;
   --color-gema-surface-light: #FFFFFF;
+
+  /* Landing/system typography tokens (set via next/font variable classes) */
+  --font-heading: var(--font-sora);
+  --font-body: var(--font-inter);
 }
 
 @theme inline {
