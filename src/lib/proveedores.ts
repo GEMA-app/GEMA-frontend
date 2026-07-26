@@ -1,1 +1,27 @@
-import { extractResourceList, type JsonApiResource } from '@/lib/jsonapi';import type { Proveedor } from '@/types/proveedor';export function mapProveedorFromApi(resource: JsonApiResource): Proveedor {  const a = resource.attributes;  return {    id: resource.id,    name: (a.name as string) || 'Sin nombre',    rif: (a.rif as string) || null,    phone: (a.phone as string) || null,    email: (a.email as string) || null,    contact: (a.contact as string) || null,    version: (a.version as number) || 1,  };}export function extractProveedoresFromResponse(payload: unknown): Proveedor[] {  return extractResourceList(payload).map(mapProveedorFromApi);}
+import { extractResourceList, getAttr, getAttrNumber, type JsonApiResource } from '@/lib/jsonapi';
+import type { Proveedor, ProveedorDetalle } from '@/types/proveedor';
+
+export function mapProveedorFromApi(resource: JsonApiResource): Proveedor {
+  return {
+    id: resource.id,
+    name: getAttr(resource, 'name') || 'Sin nombre',
+    rif: getAttr(resource, 'rif') || null,
+    phone: getAttr(resource, 'phone') || null,
+    email: getAttr(resource, 'email') || null,
+    contact: getAttr(resource, 'contact') || null,
+    version: getAttrNumber(resource, 'version', 1),
+  };
+}
+
+export function mapProveedorDetalleFromApi(resource: JsonApiResource): ProveedorDetalle {
+  return {
+    ...mapProveedorFromApi(resource),
+    empresa_id: getAttr(resource, 'empresa_id'),
+    created_at: getAttr(resource, 'created_at') || null,
+    updated_at: getAttr(resource, 'updated_at') || null,
+  };
+}
+
+export function extractProveedoresFromResponse(payload: unknown): Proveedor[] {
+  return extractResourceList(payload).map(mapProveedorFromApi);
+}
