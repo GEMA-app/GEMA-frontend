@@ -4,20 +4,25 @@ const ESTADO_CONFIG: Record<
   ReporteEstado,
   { label: string; dot: string; text: string }
 > = {
-  completado: {
-    label: 'COMPLETADO',
-    dot: 'bg-green-500',
-    text: 'text-green-700',
+  pendiente: {
+    label: 'PENDIENTE',
+    dot: 'bg-yellow-500',
+    text: 'text-yellow-700',
   },
   en_proceso: {
     label: 'EN PROCESO',
     dot: 'bg-orange-500',
     text: 'text-orange-700',
   },
-  programado: {
-    label: 'PROGRAMADO',
-    dot: 'bg-blue-500',
-    text: 'text-blue-700',
+  atendido: {
+    label: 'ATENDIDO',
+    dot: 'bg-green-500',
+    text: 'text-green-700',
+  },
+  descartado: {
+    label: 'DESCARTADO',
+    dot: 'bg-gray-500',
+    text: 'text-gray-700',
   },
 };
 

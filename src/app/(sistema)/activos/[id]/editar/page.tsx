@@ -28,6 +28,8 @@ export default function EditarActivoPage() {
     estadoInicial: 'Operativo',
     version: 0,
   });
+  const [articuloId, setArticuloId] = useState<string>('');
+  const [articuloNombre, setArticuloNombre] = useState<string>('');
   const [loadingAsset, setLoadingAsset] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState('');
@@ -41,9 +43,10 @@ export default function EditarActivoPage() {
         const a = await getActivo(activoId);
         if (cancelled) return;
         let marca = '';
+        let catName = '';
         try {
           const c = await getCatalogArticle(a.articulo_id);
-          if (!cancelled) marca = c.manufacturer || '';
+          if (!cancelled) { marca = c.manufacturer || ''; catName = c.name; }
         } catch { /* ignore */ }
         const estadoMap: Record<string, string> = {
           'operativo': 'Operativo',
@@ -52,6 +55,8 @@ export default function EditarActivoPage() {
           'dado_de_baja': 'Dado de baja',
         };
         if (!cancelled) {
+          setArticuloId(a.articulo_id);
+          setArticuloNombre(catName);
           setFormData({
             nombre: a.serial_interno,
             codigo: a.codigo_activo,
@@ -169,6 +174,12 @@ export default function EditarActivoPage() {
                     className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.nombre ? 'border-red-500' : 'border-gray-400'}`}
                   />
                   {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Artículo (catálogo)</label>
+                  <p className="text-sm py-1.5 border-b border-gray-300">
+                    {articuloNombre ? <Link href={`/catalogo/${articuloId}`} className="text-[#E59D12] hover:underline">{articuloNombre}</Link> : '—'}
+                  </p>
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="codigo">Código Inventario</label>

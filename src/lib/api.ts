@@ -1,6 +1,9 @@
-import { getEmpresaId, getToken } from '@/lib/auth';
+import { clearSession, getEmpresaId, getToken, refreshSession } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
 
 export class ApiError extends Error {
   status: number;
@@ -64,9 +67,9 @@ async function parseErrorMessage(response: Response): Promise<string> {
   return `Error ${response.status}: ${response.statusText || 'Solicitud fallida'}`;
 }
 
-export async function fetchWithAuth<T>(
+async function executeFetch<T>(
   path: string,
-  options: FetchWithAuthOptions = {},
+  options: FetchWithAuthOptions,
 ): Promise<T> {
   const {
     json,
@@ -109,6 +112,47 @@ export async function fetchWithAuth<T>(
   }
 
   return response.json() as Promise<T>;
+}
+
+export async function fetchWithAuth<T>(
+  path: string,
+  options: FetchWithAuthOptions = {},
+): Promise<T> {
+  const { auth = true } = options;
+
+  try {
+    return await executeFetch<T>(path, options);
+  } catch (err) {
+    if (auth && err instanceof ApiError && err.status === 401) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = refreshSession()
+          .catch(() => {
+            clearSession();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            throw new ApiError('Sesión expirada. Inicie sesión nuevamente.', 401);
+          })
+          .finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
+      }
+
+      try {
+        await refreshPromise;
+        return await executeFetch<T>(path, options);
+      } catch (retryErr) {
+        clearSession();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw retryErr;
+      }
+    }
+    throw err;
+  }
 }
 
 export async function requireEmpresaId(): Promise<string> {

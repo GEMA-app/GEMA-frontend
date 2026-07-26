@@ -1,12 +1,14 @@
 import type { ReportePrioridad } from '@/types/reporte';
 
 const PRIORIDAD_STYLES: Record<ReportePrioridad, string> = {
+  critica: 'bg-purple-100 text-purple-800 border-purple-200',
   alta: 'bg-red-100 text-red-800 border-red-200',
   media: 'bg-orange-100 text-orange-800 border-orange-200',
   baja: 'bg-blue-100 text-blue-800 border-blue-200',
 };
 
 const PRIORIDAD_LABELS: Record<ReportePrioridad, string> = {
+  critica: 'CRITICA',
   alta: 'ALTA',
   media: 'MEDIA',
   baja: 'BAJA',

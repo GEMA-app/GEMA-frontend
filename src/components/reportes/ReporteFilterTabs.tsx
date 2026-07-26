@@ -1,14 +1,18 @@
-import type { ReporteFiltroTipo } from '@/types/reporte';
+import type { ReporteEstado } from '@/types/reporte';
 
-const TABS: { id: ReporteFiltroTipo; label: string }[] = [
-  { id: 'todos', label: 'TODOS LOS REPORTES' },
-  { id: 'correctivo', label: 'CORRECTIVOS' },
-  { id: 'preventivo', label: 'PREVENTIVOS' },
+const TABS: { id: ReporteEstado | 'todos'; label: string }[] = [
+  { id: 'todos', label: 'TODOS' },
+  { id: 'pendiente', label: 'PENDIENTES' },
+  { id: 'en_proceso', label: 'EN PROCESO' },
+  { id: 'atendido', label: 'ATENDIDOS' },
+  { id: 'descartado', label: 'DESCARTADOS' },
 ];
 
+type FiltroEstado = ReporteEstado | 'todos';
+
 interface ReporteFilterTabsProps {
-  value: ReporteFiltroTipo;
-  onChange: (value: ReporteFiltroTipo) => void;
+  value: FiltroEstado;
+  onChange: (value: FiltroEstado) => void;
 }
 
 export function ReporteFilterTabs({ value, onChange }: ReporteFilterTabsProps) {
@@ -16,7 +20,7 @@ export function ReporteFilterTabs({ value, onChange }: ReporteFilterTabsProps) {
     <div
       className="flex flex-wrap gap-2 sm:gap-3"
       role="tablist"
-      aria-label="Filtrar reportes por tipo"
+      aria-label="Filtrar reportes por estado"
     >
       {TABS.map((tab) => {
         const isActive = value === tab.id;

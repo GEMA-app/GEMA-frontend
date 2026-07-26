@@ -6,6 +6,7 @@ const TOKEN_KEY = 'token';
 const EMPRESA_ID_KEY = 'empresaId';
 const ROLES_KEY = 'roles';
 const USER_NAME_KEY = 'userName';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 function pickString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -153,6 +154,15 @@ export function setSession(loginResponse: SessionPayload): void {
     localStorage.setItem(TOKEN_KEY, token);
   }
 
+  const refreshToken = pickString(
+    loginResponse.refresh_token,
+    data?.refresh_token,
+    attributes?.refresh_token,
+  );
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  }
+
   if (empresaId) {
     localStorage.setItem(EMPRESA_ID_KEY, empresaId);
   }
@@ -182,6 +192,7 @@ export function clearSession(): void {
   localStorage.removeItem(EMPRESA_ID_KEY);
   localStorage.removeItem(ROLES_KEY);
   localStorage.removeItem(USER_NAME_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export async function ensureSessionRoles(): Promise<string[]> {
@@ -207,4 +218,24 @@ export async function ensureSessionRoles(): Promise<string[]> {
 
 export function isAuthenticated(): boolean {
   return Boolean(getToken());
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export async function refreshSession(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('No hay refresh token.');
+  const { fetchWithAuth } = await import('@/lib/api');
+  const payload = await fetchWithAuth<Record<string, unknown>>('/v1/auth/refrescar', {
+    method: 'POST',
+    auth: false,
+    contentType: 'json-api',
+    json: { data: { type: 'tokens', attributes: { refresh_token: refreshToken } } },
+  });
+  setSession(payload);
 }
