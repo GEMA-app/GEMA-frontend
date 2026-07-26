@@ -32,7 +32,7 @@ export function DataTable<T>({
               <th
                 key={col.key}
                 scope="col"
-                className={`px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 ${col.className ?? ''}`}
+                className={`px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 ${col.className ?? ''}`}
               >
                 {col.header}
               </th>
@@ -68,7 +68,7 @@ export function DataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={`px-4 py-3.5 text-gema-primary/80 dark:text-white/80 ${col.className ?? ''}`}
+                    className={`px-3 py-3 sm:px-4 sm:py-3.5 text-gema-primary/80 dark:text-white/80 ${col.className ?? ''}`}
                   >
                     {col.render(row)}
                   </td>

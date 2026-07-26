@@ -259,16 +259,16 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="font-heading font-bold text-2xl sm:text-3xl text-gema-primary dark:text-white">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
           Resumen operativo
         </h1>
-        <p className="mt-1 text-sm text-gema-primary/60 dark:text-white/50">
+        <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
           Vista general del estado actual de los activos
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
         <StatCard icon={Box} value={total} label="Activos totales" loading={loading} tone="default" />
         <StatCard
           icon={Wrench}
@@ -293,7 +293,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 sm:gap-6">
         <Card padding="lg" className="xl:col-span-3">
           <CardHeader>
             <div className="flex items-center gap-3">

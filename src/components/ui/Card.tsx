@@ -4,9 +4,9 @@ type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 const PADDING_CLASSES: Record<CardPadding, string> = {
   none: '',
-  sm: 'p-4',
-  md: 'p-6',
-  lg: 'p-8',
+  sm: 'p-3 sm:p-4',
+  md: 'p-4 sm:p-6',
+  lg: 'p-5 sm:p-8',
 };
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -32,7 +32,7 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={`flex items-center justify-between gap-4 mb-5 ${className}`}>
+    <div className={`flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between ${className}`}>
       {children}
     </div>
   );

@@ -82,36 +82,46 @@ export default function Sidebar() {
   return (
     <aside
       className={`flex h-screen shrink-0 flex-col border-r border-white/10 bg-gema-primary transition-all duration-300 dark:bg-gema-bg-dark ${
-        isCollapsed ? 'w-16' : 'w-64'
+        isCollapsed ? 'w-16' : 'w-16 md:w-64'
       }`}
     >
       <button
         type="button"
         onClick={() => setIsCollapsed((v) => !v)}
         aria-label={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
-        className="flex cursor-pointer items-center justify-start gap-3 px-4 py-6"
+        className="hidden cursor-pointer items-center justify-start gap-3 px-4 py-6 md:flex"
       >
         <img
           src="/GEMA%20Logo%20Perlado.png"
           alt="GEMA"
           className="h-9 w-auto shrink-0 object-contain"
         />
-        {!isCollapsed && (
-          <span className="font-heading text-lg font-bold text-white">GEMA</span>
-        )}
+        <span className={`font-heading text-lg font-bold text-white ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
+          GEMA
+        </span>
       </button>
 
+      <div className="flex items-center justify-center py-4 md:hidden">
+        <img
+          src="/GEMA%20Logo%20Perlado.png"
+          alt="GEMA"
+          className="h-8 w-auto shrink-0 object-contain"
+        />
+      </div>
+
       <nav
-        className="flex-1 space-y-6 overflow-y-auto px-3 py-2"
+        className="flex-1 space-y-6 overflow-y-auto px-2 py-2 md:px-3"
         aria-label="Navegación principal"
       >
         {MENU_SECTIONS.map((section) => (
           <div key={section.label}>
-            {!isCollapsed && (
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-white/40">
-                {section.label}
-              </p>
-            )}
+            <p
+              className={`mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-white/40 ${
+                isCollapsed ? 'hidden' : 'hidden md:block'
+              }`}
+            >
+              {section.label}
+            </p>
             <div className="space-y-1">
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -122,18 +132,20 @@ export default function Sidebar() {
                     key={item.href}
                     href={item.href}
                     aria-current={isActive ? 'page' : undefined}
-                    aria-label={isCollapsed ? item.label : undefined}
-                    title={isCollapsed ? item.label : undefined}
+                    aria-label={item.label}
+                    title={item.label}
                   >
                     <div
-                      className={`flex items-center gap-3 py-2.5 pl-3 pr-3 transition-colors cursor-pointer ${
+                      className={`flex items-center justify-center gap-3 py-2.5 pl-3 pr-3 transition-colors cursor-pointer md:justify-start ${
                         isActive
                           ? 'border-l-4 border-white/70 bg-gema-accent font-semibold text-gema-bg-dark rounded-r-xl'
                           : 'border-l-4 border-transparent text-white/70 hover:bg-white/10 rounded-xl'
                       }`}
                     >
                       <Icon className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
-                      {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                      <span className={`text-sm ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
+                        {item.label}
+                      </span>
                     </div>
                   </Link>
                 );
@@ -143,14 +155,18 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-white/10 p-2 md:p-4">
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+          className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white md:justify-start"
         >
           <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
-          {!isCollapsed && <span className="text-sm">Cerrar sesión</span>}
+          <span className={`text-sm ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
+            Cerrar sesión
+          </span>
         </button>
       </div>
     </aside>
