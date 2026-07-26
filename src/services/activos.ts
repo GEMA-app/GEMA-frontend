@@ -88,6 +88,41 @@ export async function createActivo(data: CreateActivoForm): Promise<void> {
   }
 }
 
+export interface CreateActivoDirectoInput {
+  articuloId: string;
+  ubicacionId: string;
+  serialInterno: string;
+  codigoActivo: string;
+  fechaAdquisicion: string;
+  valorMonetario: string;
+  moneda: string;
+}
+
+export async function createActivoDirecto(input: CreateActivoDirectoInput): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  const valor = input.valorMonetario ? parseFloat(input.valorMonetario.replace(',', '.')) : null;
+
+  await fetchWithAuth(`/v1/empresas/${empresaId}/activos`, {
+    method: 'POST',
+    contentType: 'json-api',
+    json: {
+      data: {
+        type: 'assets',
+        attributes: {
+          articulo_id: input.articuloId,
+          ubicacion_id: input.ubicacionId || null,
+          serial_interno: input.serialInterno,
+          codigo_activo: input.codigoActivo,
+          fecha_adquisicion: input.fechaAdquisicion || null,
+          valor_monetario: valor,
+          moneda: input.moneda || 'USD',
+          estado: 'operativo',
+        },
+      },
+    },
+  });
+}
+
 export async function deleteActivo(id: string): Promise<void> {
   const empresaId = await requireEmpresaId();
   await fetchWithAuth(`/v1/empresas/${empresaId}/activos/${id}`, {

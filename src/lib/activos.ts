@@ -43,6 +43,9 @@ export function mapActivoFromApi(resource: JsonApiResource): Activo {
     serial: (attrs.codigo_activo as string) || 'N/A',
     ubicacion: ubiId || 'N/A', // El hook resuelve el nombre vía useUbicaciones
     estado: normalizeAssetStatus((attrs.estado as string) || 'operativo'),
+    articuloId: (attrs.articulo_id as string) || null,
+    valorMonetario: (attrs.valor_monetario as number) ?? null,
+    moneda: (attrs.moneda as string) || 'USD',
   };
 }
 
