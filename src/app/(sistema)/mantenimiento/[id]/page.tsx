@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Clock, FileText, Calendar, Users, Save, Plus, Trash, Wrench } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useOrdenDetalle } from '@/hooks/useOrdenDetalle';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
@@ -89,11 +90,12 @@ export default function OrdenDetallePage() {
     [activos, orden],
   );
 
-  const { intervenciones, loading: loadingInt, error: errorInt, empty: emptyInt, crearIntervencion, eliminarIntervencion } = useIntervenciones(id);
+  const { intervenciones, loading: loadingInt, error: errorInt, empty: emptyInt, refetch: refetchInt, crearIntervencion, eliminarIntervencion } = useIntervenciones(id);
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
   const [articulos, setArticulos] = useState<ArticuloCatalogo[]>([]);
+  const [repuestosError, setRepuestosError] = useState<string | null>(null);
   useEffect(() => {
-    getRepuestos({}).then(r => setRepuestos(r.repuestos)).catch(() => {});
+    getRepuestos({}).then(r => setRepuestos(r.repuestos)).catch(() => setRepuestosError('No se pudieron cargar los repuestos.'));
     getArticulos({}).then(a => setArticulos(a)).catch(() => {});
   }, []);
 
@@ -107,12 +109,14 @@ export default function OrdenDetallePage() {
   const [tareas, setTareas] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [horasHombre, setHorasHombre] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
   const [savingInt, setSavingInt] = useState(false);
   const [saveErrorInt, setSaveErrorInt] = useState<string | null>(null);
 
   const handleCreateIntervencion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!techId || !tareas || !fechaInicio || !horasHombre) { setSaveErrorInt('Completa todos los campos.'); return; }
+    if (Number(horasHombre) < 0) { setSaveErrorInt('Las horas hombre no pueden ser negativas.'); return; }
     setSavingInt(true); setSaveErrorInt(null);
     try {
       await crearIntervencion({ technician_id: techId, tareas_realizadas: tareas, fecha_inicio: fechaInicio, horas_hombre: Number(horasHombre) });
@@ -136,7 +140,7 @@ export default function OrdenDetallePage() {
 
   const handleDeleteRepuesto = async (intervencionId: string, repuestoId: string) => {
     if (!window.confirm('¿Eliminar repuesto? El stock se restaurará.')) return;
-    try { await deleteRepuestoUtilizado(id, intervencionId, repuestoId); window.location.reload(); }
+    try { await deleteRepuestoUtilizado(id, intervencionId, repuestoId); await refetchInt(); }
     catch { alert('Error al eliminar repuesto.'); }
   };
 
@@ -380,11 +384,11 @@ export default function OrdenDetallePage() {
             <Wrench className="w-5 h-5" />
             <span className="text-gray-800">Intervenciones</span>
           </div>
-          <button type="button" onClick={() => setShowForm(!showForm)}
+          <PermissionGuard module="mantenimiento" action="create"><button type="button" onClick={() => setShowForm(!showForm)}
             className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
             <Plus className="w-4 h-4" strokeWidth={2.5} />
             {showForm ? 'Cancelar' : 'Nueva intervención'}
-          </button>
+          </button></PermissionGuard>
         </div>
 
         {showForm && (
@@ -401,6 +405,11 @@ export default function OrdenDetallePage() {
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Fecha inicio *</label>
                 <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} required
+                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Fecha fin</label>
+                <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)}
                   className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400" />
               </div>
               <div>
@@ -435,7 +444,7 @@ export default function OrdenDetallePage() {
                     <label className="block text-xs text-gray-500 mb-1">Fecha</label>
                     <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{new Date(intv.fecha_inicio).toLocaleDateString('es')} — {intv.horas_hombre}h</p>
                   </div>
-                  <button type="button" onClick={() => eliminarIntervencion(intv.id)}
+                  <button type="button" onClick={() => { if (window.confirm("¿Eliminar esta intervención?")) eliminarIntervencion(intv.id); }}
                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
                     <Trash className="w-4 h-4 text-red-400" />
                   </button>
