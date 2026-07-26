@@ -1,14 +1,16 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { NuevoReporteInput, ReportePrioridad } from '@/types/reporte';
+import type { ActualizarReporteInput, NuevoReporteInput, Reporte, ReportePrioridad } from '@/types/reporte';
 
 interface CrearReporteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (input: NuevoReporteInput) => Promise<void>;
+  onUpdate?: (id: string, input: ActualizarReporteInput) => Promise<void>;
   saving?: boolean;
+  reporte?: Reporte; // si se pasa, modo edición
 }
 
 const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
@@ -18,32 +20,67 @@ const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
   { value: 'baja', label: 'Baja' },
 ];
 
-export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: CrearReporteModalProps) {
+export function CrearReporteModal({ isOpen, onClose, onSave, onUpdate, saving = false, reporte }: CrearReporteModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [priority, setPriority] = useState<ReportePrioridad>('media');
   const [reported_by, setReportedBy] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const isEditing = !!reporte;
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
+    if (!isOpen) return;
+    if (reporte) {
+      setTitle(reporte.title);
+      setDescription(reporte.description);
+      setLocation(reporte.location);
+      setPriority(reporte.priority);
+      setReportedBy(reporte.reported_by);
+    } else {
+      setTitle('');
+      setDescription('');
+      setLocation('');
+      setPriority('media');
+      setReportedBy('');
     }
-    setTitle('');
-    setDescription('');
-    setLocation('');
-    setPriority('media');
-    setReportedBy('');
-  }, [isOpen]);
+    setError(null);
+  }, [isOpen, reporte]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await onSave({ title, description, location, priority, reported_by });
-    onClose();
+    setError(null);
+
+    const trimmedTitle = title.trim();
+    const trimmedDesc = description.trim();
+    const trimmedLoc = location.trim();
+    const trimmedBy = reported_by.trim();
+
+    if (!trimmedTitle || !trimmedDesc || !trimmedLoc || !trimmedBy) {
+      setError('Todos los campos son obligatorios.');
+      return;
+    }
+
+    try {
+      if (isEditing && onUpdate && reporte) {
+        await onUpdate(reporte.id, {
+          title: trimmedTitle,
+          description: trimmedDesc,
+          location: trimmedLoc,
+          priority,
+          reported_by: trimmedBy,
+          version: reporte.version,
+        });
+      } else {
+        await onSave({ title: trimmedTitle, description: trimmedDesc, location: trimmedLoc, priority, reported_by: trimmedBy });
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar el reporte.');
+    }
   };
 
   return (
@@ -56,7 +93,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
       <div className="w-full max-w-md rounded-3xl border border-[#DED4C7] bg-[#F7F4EF] shadow-xl">
         <div className="flex items-center justify-between border-b border-[#EBE2D5] px-6 py-4">
           <h2 id="crear-reporte-title" className="text-xl font-bold text-gray-800">
-            Crear reporte de falla
+            {isEditing ? 'Editar reporte de falla' : 'Crear reporte de falla'}
           </h2>
           <button
             type="button"
@@ -79,6 +116,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               required
+              maxLength={200}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             />
           </div>
@@ -93,6 +131,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
               onChange={(event) => setDescription(event.target.value)}
               required
               rows={3}
+              maxLength={1000}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] resize-none"
             />
           </div>
@@ -107,6 +146,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
               value={location}
               onChange={(event) => setLocation(event.target.value)}
               required
+              maxLength={200}
               className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
             />
           </div>
@@ -140,10 +180,17 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
                 value={reported_by}
                 onChange={(event) => setReportedBy(event.target.value)}
                 required
+                maxLength={100}
                 className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
               />
             </div>
           </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2" role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -158,7 +205,7 @@ export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: C
               disabled={saving}
               className="rounded-xl bg-[#E5A93D] px-4 py-2 text-sm font-semibold text-black hover:bg-[#d19730] disabled:opacity-60 cursor-pointer"
             >
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Guardar')}
             </button>
           </div>
         </form>

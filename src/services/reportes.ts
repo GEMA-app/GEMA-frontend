@@ -1,4 +1,4 @@
-import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+﻿import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { buildOffsetQuery } from '@/lib/pagination';
 import { extractReportesFromResponse, extractReportesMeta, mapReporteFromResponse } from '@/lib/reportes';
 import type {
@@ -30,14 +30,6 @@ export async function getReportes(params: ReportesQuery = {}): Promise<ReportesR
     reportes: extractReportesFromResponse(payload),
     meta: extractReportesMeta(payload, page, perPage),
   };
-}
-
-export async function getReporteById(id: string): Promise<Reporte> {
-  const url = await baseUrl();
-  const payload = await fetchWithAuth<unknown>(`${url}/${id}`);
-  const reporte = mapReporteFromResponse(payload);
-  if (!reporte) throw new Error('No se pudo interpretar el reporte.');
-  return reporte;
 }
 
 export async function createReporte(input: NuevoReporteInput): Promise<Reporte> {

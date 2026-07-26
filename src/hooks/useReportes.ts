@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '@/lib/api';
@@ -11,7 +11,7 @@ import type {
 } from '@/types/reporte';
 import type { PaginationMeta } from '@/types/common';
 
-const DEFAULT_META: PaginationMeta = { page: 1, perPage: 15, total: 0, lastPage: 1 };
+const DEFAULT_META: PaginationMeta = { page: 1, perPage: 10, total: 0, lastPage: 1 };
 
 export function useReportes(filters: ReportesQuery = {}) {
   const [reportes, setReportes] = useState<Reporte[]>([]);
