@@ -104,7 +104,7 @@ export async function restablecerContrasena(
         type: 'auth',
         attributes: {
           token,
-          contrasena_nueva: contrasenaNueva,
+          new_password: contrasenaNueva,
         },
       },
     },

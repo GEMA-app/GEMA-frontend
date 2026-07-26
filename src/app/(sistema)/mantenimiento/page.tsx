@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import {
   Search,
   Bell,
@@ -14,6 +15,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
+import { useOrdenesTrabajo } from '@/hooks/useOrdenesTrabajo';
 
 type Vista = 'ordenes' | 'calendario';
 type EstadoOrden = 'Pendiente' | 'En progreso' | 'Completado' | 'Cancelado';
@@ -413,58 +415,17 @@ function CalendarioView({ planes }: { planes: Array<{ nombre: string; tipo: Tipo
 
 export default function MantenimientoPage() {
   const [vista, setVista] = useState<Vista>('ordenes');
-  const [ordenes, setOrdenes] = useState<OrdenRow[]>([]);
-  const [loadingOrdenes, setLoadingOrdenes] = useState(false);
-  const [errorOrdenes, setErrorOrdenes] = useState<string | null>(null);
+  const { ordenes: rawOrdenes, loading: loadingOrdenes, error: errorOrdenes } = useOrdenesTrabajo({ page: 1, perPage: 50 });
   const { planes } = usePlanesMantenimiento({ activo: true });
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const empresaId = localStorage.getItem('empresaId');
-
-    if (!token || !empresaId) {
-      window.location.href = '/login';
-      return;
-    }
-
-    async function fetchOrdenes() {
-      setLoadingOrdenes(true);
-      setErrorOrdenes(null);
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/empresas/${empresaId}/ordenes-trabajo`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/vnd.api+json',
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        const mapped: OrdenRow[] = (result.data ?? []).map((item: Record<string, any>) => ({
-          id: item.attributes?.codigo_ot ?? item.id,
-          activo: item.attributes?.activo_id ?? '—',
-          fecha: item.attributes?.fecha_apertura
-            ? new Date(item.attributes.fecha_apertura as string).toLocaleDateString('es')
-            : '—',
-          estado: mapEstado(item.attributes?.estado ?? ''),
-        }));
-        setOrdenes(mapped);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Error al cargar las órdenes de trabajo.';
-        setErrorOrdenes(message);
-      } finally {
-        setLoadingOrdenes(false);
-      }
-    }
-
-    void fetchOrdenes();
-  }, []);
+  const ordenes: OrdenRow[] = rawOrdenes.map((o) => ({
+    id: o.codigo_ot || o.id,
+    activo: o.activo_id,
+    fecha: o.fecha_apertura
+      ? new Date(o.fecha_apertura).toLocaleDateString('es')
+      : '—',
+    estado: mapEstado(o.estado),
+  }));
 
   return (
     <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">

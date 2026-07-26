@@ -77,6 +77,7 @@ export function mapRolFromApi(resource: JsonApiResource): Rol {
   return {
     id: resource.id,
     nombre: (attrs.nombre as string) || 'Sin nombre',
+    descripcion: (attrs.descripcion as string | undefined) ?? undefined,
     permisos: parsePermisos(attrs.permisos ?? attrs.permissions ?? []),
     version: (attrs.version as number) || 1,
   };
