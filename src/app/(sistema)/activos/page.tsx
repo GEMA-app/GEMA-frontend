@@ -12,6 +12,7 @@ import { formatEstadoActivo } from '@/lib/activos';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoActivo } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { Activo, ActivoEstado } from '@/types/activo';
 
 const PER_PAGE = 15;
@@ -210,21 +211,25 @@ export default function ActivosPage() {
           >
             <Eye className="w-4 h-4" strokeWidth={1.5} />
           </Link>
-          <Link
-            href={`/activos/${activo.id}/editar`}
-            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={`Editar ${activo.nombre}`}
-          >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleDelete(activo.id, activo.serial)}
-            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-            aria-label={`Eliminar ${activo.nombre}`}
-          >
-            <Trash className="w-4 h-4" strokeWidth={1.5} />
-          </button>
+          <PermissionGuard module="activos" action="edit">
+            <Link
+              href={`/activos/${activo.id}/editar`}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Editar ${activo.nombre}`}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+          </PermissionGuard>
+          <PermissionGuard module="activos" action="delete">
+            <button
+              type="button"
+              onClick={() => handleDelete(activo.id, activo.serial)}
+              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+              aria-label={`Eliminar ${activo.nombre}`}
+            >
+              <Trash className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -241,13 +246,15 @@ export default function ActivosPage() {
             Inventario y seguimiento de equipos críticos
           </p>
         </div>
-        <Link
-          href="/activos/nuevo"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nuevo activo
-        </Link>
+        <PermissionGuard module="activos" action="create">
+          <Link
+            href="/activos/nuevo"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo activo
+          </Link>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">

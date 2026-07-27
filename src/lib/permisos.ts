@@ -74,3 +74,44 @@ export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
 
 export type ModuloRBAC = (typeof MODULOS_RBAC)[keyof typeof MODULOS_RBAC];
 export type AccionRBAC = (typeof ACCIONES_RBAC)[number];
+
+type PermisoMatrix = Record<string, boolean>;
+
+function buildAccionesPorRol(rol: string): PermisoMatrix {
+  const matrix: PermisoMatrix = {};
+  for (const m of Object.values(MODULOS_RBAC)) {
+    for (const a of ACCIONES_RBAC) {
+      matrix[`${m}:${a}`] = false;
+    }
+  }
+
+  if (rol === 'admin') {
+    for (const m of Object.values(MODULOS_RBAC)) {
+      for (const a of ACCIONES_RBAC) {
+        matrix[`${m}:${a}`] = true;
+      }
+    }
+    return matrix;
+  }
+
+  const operativos = new Set<ModuloRBAC>(['activos', 'mantenimiento', 'inventario']);
+  const puedeEditar = new Set(['supervisor', 'tecnico']);
+  const puedeVerReportes = new Set(['supervisor', 'reporter']);
+
+  for (const modulo of operativos) {
+    matrix[`${modulo}:view`] = puedeEditar.has(rol);
+    matrix[`${modulo}:create`] = puedeEditar.has(rol);
+    matrix[`${modulo}:edit`] = puedeEditar.has(rol);
+  }
+
+  if (puedeVerReportes.has(rol)) {
+    matrix['reportes:view'] = true;
+  }
+
+  return matrix;
+}
+
+export function hasPermisoAccion(rol: string, modulo: ModuloRBAC, accion: AccionRBAC): boolean {
+  const matrix = buildAccionesPorRol(rol);
+  return matrix[`${modulo}:${accion}`] ?? false;
+}

@@ -16,6 +16,7 @@ import type { ActivoResponse, CatalogArticleResponse } from '@/services/activos'
 import type { ActivoEstado, LogEstadoActivo } from '@/types/activo';
 import { Badge, type EstadoActivo } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const ESTADO_OPTIONS: { value: ActivoEstado; label: string }[] = [
   { value: 'operativo', label: 'Operativo' },
@@ -260,13 +261,15 @@ export default function FichaDeActivoPage() {
             <RefreshCw className="w-4 h-4" strokeWidth={2} />
             Cambiar estado
           </button>
-          <Link
-            href={`/activos/${asset.id}/editar`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer"
-          >
-            <Pencil className="w-4 h-4" strokeWidth={2} />
-            Editar
-          </Link>
+          <PermissionGuard module="activos" action="edit">
+            <Link
+              href={`/activos/${asset.id}/editar`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer"
+            >
+              <Pencil className="w-4 h-4" strokeWidth={2} />
+              Editar
+            </Link>
+          </PermissionGuard>
         </div>
       </div>
 

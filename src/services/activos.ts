@@ -82,7 +82,7 @@ export async function createActivo(data: CreateActivoForm): Promise<void> {
     });
   } catch (err) {
     if (articuloCreado) {
-      try { await deleteArticulo(articuloId); } catch { /* ponytail: rollback silencioso */ }
+      try { await deleteArticulo(articuloId); } catch (e) { console.error('rollback: fallo al eliminar articulo huerfano', e); }
     }
     throw err;
   }
