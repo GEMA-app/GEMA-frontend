@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/Badge';
 
 export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { orden, loading, error, empty, cambiarEstado, asignar, validar } = useOrdenDetalle(id);
+  const { orden, loading, error, empty, cambiarEstado, asignar, validar, refetch: refetchOrden } = useOrdenDetalle(id);
   const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
 
@@ -80,7 +80,7 @@ export default function OrdenDetallePage() {
     [activos, orden],
   );
 
-  const { intervenciones, loading: loadingInt, error: errorInt, empty: emptyInt, crearIntervencion, eliminarIntervencion } = useIntervenciones(id);
+  const { intervenciones, loading: loadingInt, error: errorInt, empty: emptyInt, crearIntervencion, eliminarIntervencion, refetch: refetchIntervenciones } = useIntervenciones(id);
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
   const [articulos, setArticulos] = useState<ArticuloCatalogo[]>([]);
   useEffect(() => {
@@ -121,14 +121,18 @@ export default function OrdenDetallePage() {
     try {
       await createRepuestoUtilizado(id, intervencionId, { repuesto_id: selRepuesto, cantidad_usada: Number(cantidad) });
       setAddingRepuesto(null); setSelRepuesto(''); setCantidad('');
-      window.location.reload();
+      await refetchIntervenciones();
+      await refetchOrden();
     } catch (err) { alert(err instanceof Error ? err.message : 'Error al agregar repuesto.'); }
   };
 
   const handleDeleteRepuesto = async (intervencionId: string, repuestoId: string) => {
     if (!window.confirm('¿Eliminar repuesto? El stock se restaurará.')) return;
-    try { await deleteRepuestoUtilizado(id, intervencionId, repuestoId); window.location.reload(); }
-    catch { alert('Error al eliminar repuesto.'); }
+    try {
+      await deleteRepuestoUtilizado(id, intervencionId, repuestoId);
+      await refetchIntervenciones();
+      await refetchOrden();
+    } catch { alert('Error al eliminar repuesto.'); }
   };
 
   return (
