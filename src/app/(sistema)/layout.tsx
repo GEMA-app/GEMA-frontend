@@ -7,6 +7,8 @@ import Sidebar from '../../components/layout/Sidebar';
 import Header from '../../components/layout/Header';
 import { sora, inter } from '@/lib/fonts';
 
+import { usePreferencias } from '@/hooks/usePreferencias';
+
 const THEME_STORAGE_KEY = 'gema-theme';
 
 export default function SistemaLayout({
@@ -17,6 +19,7 @@ export default function SistemaLayout({
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const { preferencia, cambiarTema } = usePreferencias();
 
   useEffect(() => {
     setIsDark(localStorage.getItem(THEME_STORAGE_KEY) !== 'light');
@@ -28,12 +31,39 @@ export default function SistemaLayout({
     }
   }, [router]);
 
+  useEffect(() => {
+    if (preferencia) {
+      let darkFromBackend = false;
+      if (preferencia.tema === 'oscuro') {
+        darkFromBackend = true;
+      } else if (preferencia.tema === 'claro') {
+        darkFromBackend = false;
+      } else if (typeof window !== 'undefined') {
+        darkFromBackend = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      setIsDark(darkFromBackend);
+      localStorage.setItem(THEME_STORAGE_KEY, darkFromBackend ? 'dark' : 'light');
+    }
+  }, [preferencia]);
+
+  useEffect(() => {
+    function handleCustomThemeChange(e: Event) {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === 'boolean') {
+        setIsDark(customEvent.detail);
+      }
+    }
+    window.addEventListener('gema-theme-change', handleCustomThemeChange);
+    return () => window.removeEventListener('gema-theme-change', handleCustomThemeChange);
+  }, []);
+
   if (!isAuthed) return null;
 
   const toggleTheme = () => {
     setIsDark((prev) => {
       const next = !prev;
       localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light');
+      void cambiarTema(next ? 'oscuro' : 'claro');
       return next;
     });
   };
