@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { sora, inter } from '@/lib/fonts';
 
 const THEME_STORAGE_KEY = 'gema-theme';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const [isDark] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem(THEME_STORAGE_KEY) !== 'light';
-  });
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(localStorage.getItem(THEME_STORAGE_KEY) !== 'light');
+  }, []);
 
   return (
     <div
