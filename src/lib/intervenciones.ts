@@ -19,6 +19,7 @@ export function mapRepuestoUtilizado(raw: unknown): RepuestoUtilizado {
     moneda: String(attrs.moneda ?? 'USD'),
     precio_total: toNumber(attrs.precio_total),
     created_at: (attrs.created_at as string) ?? null,
+    updated_at: (attrs.updated_at as string) ?? null,
   };
 }
 
