@@ -1,7 +1,7 @@
 import type { PaginationMeta } from '@/types/common';
 
 export type ReportePrioridad = 'critica' | 'alta' | 'media' | 'baja';
-export type ReporteEstado = 'pendiente' | 'en_proceso' | 'atendido' | 'descartado';
+export type ReporteEstado = 'pendiente' | 'en_proceso' | 'atendido' | 'resuelto' | 'descartado' | 'cancelado';
 
 export interface Reporte {
   id: string;
@@ -15,6 +15,9 @@ export interface Reporte {
   orden_trabajo_id: string | null;
   created_at: string;
   version: number;
+  codigo?: string;
+  observaciones?: string | null;
+  tecnico?: string;
 }
 
 export interface ReportesQuery {
@@ -31,12 +34,13 @@ export interface ReportesResponse {
 }
 
 export interface NuevoReporteInput {
-  title: string;
+  title?: string;
   description: string;
-  location: string;
+  location?: string;
   priority: ReportePrioridad;
-  reported_by: string;
+  reported_by?: string;
   activo_id?: string;
+  observaciones?: string;
 }
 
 export interface ActualizarReporteInput {
@@ -47,12 +51,15 @@ export interface ActualizarReporteInput {
   reported_by?: string;
   status?: ReporteEstado;
   activo_id?: string;
+  observaciones?: string;
   version: number;
 }
 
 export const TRANSICIONES_REPORTE: Record<ReporteEstado, ReporteEstado[]> = {
-  pendiente: ['en_proceso', 'descartado'],
-  en_proceso: ['atendido'],
+  pendiente: ['en_proceso', 'descartado', 'cancelado', 'atendido', 'resuelto'],
+  en_proceso: ['atendido', 'resuelto', 'descartado', 'cancelado'],
   atendido: [],
+  resuelto: [],
   descartado: [],
+  cancelado: [],
 };

@@ -29,7 +29,27 @@ export type EstadoProveedor =
   | 'activo'
   | 'inactivo';
 
-export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto | TipoUbicacionBadge | EstadoProveedor;
+export type EstadoReporte =
+  | 'pendiente'
+  | 'resuelto'
+  | 'atendido'
+  | 'descartado'
+  | 'cancelado';
+
+export type PrioridadReporte =
+  | 'alta'
+  | 'media'
+  | 'baja'
+  | 'critica';
+
+export type EstadoBadgeType =
+  | EstadoActivo
+  | EstadoOT
+  | EstadoRepuesto
+  | TipoUbicacionBadge
+  | EstadoProveedor
+  | EstadoReporte
+  | PrioridadReporte;
 
 interface EstadoConfig {
   label: string;
@@ -86,7 +106,7 @@ const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
       'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
   },
   en_proceso: {
-    label: 'En progreso',
+    label: 'En proceso',
     icon: Wrench,
     className:
       'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
@@ -144,6 +164,60 @@ const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
     icon: Ban,
     className:
       'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  },
+  pendiente: {
+    label: 'Pendiente',
+    icon: Clock,
+    className:
+      'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  },
+  resuelto: {
+    label: 'Resuelto',
+    icon: CheckCircle2,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  atendido: {
+    label: 'Atendido',
+    icon: CheckCircle2,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  descartado: {
+    label: 'Descartado',
+    icon: XCircle,
+    className:
+      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  },
+  cancelado: {
+    label: 'Cancelado',
+    icon: XCircle,
+    className:
+      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  },
+  alta: {
+    label: 'Alta',
+    icon: AlertCircle,
+    className:
+      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  },
+  media: {
+    label: 'Media',
+    icon: Clock,
+    className:
+      'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
+  },
+  baja: {
+    label: 'Baja',
+    icon: Clock,
+    className:
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  },
+  critica: {
+    label: 'Crítica',
+    icon: AlertCircle,
+    className:
+      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
   },
 };
 
