@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function RepuestosRedirectPage() {
+export default function ConfiguracionRepuestosRedirectPage() {
   redirect('/inventario');
 }

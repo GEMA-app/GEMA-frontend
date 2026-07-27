@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle } from 'lucide-react';
+import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle, AlertCircle } from 'lucide-react';
 
 export type EstadoActivo =
   | 'operativo'
@@ -14,7 +14,12 @@ export type EstadoOT =
   | 'cerrada'
   | 'cancelada';
 
-export type EstadoBadgeType = EstadoActivo | EstadoOT;
+export type EstadoRepuesto =
+  | 'disponible'
+  | 'bajo_minimo'
+  | 'sin_stock';
+
+export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto;
 
 interface EstadoConfig {
   label: string;
@@ -23,6 +28,24 @@ interface EstadoConfig {
 }
 
 const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
+  disponible: {
+    label: 'Disponible',
+    icon: CheckCircle2,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  bajo_minimo: {
+    label: 'Bajo mínimo',
+    icon: AlertCircle,
+    className:
+      'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
+  },
+  sin_stock: {
+    label: 'Sin stock',
+    icon: XCircle,
+    className:
+      'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  },
   operativo: {
     label: 'Operativo',
     icon: CheckCircle2,
