@@ -95,7 +95,19 @@ export default function NuevoActivoPage() {
       });
       router.push('/activos');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo registrar el activo.');
+      if (err instanceof ApiError && err.status === 409) {
+        const details = err.details as { errors?: Array<{ code?: string }> } | undefined;
+        const code = details?.errors?.[0]?.code;
+        if (code === 'ERR_ASSET_CODE_EXISTS') {
+          setError('Ya existe un activo con ese código.');
+        } else if (code === 'ERR_ASSET_SERIAL_EXISTS') {
+          setError('Ya existe un activo con ese serial interno.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError(err instanceof ApiError ? err.message : 'No se pudo registrar el activo.');
+      }
     } finally {
       setLoading(false);
     }

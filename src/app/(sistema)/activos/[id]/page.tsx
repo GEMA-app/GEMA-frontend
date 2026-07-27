@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, History, RefreshCw, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import {
@@ -12,6 +13,7 @@ import {
   getHistorialEstadosActivo,
   updateActivo,
 } from '@/services/activos';
+import { normalizeAssetStatus } from '@/lib/activos';
 import type { ActivoResponse, CatalogArticleResponse } from '@/services/activos';
 import type { ActivoEstado, LogEstadoActivo } from '@/types/activo';
 import { Badge, type EstadoActivo } from '@/components/ui/Badge';
@@ -24,14 +26,6 @@ const ESTADO_OPTIONS: { value: ActivoEstado; label: string }[] = [
   { value: 'fuera_de_servicio', label: 'Fuera de servicio' },
   { value: 'dado_de_baja', label: 'Dado de baja' },
 ];
-
-function normalizeEstado(estado: string): ActivoEstado {
-  return (['operativo', 'en_mantenimiento', 'fuera_de_servicio', 'dado_de_baja'] as const).includes(
-    estado as ActivoEstado,
-  )
-    ? (estado as ActivoEstado)
-    : 'operativo';
-}
 
 interface CambiarEstadoModalProps {
   estadoActual: ActivoEstado;
@@ -202,13 +196,18 @@ export default function FichaDeActivoPage() {
       await loadAll(asset.id);
       setModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo cambiar el estado del activo.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'No se pudo cambiar el estado del activo.',
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setCambiandoEstado(false);
     }
   };
 
-  const estado = asset ? normalizeEstado(asset.estado) : null;
+  const estado = asset ? normalizeAssetStatus(asset.estado) : null;
 
   if (loading) {
     return (
