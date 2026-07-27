@@ -1,28 +1,5 @@
 import type { Ubicacion } from '@/types/ubicacion';
 
-export function buildUbicacionTree(flatList: Ubicacion[]): Ubicacion[] {
-  const nodes = new Map<string, Ubicacion>();
-  const roots: Ubicacion[] = [];
-
-  for (const item of flatList) {
-    nodes.set(item.id, { ...item, hijos: [] });
-  }
-
-  for (const item of flatList) {
-    const node = nodes.get(item.id);
-    if (!node) continue;
-
-    if (item.parentId && nodes.has(item.parentId)) {
-      const parent = nodes.get(item.parentId)!;
-      parent.hijos = [...(parent.hijos ?? []), node];
-    } else {
-      roots.push(node);
-    }
-  }
-
-  return roots;
-}
-
 export function flattenUbicacionesForSelect(
   ubicaciones: Ubicacion[],
   depth = 0,
@@ -57,13 +34,6 @@ export function filterUbicaciones(ubicaciones: Ubicacion[], query: string): Ubic
       return [{ ...ubicacion, hijos: filteredChildren }];
     }
     return [];
-  });
-}
-
-export function collectExpandableIds(ubicaciones: Ubicacion[]): string[] {
-  return ubicaciones.flatMap((ubicacion) => {
-    const childIds = ubicacion.hijos ? collectExpandableIds(ubicacion.hijos) : [];
-    return ubicacion.hijos?.length ? [ubicacion.id, ...childIds] : childIds;
   });
 }
 

@@ -6,9 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
-import { createUbicacion } from '@/services/ubicaciones';
 import { ApiError } from '@/lib/api';
-import type { Ubicacion } from '@/types/ubicacion';
+import type { TipoUbicacion, Ubicacion } from '@/types/ubicacion';
 
 const labelClass = 'block text-[13px] font-semibold text-gema-primary dark:text-white/80 mb-1.5';
 const inputClass =
@@ -16,7 +15,7 @@ const inputClass =
 
 export default function NuevaUbicacionPage() {
   const router = useRouter();
-  const { ubicaciones, loading: loadingUbicaciones } = useUbicaciones();
+  const { ubicaciones, loading: loadingUbicaciones, createUbicacion } = useUbicaciones();
   const ubicacionOptions = useMemo(
     () => flattenUbicacionesForSelect(ubicaciones),
     [ubicaciones],
@@ -36,7 +35,7 @@ export default function NuevaUbicacionPage() {
 
   const [formData, setFormData] = useState({
     nombre: '',
-    tipo: 'area',
+    tipo: 'area' as TipoUbicacion,
     parentId: '',
     descripcion: '',
   });

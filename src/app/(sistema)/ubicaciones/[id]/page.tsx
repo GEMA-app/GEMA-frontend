@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, MapPin, Loader2 } from 'lucide-react';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { getUbicacion } from '@/services/ubicaciones';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { Ubicacion } from '@/types/ubicacion';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -102,13 +103,15 @@ export default function UbicacionDetailPage() {
             Detalle de la ubicación en el árbol jerárquico
           </p>
         </div>
-        <Link
-          href={`/ubicaciones/${ubicacion.id}/editar`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Pencil className="w-4 h-4" strokeWidth={2} />
-          Editar ubicación
-        </Link>
+        <PermissionGuard module="administracion" action="edit">
+          <Link
+            href={`/ubicaciones/${ubicacion.id}/editar`}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Pencil className="w-4 h-4" strokeWidth={2} />
+            Editar ubicación
+          </Link>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
