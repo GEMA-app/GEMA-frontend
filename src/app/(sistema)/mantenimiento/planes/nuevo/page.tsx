@@ -21,7 +21,7 @@ const inputClass =
 export default function NuevoPlanPage() {
   const router = useRouter();
   const { crearPlan } = usePlanesMantenimiento();
-  const { activos } = useActivos({ perPage: 200 });
+  const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
   const tecnicos = usuarios.filter((u) =>
     u.roles.some((r) =>

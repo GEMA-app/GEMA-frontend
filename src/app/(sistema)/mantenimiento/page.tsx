@@ -26,6 +26,7 @@ import { formatTipoMantenimiento } from '@/lib/orden-trabajo';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoOT } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { OrdenTrabajo } from '@/types/orden-trabajo';
 import type { PlanMantenimiento, TipoMantenimiento as TipoPlan } from '@/types/plan-mantenimiento';
 
@@ -358,26 +359,47 @@ function PlanesTabContent() {
       ),
     },
     {
+      key: 'urgencia',
+      header: 'Urgencia',
+      className: 'text-center',
+      render: (plan) => (
+        plan.es_urgente ? (
+          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-3 h-3" />
+            Urgente
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-white/10 px-2.5 py-0.5 text-xs text-gray-400 dark:text-white/40">
+            Normal
+          </span>
+        )
+      ),
+    },
+    {
       key: 'acciones',
       header: '',
       className: 'text-right',
       render: (plan) => (
         <div className="flex items-center justify-end gap-2">
-          <Link
-            href={`/mantenimiento/planes/${plan.id}`}
-            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={`Editar ${plan.nombre}`}
-          >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleDelete(plan.id, plan.nombre)}
-            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-            aria-label={`Eliminar ${plan.nombre}`}
-          >
-            <Trash className="w-4 h-4" strokeWidth={1.5} />
-          </button>
+          <PermissionGuard module="mantenimiento" action="edit">
+            <Link
+              href={`/mantenimiento/planes/${plan.id}`}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Editar ${plan.nombre}`}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+          </PermissionGuard>
+          <PermissionGuard module="mantenimiento" action="delete">
+            <button
+              type="button"
+              onClick={() => handleDelete(plan.id, plan.nombre)}
+              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+              aria-label={`Eliminar ${plan.nombre}`}
+            >
+              <Trash className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -669,21 +691,25 @@ function OrdenesTrabajoContent() {
           </p>
         </div>
         {vista === 'planes' ? (
-          <Link
-            href="/mantenimiento/planes/nuevo"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Nuevo plan
-          </Link>
+          <PermissionGuard module="mantenimiento" action="create">
+            <Link
+              href="/mantenimiento/planes/nuevo"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Nuevo plan
+            </Link>
+          </PermissionGuard>
         ) : (
-          <Link
-            href="/mantenimiento/nuevo"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Nueva OT
-          </Link>
+          <PermissionGuard module="mantenimiento" action="create">
+            <Link
+              href="/mantenimiento/nuevo"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
+              Nueva OT
+            </Link>
+          </PermissionGuard>
         )}
       </div>
 

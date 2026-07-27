@@ -25,7 +25,7 @@ export default function EditarPlanPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { editarPlan } = usePlanesMantenimiento();
-  const { activos } = useActivos({ perPage: 200 });
+  const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
   const tecnicos = usuarios.filter((u) =>
     u.roles.some((r) =>
