@@ -14,6 +14,7 @@ import {
   Settings,
   LogOut,
   Package,
+  BookOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,6 +45,12 @@ const MENU_SECTIONS: MenuSection[] = [
         roles: ['administrador', 'supervisor de activos', 'supervisor de operaciones'],
       },
       { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento', roles: ['todos'] },
+      {
+        icon: BookOpen,
+        label: 'Catálogo',
+        href: '/catalogo',
+        roles: ['administrador', 'supervisor de activos', 'supervisor de operaciones'],
+      },
     ],
   },
   {
