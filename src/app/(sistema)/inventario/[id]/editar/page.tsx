@@ -8,7 +8,7 @@ import Swal from 'sweetalert2';
 import { getRepuestoById, updateRepuesto } from '@/services/repuestos';
 import { getProveedores } from '@/services/proveedores';
 import type { Repuesto } from '@/types/repuesto';
-import type { ProveedorItem } from '@/types/proveedor';
+import type { Proveedor } from '@/types/proveedor';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
 
@@ -22,7 +22,7 @@ export default function EditarInventarioPage() {
   const router = useRouter();
 
   const [repuesto, setRepuesto] = useState<Repuesto | null>(null);
-  const [proveedores, setProveedores] = useState<ProveedorItem[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loadingAsset, setLoadingAsset] = useState(true);
   const [proveedorId, setProveedorId] = useState('');
   const [ubicacion, setUbicacion] = useState('');
@@ -169,7 +169,7 @@ export default function EditarInventarioPage() {
               <option value="">Sin proveedor asignado</option>
               {proveedores.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nombre_empresa || p.nombre_contacto || p.id}
+                  {p.name || p.id}
                 </option>
               ))}
             </select>

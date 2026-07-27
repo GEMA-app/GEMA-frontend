@@ -39,7 +39,7 @@ export default function NuevoInventarioPage() {
 
   useEffect(() => {
     let cancelled = false;
-    getArticulos({ perPage: 200 })
+    getArticulos({ perPage: 100 })
       .then((data) => {
         if (!cancelled) setArticulos(data);
       })
@@ -76,7 +76,7 @@ export default function NuevoInventarioPage() {
     try {
       await crearRepuesto({
         articulo_id: form.articuloId,
-        proveedor_id: form.proveedorId,
+        proveedor_id: form.proveedorId || undefined,
         ubicacion_almacen: form.ubicacion.trim(),
         stock_actual: Number(form.stockActual) || 0,
         stock_minimo: Number(form.stockMinimo) || 0,
