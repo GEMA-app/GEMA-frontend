@@ -17,6 +17,7 @@ export function useRoles() {
       setRoles(await getRoles());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudieron cargar los roles.');
+      setRoles([]);
     } finally {
       setLoading(false);
     }

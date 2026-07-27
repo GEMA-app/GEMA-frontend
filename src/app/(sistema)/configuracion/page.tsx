@@ -301,7 +301,7 @@ export default function ConfiguracionPage() {
                 href="/configuracion/roles"
                 className="inline-flex items-center gap-2 text-sm font-semibold text-gema-accent-dark dark:text-gema-accent hover:underline cursor-pointer"
               >
-                Editar roles
+                Ver roles y permisos
                 <ArrowRight className="h-4 w-4" />
               </Link>
             )}
