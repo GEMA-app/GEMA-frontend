@@ -2,28 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, Ban, AlertCircle } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useProveedores } from '@/hooks/useProveedores';
 import { StatCard } from '@/components/ui/StatCard';
-import { Badge, type EstadoProveedor } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import type { Proveedor } from '@/types/proveedor';
-
-const ESTADO_FILTER_OPTIONS: { value: EstadoProveedor | ''; label: string }[] = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'activo', label: 'Activo' },
-  { value: 'inactivo', label: 'Inactivo' },
-];
 
 export default function ProveedoresPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [estadoFiltro, setEstadoFiltro] = useState<EstadoProveedor | ''>('');
 
   const { proveedores, loading, error, empty, eliminarProveedor } = useProveedores({
     search: debouncedSearch,
-    estado: estadoFiltro || undefined,
   });
 
   useEffect(() => {
@@ -35,17 +26,8 @@ export default function ProveedoresPage() {
 
   const summary = useMemo(() => {
     const total = proveedores.length;
-    const activos = proveedores.filter((p) => p.estado === 'activo' || p.is_active).length;
-    const inactivos = total - activos;
-    return { total, activos, inactivos };
+    return { total };
   }, [proveedores]);
-
-  const proveedoresFiltrados = useMemo(() => {
-    return proveedores.filter((p) => {
-      if (estadoFiltro && p.estado !== estadoFiltro) return false;
-      return true;
-    });
-  }, [proveedores, estadoFiltro]);
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
@@ -75,9 +57,7 @@ export default function ProveedoresPage() {
 
   const emptyMessage = debouncedSearch
     ? `No se encontraron proveedores para "${debouncedSearch}".`
-    : estadoFiltro
-      ? `No hay proveedores con estado "${estadoFiltro === 'activo' ? 'Activo' : 'Inactivo'}".`
-      : 'No hay proveedores registrados. Crea el primero con el botón "Nuevo proveedor".';
+    : 'No hay proveedores registrados. Crea el primero con el botón "Nuevo proveedor".';
 
   const columns: DataTableColumn<Proveedor>[] = [
     {
@@ -111,11 +91,6 @@ export default function ProveedoresPage() {
       key: 'phone',
       header: 'Teléfono',
       render: (p) => p.phone || '—',
-    },
-    {
-      key: 'estado',
-      header: 'Estado',
-      render: (p) => <Badge estado={p.estado} />,
     },
     {
       key: 'acciones',
@@ -170,7 +145,7 @@ export default function ProveedoresPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           icon={Truck}
           value={summary.total}
@@ -180,17 +155,10 @@ export default function ProveedoresPage() {
         />
         <StatCard
           icon={CheckCircle2}
-          value={summary.activos}
-          label="Proveedores activos"
+          value={summary.total}
+          label="Proveedores registrados"
           loading={loading}
           tone="accent"
-        />
-        <StatCard
-          icon={Ban}
-          value={summary.inactivos}
-          label="Proveedores inactivos"
-          loading={loading}
-          tone="default"
         />
       </div>
 
@@ -204,18 +172,6 @@ export default function ProveedoresPage() {
             aria-label="Buscar proveedores"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
-            value={estadoFiltro}
-            onChange={(e) => setEstadoFiltro(e.target.value as EstadoProveedor | '')}
-            aria-label="Filtrar por estado"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-          >
-            {ESTADO_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         {error && empty ? (
@@ -226,7 +182,7 @@ export default function ProveedoresPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={proveedoresFiltrados}
+            data={proveedores}
             keyExtractor={(p) => p.id}
             loading={loading}
             emptyMessage={emptyMessage}

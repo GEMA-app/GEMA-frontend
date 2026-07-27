@@ -11,7 +11,6 @@ const initialFormState = {
   rif: '',
   phone: '',
   email: '',
-  address: '',
   contact: '',
 };
 
@@ -56,9 +55,7 @@ export default function RegistrarProveedorPage() {
         rif: formData.rif.trim(),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
-        address: formData.address.trim() || undefined,
         contact: formData.contact.trim() || undefined,
-        is_active: true,
       });
       setSubmitStatus('Proveedor creado exitosamente.');
       setTimeout(() => router.push('/proveedores'), 800);
@@ -176,21 +173,6 @@ export default function RegistrarProveedorPage() {
                 value={formData.contact}
                 onChange={handleInputChange}
                 placeholder="Ej. Ing. Pedro Pérez"
-                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="address" className="block text-xs font-semibold text-gema-primary/70 dark:text-white/70 mb-1.5">
-                Dirección
-              </label>
-              <input
-                id="address"
-                name="address"
-                type="text"
-                value={formData.address}
-                onChange={handleInputChange}
-                placeholder="Av. Principal, Edificio Central, Galpón 4"
                 className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
               />
             </div>

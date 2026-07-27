@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Truck, AlertCircle } from 'lucide-react';
 import { getProveedor, updateProveedor } from '@/services/proveedores';
-import type { EstadoProveedor } from '@/components/ui/Badge';
 
 export default function EditarProveedorPage() {
   const params = useParams();
@@ -17,9 +16,7 @@ export default function EditarProveedorPage() {
     rif: '',
     phone: '',
     email: '',
-    address: '',
     contact: '',
-    is_active: true,
     version: 1,
   });
   const [loading, setLoading] = useState(true);
@@ -41,9 +38,7 @@ export default function EditarProveedorPage() {
             rif: s.rif || '',
             phone: s.phone || '',
             email: s.email || '',
-            address: s.address || '',
             contact: s.contact || '',
-            is_active: s.is_active,
             version: s.version || 1,
           });
         }
@@ -60,14 +55,10 @@ export default function EditarProveedorPage() {
   }, [proveedorId]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    if (name === 'is_active') {
-      setFormData((prev) => ({ ...prev, is_active: value === 'true' }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
     setSubmitStatus('');
   };
@@ -97,9 +88,7 @@ export default function EditarProveedorPage() {
         rif: formData.rif.trim(),
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
-        address: formData.address.trim() || undefined,
         contact: formData.contact.trim() || undefined,
-        is_active: formData.is_active,
         version: formData.version,
       });
       setSubmitStatus('Proveedor actualizado correctamente.');
@@ -137,7 +126,7 @@ export default function EditarProveedorPage() {
           Editar Proveedor
         </h1>
         <p className="text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
-          Modifique los datos principales y el estado del proveedor
+          Modifique los datos principales del proveedor
         </p>
       </div>
 
@@ -220,36 +209,6 @@ export default function EditarProveedorPage() {
                 name="contact"
                 type="text"
                 value={formData.contact}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="is_active" className="block text-xs font-semibold text-gema-primary/70 dark:text-white/70 mb-1.5">
-                Estado del Proveedor
-              </label>
-              <select
-                id="is_active"
-                name="is_active"
-                value={formData.is_active ? 'true' : 'false'}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
-              >
-                <option value="true">Activo</option>
-                <option value="false">Inactivo</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-xs font-semibold text-gema-primary/70 dark:text-white/70 mb-1.5">
-                Dirección
-              </label>
-              <input
-                id="address"
-                name="address"
-                type="text"
-                value={formData.address}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
               />
