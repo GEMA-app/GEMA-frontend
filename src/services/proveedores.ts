@@ -1,1 +1,85 @@
-import { extractProveedoresFromResponse } from '@/lib/proveedores';import type {  CreateProveedorForm,  ProveedorDetalle,  ProveedoresQuery,  ProveedoresResponse,  UpdateProveedorForm,} from '@/types/proveedor';import { fetchWithAuth, requireEmpresaId } from '@/lib/api';export async function getProveedores(params: ProveedoresQuery = {}): Promise<ProveedoresResponse> {  const empresaId = await requireEmpresaId();  const query = params.search ? `?search=${encodeURIComponent(params.search)}` : '';  const payload = await fetchWithAuth<unknown>(    `/v1/empresas/${empresaId}/proveedores${query}`,  );  return { proveedores: extractProveedoresFromResponse(payload) };}export async function getProveedor(id: string): Promise<ProveedorDetalle> {  const empresaId = await requireEmpresaId();  const res = await fetchWithAuth<{ data: { id: string; attributes: Record<string, unknown> } }>(    `/v1/empresas/${empresaId}/proveedores/${id}`,  );  const a = res.data.attributes;  return {    id: res.data.id,    name: a.name as string,    rif: (a.rif as string) || null,    phone: (a.phone as string) || null,    email: (a.email as string) || null,    contact: (a.contact as string) || null,    version: a.version as number,    empresa_id: a.empresa_id as string,    created_at: (a.created_at as string) || null,    updated_at: (a.updated_at as string) || null,  };}export async function createProveedor(data: CreateProveedorForm): Promise<void> {  const empresaId = await requireEmpresaId();  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores`, {    method: 'POST',    contentType: 'json-api',    json: {      data: {        type: 'suppliers',        attributes: {          name: data.name,          rif: data.rif || null,          phone: data.phone || null,          email: data.email || null,          contact: data.contact || null,        },      },    },  });}export async function updateProveedor(id: string, data: UpdateProveedorForm): Promise<void> {  const empresaId = await requireEmpresaId();  const attrs: Record<string, unknown> = { version: data.version };  if (data.name !== undefined) attrs.name = data.name;  if (data.rif !== undefined) attrs.rif = data.rif || null;  if (data.phone !== undefined) attrs.phone = data.phone || null;  if (data.email !== undefined) attrs.email = data.email || null;  if (data.contact !== undefined) attrs.contact = data.contact || null;  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores/${id}`, {    method: 'PATCH',    contentType: 'json-api',    json: { data: { type: 'suppliers', attributes: attrs } },  });}export async function deleteProveedor(id: string): Promise<void> {  const empresaId = await requireEmpresaId();  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores/${id}`, {    method: 'DELETE',  });}
+import { extractProveedoresFromResponse, mapProveedorFromApi } from '@/lib/proveedores';
+import type {
+  CreateProveedorForm,
+  ProveedorDetalle,
+  ProveedoresQuery,
+  ProveedoresResponse,
+  UpdateProveedorForm,
+} from '@/types/proveedor';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+
+export async function getProveedores(params: ProveedoresQuery = {}): Promise<ProveedoresResponse> {
+  const empresaId = await requireEmpresaId();
+  const queryParts: string[] = [];
+  if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  if (params.estado) queryParts.push(`estado=${encodeURIComponent(params.estado)}`);
+  const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+  const payload = await fetchWithAuth<unknown>(
+    `/v1/empresas/${empresaId}/proveedores${query}`,
+  );
+  return { proveedores: extractProveedoresFromResponse(payload) };
+}
+
+export async function getProveedor(id: string): Promise<ProveedorDetalle> {
+  const empresaId = await requireEmpresaId();
+  const res = await fetchWithAuth<{ data: { id: string; attributes: Record<string, unknown> } }>(
+    `/v1/empresas/${empresaId}/proveedores/${id}`,
+  );
+  const mapped = mapProveedorFromApi(res.data as unknown as Parameters<typeof mapProveedorFromApi>[0]);
+  const a = res.data.attributes;
+
+  return {
+    ...mapped,
+    empresa_id: (a.empresa_id as string) || empresaId,
+    created_at: (a.created_at as string) || null,
+    updated_at: (a.updated_at as string) || null,
+  };
+}
+
+export async function createProveedor(data: CreateProveedorForm): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores`, {
+    method: 'POST',
+    contentType: 'json-api',
+    json: {
+      data: {
+        type: 'suppliers',
+        attributes: {
+          name: data.name,
+          rif: data.rif || null,
+          phone: data.phone || null,
+          email: data.email || null,
+          contact: data.contact || null,
+          address: data.address || null,
+          is_active: data.is_active ?? true,
+        },
+      },
+    },
+  });
+}
+
+export async function updateProveedor(id: string, data: UpdateProveedorForm): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  const attrs: Record<string, unknown> = { version: data.version };
+  if (data.name !== undefined) attrs.name = data.name;
+  if (data.rif !== undefined) attrs.rif = data.rif || null;
+  if (data.phone !== undefined) attrs.phone = data.phone || null;
+  if (data.email !== undefined) attrs.email = data.email || null;
+  if (data.contact !== undefined) attrs.contact = data.contact || null;
+  if (data.address !== undefined) attrs.address = data.address || null;
+  if (data.is_active !== undefined) attrs.is_active = data.is_active;
+
+  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores/${id}`, {
+    method: 'PATCH',
+    contentType: 'json-api',
+    json: { data: { type: 'suppliers', attributes: attrs } },
+  });
+}
+
+export async function deleteProveedor(id: string): Promise<void> {
+  const empresaId = await requireEmpresaId();
+  await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores/${id}`, {
+    method: 'DELETE',
+  });
+}

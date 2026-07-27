@@ -25,7 +25,11 @@ export type TipoUbicacionBadge =
   | 'area'
   | 'seccion';
 
-export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto | TipoUbicacionBadge;
+export type EstadoProveedor =
+  | 'activo'
+  | 'inactivo';
+
+export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto | TipoUbicacionBadge | EstadoProveedor;
 
 interface EstadoConfig {
   label: string;
@@ -126,6 +130,18 @@ const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
   seccion: {
     label: 'Sección',
     icon: Layers,
+    className:
+      'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  },
+  activo: {
+    label: 'Activo',
+    icon: CheckCircle2,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  inactivo: {
+    label: 'Inactivo',
+    icon: Ban,
     className:
       'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
   },
