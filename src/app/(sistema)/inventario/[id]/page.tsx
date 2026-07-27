@@ -8,6 +8,7 @@ import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/re
 import { Badge } from '@/components/ui/Badge';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { getEstadoRepuesto } from '../page';
+import type { PaginationMeta } from '@/types/common';
 import type { Repuesto, MovimientoInventario, TipoMovimiento } from '@/types/repuesto';
 
 const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
@@ -26,18 +27,22 @@ export default function InventarioDetallePage() {
   const [reason, setReason] = useState('');
   const [movError, setMovError] = useState<string | null>(null);
   const [submittingMov, setSubmittingMov] = useState(false);
+  const [movimientoMeta, setMovimientoMeta] = useState<PaginationMeta | null>(null);
+  const [movimientoPage, setMovimientoPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const [r, m] = await Promise.all([
+      const [r, result] = await Promise.all([
         getRepuestoById(id),
-        getMovimientos(id),
+        getMovimientos(id, 1, 20),
       ]);
       setRepuesto(r);
-      setMovimientos(m);
+      setMovimientos(result.movimientos);
+      setMovimientoMeta(result.meta);
+      setMovimientoPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar repuesto.');
     } finally {
@@ -52,13 +57,15 @@ export default function InventarioDetallePage() {
       setLoading(true);
       setError(null);
       try {
-        const [r, m] = await Promise.all([
+        const [r, result] = await Promise.all([
           getRepuestoById(id),
-          getMovimientos(id),
+          getMovimientos(id, 1, 20),
         ]);
         if (cancelled) return;
         setRepuesto(r);
-        setMovimientos(m);
+        setMovimientos(result.movimientos);
+        setMovimientoMeta(result.meta);
+        setMovimientoPage(1);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar repuesto.');
       } finally {
@@ -90,6 +97,19 @@ export default function InventarioDetallePage() {
       setSubmittingMov(false);
     }
   }, [id, cantidad, tipoMov, reason, fetchData]);
+
+  const handleLoadMore = useCallback(async () => {
+    if (!id || !movimientoMeta) return;
+    const nextPage = movimientoPage + 1;
+    try {
+      const result = await getMovimientos(id, nextPage, 20);
+      setMovimientos(prev => [...prev, ...result.movimientos]);
+      setMovimientoMeta(result.meta);
+      setMovimientoPage(nextPage);
+    } catch (err) {
+      console.error('Error al cargar más movimientos:', err);
+    }
+  }, [id, movimientoPage, movimientoMeta]);
 
   if (loading) {
     return (
@@ -289,6 +309,16 @@ export default function InventarioDetallePage() {
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+          {movimientoMeta && movimientoPage < movimientoMeta.lastPage && (
+            <div className="text-center pt-4">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-sm font-medium text-gema-primary/70 dark:text-white/60 transition-colors cursor-pointer"
+              >
+                Cargar más movimientos ({movimientos.length} de {movimientoMeta.total})
+              </button>
             </div>
           )}
         </div>
