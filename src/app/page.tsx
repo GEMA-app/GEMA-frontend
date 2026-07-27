@@ -181,8 +181,8 @@ const FOOTER_PRODUCT_LINKS = [
 ];
 
 const FOOTER_LEGAL_LINKS = [
-  { label: "Términos de servicio", href: "#" },
-  { label: "Política de privacidad", href: "#" },
+  { label: "Términos y condiciones", href: "/terminos" },
+  { label: "Política de privacidad", href: "/privacidad" },
   { label: "Seguridad de datos", href: "#" },
 ];
 
@@ -896,12 +896,12 @@ export default function HomePage() {
               <ul className="flex flex-col gap-3">
                 {FOOTER_LEGAL_LINKS.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="text-sm text-white/60 hover:text-gema-accent transition-colors cursor-pointer"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
