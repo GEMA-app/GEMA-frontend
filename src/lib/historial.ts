@@ -20,20 +20,57 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
 
   const attributes = asRecord(record.attributes) ?? record;
 
-  const id = asString(record.id);
-  const fecha = asString(attributes.ocurrido_en);
+  const id = asString(record.id) || asString(attributes.id);
+  const fecha =
+    asString(attributes.ocurrido_en) ||
+    asString(attributes.fecha) ||
+    asString(attributes.created_at) ||
+    new Date().toISOString();
 
-  if (!id || !fecha) return null;
+  if (!id) return null;
+
+  const rawModulo =
+    asString(attributes.modulo) ||
+    asString(attributes.resource_type) ||
+    asString(attributes.entidad) ||
+    asString(attributes.target_type) ||
+    'sistema';
+
+  const moduloLower = rawModulo.toLowerCase();
+  let modulo = 'sistema';
+  if (moduloLower.includes('activo')) modulo = 'activos';
+  else if (moduloLower.includes('mantenimiento') || moduloLower.includes('orden')) modulo = 'mantenimiento';
+  else if (moduloLower.includes('inventario') || moduloLower.includes('repuesto') || moduloLower.includes('articulo')) modulo = 'inventario';
+  else if (moduloLower.includes('usuario') || moduloLower.includes('auth') || moduloLower.includes('sesion')) modulo = 'usuarios';
+
+  const detallesObj = asRecordValue(attributes.detalles) ?? {};
+  const detallesSummary = Object.keys(detallesObj).length > 0
+    ? Object.entries(detallesObj).map(([k, v]) => `${k}: ${v}`).join(', ')
+    : '';
+
+  const descripcion =
+    asString(attributes.descripcion) ||
+    asString(attributes.mensaje) ||
+    detallesSummary ||
+    asString(attributes.accion, '—');
+
+  const usuarioNombre =
+    asString(attributes.usuario_nombre) ||
+    asString(attributes.usuario) ||
+    asString(attributes.usuario_id, 'Sistema');
 
   return {
     id,
     usuario: {
-      nombre: asString(attributes.usuario_id, '—'),
+      nombre: usuarioNombre,
+      email: asString(attributes.usuario_email, undefined) || undefined,
     },
     accion: asString(attributes.accion, '—'),
-    detalles: asRecordValue(attributes.detalles) ?? {},
+    modulo,
+    descripcion,
+    detalles: detallesObj,
     fecha,
-    ip: asString(attributes.ip_address, undefined) || undefined,
+    ip: asString(attributes.ip_address) || asString(attributes.ip, undefined) || undefined,
   };
 }
 
@@ -62,6 +99,7 @@ export interface HistorialMeta {
   page: number;
   limit: number;
   total: number;
+  lastPage: number;
   hasMore: boolean;
 }
 
@@ -72,7 +110,8 @@ export function extractHistorialMeta(payload: unknown, fallbackPage: number, fal
   const page = Number(meta?.page ?? meta?.current_page ?? fallbackPage);
   const limit = Number(meta?.limit ?? meta?.per_page ?? fallbackLimit);
   const total = Number(meta?.total ?? meta?.total_count ?? 0);
-  const lastPage = Number(meta?.last_page ?? 0);
+  const calculatedLastPage = Math.max(1, Math.ceil(total / (limit || 20)));
+  const lastPage = Number(meta?.last_page ?? meta?.lastPage ?? calculatedLastPage);
   const hasMore =
     typeof meta?.has_more === 'boolean'
       ? meta.has_more
@@ -82,5 +121,5 @@ export function extractHistorialMeta(payload: unknown, fallbackPage: number, fal
           ? page < lastPage
           : page * limit < total;
 
-  return { page, limit, total, hasMore };
+  return { page, limit, total, lastPage, hasMore };
 }

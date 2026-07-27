@@ -8,6 +8,8 @@ export interface HistorialEntry {
     roles?: string[];
   };
   accion: string;
+  modulo?: string;
+  descripcion?: string;
   detalles: Record<string, unknown>;
   fecha: string;
   ip?: string;
