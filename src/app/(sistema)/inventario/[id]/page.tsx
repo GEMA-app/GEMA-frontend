@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/repuestos';
 import { Badge } from '@/components/ui/Badge';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { getEstadoRepuesto } from '../page';
 import type { Repuesto, MovimientoInventario, TipoMovimiento } from '@/types/repuesto';
 
@@ -44,7 +45,30 @@ export default function InventarioDetallePage() {
     }
   }, [id]);
 
-  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const [r, m] = await Promise.all([
+          getRepuestoById(id),
+          getMovimientos(id),
+        ]);
+        if (cancelled) return;
+        setRepuesto(r);
+        setMovimientos(m);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar repuesto.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleMovimiento = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,57 +200,59 @@ export default function InventarioDetallePage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
-          <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
-            Registrar movimiento de stock
-          </h2>
-          <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className={labelClass}>Tipo</label>
-              <select
-                value={tipoMov}
-                onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
-                className={inputClass}
+        <PermissionGuard module="inventario" action="create">
+          <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
+            <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
+              Registrar movimiento de stock
+            </h2>
+            <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className={labelClass}>Tipo</label>
+                <select
+                  value={tipoMov}
+                  onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
+                  className={inputClass}
+                >
+                  <option value="entrada">Entrada (+)</option>
+                  <option value="salida">Salida (-)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Cantidad</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cantidad}
+                  onChange={(e) => setCantidad(e.target.value)}
+                  className={`${inputClass} w-28`}
+                />
+              </div>
+
+              <div className="flex-1 min-w-[200px]">
+                <label className={labelClass}>Motivo / Observación</label>
+                <input
+                  type="text"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Ej: Reposición de inventario / Ajuste"
+                  className={`${inputClass} w-full`}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submittingMov}
+                className="px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
               >
-                <option value="entrada">Entrada (+)</option>
-                <option value="salida">Salida (-)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Cantidad</label>
-              <input
-                type="number"
-                min="1"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                className={`${inputClass} w-28`}
-              />
-            </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label className={labelClass}>Motivo / Observación</label>
-              <input
-                type="text"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Ej: Reposición de inventario / Ajuste"
-                className={`${inputClass} w-full`}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submittingMov}
-              className="px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
-            >
-              {submittingMov ? 'Registrando...' : 'Registrar'}
-            </button>
-          </form>
-          {movError && (
-            <p className="text-xs text-red-600 dark:text-red-400 mt-2">{movError}</p>
-          )}
-        </div>
+                {submittingMov ? 'Registrando...' : 'Registrar'}
+              </button>
+            </form>
+            {movError && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">{movError}</p>
+            )}
+          </div>
+        </PermissionGuard>
 
         <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
           <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">

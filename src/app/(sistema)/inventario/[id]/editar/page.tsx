@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import Swal from 'sweetalert2';
 import { getRepuestoById, updateRepuesto } from '@/services/repuestos';
+import { getProveedores } from '@/services/proveedores';
 import type { Repuesto } from '@/types/repuesto';
+import type { ProveedorItem } from '@/types/proveedor';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
 
@@ -20,6 +22,7 @@ export default function EditarInventarioPage() {
   const router = useRouter();
 
   const [repuesto, setRepuesto] = useState<Repuesto | null>(null);
+  const [proveedores, setProveedores] = useState<ProveedorItem[]>([]);
   const [loadingAsset, setLoadingAsset] = useState(true);
   const [proveedorId, setProveedorId] = useState('');
   const [ubicacion, setUbicacion] = useState('');
@@ -31,21 +34,30 @@ export default function EditarInventarioPage() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     (async () => {
       try {
-        const r = await getRepuestoById(id);
+        const [r, pRes] = await Promise.all([
+          getRepuestoById(id),
+          getProveedores().catch(() => ({ proveedores: [] })),
+        ]);
+        if (cancelled) return;
         setRepuesto(r);
+        setProveedores(pRes.proveedores);
         setProveedorId(r.proveedor_id ?? '');
         setUbicacion(r.ubicacion_almacen);
         setStockMinimo(String(r.stock_minimo));
         setPrecio(String(r.precio_unitario));
         setMoneda(r.moneda);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al cargar el repuesto');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar el repuesto');
       } finally {
-        setLoadingAsset(false);
+        if (!cancelled) setLoadingAsset(false);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -148,14 +160,19 @@ export default function EditarInventarioPage() {
           </div>
 
           <div>
-            <label className={labelClass}>Proveedor ID</label>
-            <input
-              type="text"
+            <label className={labelClass}>Proveedor</label>
+            <select
               value={proveedorId}
               onChange={(e) => setProveedorId(e.target.value)}
-              placeholder="ID del proveedor"
               className={inputClass}
-            />
+            >
+              <option value="">Sin proveedor asignado</option>
+              {proveedores.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre_empresa || p.nombre_contacto || p.id}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

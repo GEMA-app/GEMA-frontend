@@ -73,7 +73,7 @@ export default function InventarioPage() {
     let cancelled = false;
     async function fetchSummary() {
       try {
-        const res = await getRepuestos({ page: 1, perPage: 500 });
+        const res = await getRepuestos({ page: 1, perPage: 100 });
         if (cancelled) return;
         const allRepuestos = res.repuestos;
         let bajoMin = 0;
@@ -105,7 +105,7 @@ export default function InventarioPage() {
     return () => {
       cancelled = true;
     };
-  }, [repuestos.length]);
+  }, [meta?.total]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

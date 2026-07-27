@@ -24,7 +24,7 @@ async function baseUrl(): Promise<string> {
 export async function getRepuestos(params: RepuestosQuery = {}): Promise<RepuestosResponse> {
   const url = await baseUrl();
   const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
+  const perPage = Math.min(params.perPage ?? 15, 100);
   const payload = await fetchWithAuth<unknown>(`${url}${buildOffsetQuery({ page, perPage })}`);
   return {
     repuestos: extractRepuestosFromResponse(payload),
