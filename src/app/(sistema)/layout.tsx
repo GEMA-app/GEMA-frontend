@@ -16,18 +16,19 @@ export default function SistemaLayout({
 }) {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
     setIsDark(localStorage.getItem(THEME_STORAGE_KEY) !== 'light');
-  }, []);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace('/login');
+    } else {
+      setIsAuthed(true);
+    }
+  }, [router]);
 
-  // ponytail: auth guard disabled for now, re-enable when needed
-  // useEffect(() => {
-  //   const token = localStorage.getItem('token');
-  //   if (!token) {
-  //     router.replace('/login');
-  //   }
-  // }, [router]);
+  if (!isAuthed) return null;
 
   const toggleTheme = () => {
     setIsDark((prev) => {
@@ -38,14 +39,12 @@ export default function SistemaLayout({
   };
 
   return (
-    <div className={`${isDark ? 'dark' : ''} ${sora.variable} ${inter.variable} font-body`}>
-      <div className="flex h-screen bg-gema-bg-light dark:bg-gema-bg-dark overflow-hidden">
+    <div className={`${sora.variable} ${inter.variable} ${isDark ? 'dark' : ''}`}>
+      <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header isDark={isDark} onToggleTheme={toggleTheme} />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>
       </div>
     </div>

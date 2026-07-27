@@ -2,23 +2,23 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { getRoles } from '@/lib/auth';
-import { hasPermisoAccion, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos';
+import { hasPermisoAccion, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos-rbac';
 
 interface PermissionGuardProps {
   module: ModuloRBAC;
-  action: AccionRBAC;
+  action?: AccionRBAC;
   children: ReactNode;
   fallback?: ReactNode;
 }
 
 export function PermissionGuard({
   module,
-  action,
+  action = 'view',
   children,
   fallback = null,
 }: PermissionGuardProps) {
-  const [canAccess, setCanAccess] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [canAccess, setCanAccess] = useState(false);
 
   useEffect(() => {
     const roles = getRoles();
