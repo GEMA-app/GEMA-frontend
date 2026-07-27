@@ -37,7 +37,7 @@ function getContentTypeHeader(contentType: ContentType): string {
   return contentType === 'json-api' ? 'application/vnd.api+json' : 'application/json';
 }
 
-async function parseErrorMessage(response: Response): Promise<string> {
+async function parseErrorMessage(response: Response): Promise<{ message: string; payload?: unknown }> {
   try {
     const payload = await response.json();
 
@@ -45,26 +45,26 @@ async function parseErrorMessage(response: Response): Promise<string> {
       const record = payload as Record<string, unknown>;
 
       if (typeof record.mensaje === 'string') {
-        return record.mensaje;
+        return { message: record.mensaje, payload };
       }
 
       const errors = record.errors;
       if (Array.isArray(errors) && errors.length > 0) {
         const first = errors[0] as Record<string, unknown>;
         if (typeof first.detail === 'string') {
-          return first.detail;
+          return { message: first.detail, payload };
         }
       }
 
       if (typeof record.message === 'string') {
-        return record.message;
+        return { message: record.message, payload };
       }
     }
   } catch {
     // ignore parse errors
   }
 
-  return `Error ${response.status}: ${response.statusText || 'Solicitud fallida'}`;
+  return { message: `Error ${response.status}: ${response.statusText || 'Solicitud fallida'}` };
 }
 
 async function executeFetch<T>(
@@ -103,8 +103,8 @@ async function executeFetch<T>(
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(response);
-    throw new ApiError(message, response.status);
+    const { message, payload } = await parseErrorMessage(response);
+    throw new ApiError(message, response.status, payload);
   }
 
   if (response.status === 204) {
