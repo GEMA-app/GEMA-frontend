@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { getEmpresa, updateEmpresa } from '@/services/empresa';
 import type { Empresa } from '@/types/empresa';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 export default function EmpresaPage() {
   const router = useRouter();
@@ -51,10 +52,11 @@ export default function EmpresaPage() {
       setRif(updated.rif ?? '');
       setEmail(updated.email_contacto ?? '');
       setSaveOk(true);
+      setTimeout(() => setSaveOk(false), 4000);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar';
       if (msg.includes('ERR_STALE_DATA') || msg.includes('409')) {
-        setSaveError('recargar');
+        setSaveError('Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página para ver los cambios actualizados.');
       } else {
         setSaveError(msg);
       }
@@ -87,11 +89,13 @@ export default function EmpresaPage() {
                   <p className="text-gray-500 text-xs mt-1">Slug: {empresa.slug} — Estado: {empresa.estado}</p>
                 </div>
               </div>
-              <button type="button" onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-                <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-                {saving ? 'Guardando...' : 'Guardar cambios'}
-              </button>
+              <PermissionGuard module="administracion" action="edit">
+                <button type="button" onClick={handleSave} disabled={saving}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer">
+                  <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
+                  {saving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </PermissionGuard>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -68,7 +68,13 @@ function RolRow({ rol }: { rol: Rol }) {
 }
 
 export default function ConfiguracionPage() {
-  const isAdmin = hasAnyRole(['admin']);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isAdmin = mounted ? hasAnyRole(['admin']) : false;
 
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loadingEmpresa, setLoadingEmpresa] = useState(true);
@@ -111,7 +117,12 @@ export default function ConfiguracionPage() {
       setForm({ nombre: updated.nombre, rif: updated.rif ?? '', email_contacto: updated.email_contacto ?? '' });
       setEditing(false);
     } catch (err) {
-      setErrorEmpresa(err instanceof Error ? err.message : 'Error al guardar los cambios');
+      const msg = err instanceof Error ? err.message : 'Error al guardar los cambios';
+      if (msg.includes('ERR_STALE_DATA') || msg.includes('409')) {
+        setErrorEmpresa('Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página.');
+      } else {
+        setErrorEmpresa(msg);
+      }
     } finally {
       setSaving(false);
     }
