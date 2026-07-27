@@ -25,8 +25,8 @@ import { Badge } from '@/components/ui/Badge';
 
 export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { orden, loading, error, empty, cambiarEstado, validar } = useOrdenDetalle(id);
-  const { activos } = useActivos({ perPage: 200 });
+  const { orden, loading, error, empty, cambiarEstado, asignar, validar } = useOrdenDetalle(id);
+  const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
 
   const supervisores = useMemo(() => {
@@ -188,13 +188,13 @@ export default function OrdenDetallePage() {
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Fecha de inicio</label>
                     <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">
-                      {orden?.fecha_inicio_trabajo ? new Date(orden.fecha_inicio_trabajo + 'T00:00:00').toLocaleDateString('es-VE', { timeZone: 'UTC' }) : '—'}
+                      {orden?.fecha_inicio_trabajo ? new Date(orden.fecha_inicio_trabajo).toLocaleDateString('es-VE') : '—'}
                     </p>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Fecha de fin</label>
                     <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">
-                      {orden?.fecha_cierre ? new Date(orden.fecha_cierre + 'T00:00:00').toLocaleDateString('es-VE', { timeZone: 'UTC' }) : '—'}
+                      {orden?.fecha_cierre ? new Date(orden.fecha_cierre).toLocaleDateString('es-VE') : '—'}
                     </p>
                   </div>
                 </div>
@@ -217,9 +217,26 @@ export default function OrdenDetallePage() {
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Técnico</label>
-                    <select disabled
-                      className="w-full bg-transparent border-b py-1.5 outline-none text-sm border-gray-300 opacity-60 cursor-not-allowed">
-                      <option value="">Asignar desde detalle</option>
+                    <select
+                      value={techId}
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        setTechId(val);
+                        if (val) {
+                          try {
+                            await asignar(val);
+                            setSaveStatus('Técnico asignado.');
+                          } catch (err) {
+                            setSaveStatus(err instanceof Error ? err.message : 'Error al asignar técnico');
+                          }
+                        }
+                      }}
+                      className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                    >
+                      <option value="">Sin técnico asignado</option>
+                      {tecnicos.map(u => (
+                        <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>
+                      ))}
                     </select>
                   </div>
                 </div>
