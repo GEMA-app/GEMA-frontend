@@ -43,8 +43,7 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     label: 'Recursos',
     items: [
-      { icon: Boxes, label: 'Inventario', href: '/configuracion/repuestos' },
-      { icon: Package, label: 'Repuestos', href: '/repuestos' },
+      { icon: Boxes, label: 'Inventario', href: '/inventario' },
       { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
       { icon: Truck, label: 'Proveedores', href: '/proveedores' },
     ],

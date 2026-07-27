@@ -1,3 +1,5 @@
-import RepuestosPage from '../../repuestos/page';
+import { redirect } from 'next/navigation';
 
-export default RepuestosPage;
+export default function ConfiguracionRepuestosRedirectPage() {
+  redirect('/inventario');
+}

@@ -26,10 +26,10 @@ export default function ConfiguracionPage() {
       href: '/configuracion/empresa',
     },
     {
-      title: 'Gestión de repuestos',
-      description: 'Administrar materiales y herramientas',
+      title: 'Inventario de repuestos',
+      description: 'Administrar materiales, repuestos y stock',
       icon: Hammer,
-      href: '/repuestos',
+      href: '/inventario',
     },
     {
       title: 'Ubicaciones',
