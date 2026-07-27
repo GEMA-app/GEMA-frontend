@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Eye, Pencil, Trash, Package, AlertCircle, XCircle, DollarSign } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useRepuestos } from '@/hooks/useRepuestos';
 import { getRepuestos } from '@/services/repuestos';
 import { getArticulos as getArticulosCatalogo, type ArticuloCatalogo } from '@/services/catalogo';
@@ -116,7 +117,21 @@ export default function InventarioPage() {
 
   const handleDelete = useCallback(
     async (id: string, nombre: string) => {
-      if (!window.confirm(`¿Eliminar el repuesto "${nombre}"? Esta acción no se puede deshacer.`)) return;
+      const { value } = await Swal.fire({
+        title: '¿Eliminar repuesto?',
+        text: 'Escribe el código o nombre del repuesto para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Código o nombre del repuesto',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== nombre) {
+        Swal.fire('Error', 'El código o nombre no coincide', 'error');
+        return;
+      }
       try {
         await eliminarRepuesto(id);
       } catch (err) {

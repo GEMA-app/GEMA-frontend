@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Box,
@@ -24,6 +24,7 @@ interface MenuItem {
   icon: typeof LayoutDashboard;
   label: string;
   href: string;
+  roles: string[];
 }
 
 interface MenuSection {
@@ -35,38 +36,85 @@ const MENU_SECTIONS: MenuSection[] = [
   {
     label: 'Operaciones',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: Box, label: 'Activos', href: '/activos' },
-      { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento' },
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard', roles: ['todos'] },
+      {
+        icon: Box,
+        label: 'Activos',
+        href: '/activos',
+        roles: ['administrador', 'supervisor de activos', 'supervisor de operaciones'],
+      },
+      { icon: Wrench, label: 'Mantenimiento', href: '/mantenimiento', roles: ['todos'] },
     ],
   },
   {
     label: 'Recursos',
     items: [
-      { icon: Boxes, label: 'Inventario', href: '/inventario' },
-      { icon: MapPin, label: 'Ubicaciones', href: '/ubicaciones' },
-      { icon: Truck, label: 'Proveedores', href: '/proveedores' },
+      { icon: Boxes, label: 'Inventario', href: '/inventario', roles: ['administrador', 'almacenista'] },
+      {
+        icon: MapPin,
+        label: 'Ubicaciones',
+        href: '/ubicaciones',
+        roles: ['administrador', 'supervisor de activos'],
+      },
+      { icon: Truck, label: 'Proveedores', href: '/proveedores', roles: ['administrador', 'almacenista'] },
     ],
   },
   {
     label: 'Análisis',
     items: [
-      { icon: ClipboardList, label: 'Reportes', href: '/reportes' },
-      { icon: History, label: 'Historial', href: '/historial' },
+      {
+        icon: ClipboardList,
+        label: 'Reportes',
+        href: '/reportes',
+        roles: ['administrador', 'supervisor de activos', 'supervisor de operaciones'],
+      },
+      { icon: History, label: 'Historial', href: '/historial', roles: ['administrador'] },
     ],
   },
   {
     label: 'Admin',
     items: [
-      { icon: Users, label: 'Usuarios', href: '/usuarios' },
-      { icon: Settings, label: 'Configuración', href: '/configuracion' },
+      { icon: Users, label: 'Usuarios', href: '/usuarios', roles: ['administrador'] },
+      { icon: Settings, label: 'Configuración', href: '/configuracion', roles: ['administrador'] },
     ],
   },
 ];
 
+function getVisibleSections(): MenuSection[] {
+  if (typeof window === 'undefined') {
+    return MENU_SECTIONS;
+  }
+
+  let roles: string[] = [];
+  try {
+    roles = (JSON.parse(localStorage.getItem('roles') || '[]') as string[]).map((r) =>
+      r.trim().toLowerCase(),
+    );
+  } catch {
+    roles = [];
+  }
+
+  const tieneAcceso = (rolesRequeridos: string[]) => {
+    if (rolesRequeridos.includes('todos')) return true;
+    return rolesRequeridos.some((requerido) =>
+      roles.some((rol) => rol.includes(requerido) || requerido.includes(rol)),
+    );
+  };
+
+  return MENU_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => tieneAcceso(item.roles)),
+  })).filter((section) => section.items.length > 0);
+}
+
 export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const [menuSections, setMenuSections] = useState<MenuSection[]>(MENU_SECTIONS);
+
+  useEffect(() => {
+    setMenuSections(getVisibleSections());
+  }, []);
 
 
   const handleLogout = async () => {
@@ -115,7 +163,7 @@ export default function Sidebar() {
         className="flex-1 space-y-6 overflow-y-auto px-2 py-2 md:px-3"
         aria-label="Navegación principal"
       >
-        {MENU_SECTIONS.map((section) => (
+        {menuSections.map((section) => (
           <div key={section.label}>
             <p
               className={`mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-white/40 ${

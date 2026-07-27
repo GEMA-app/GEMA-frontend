@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Eye, Pencil, Trash, Box, CheckCircle2, Wrench, XCircle, AlertCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useActivos } from '@/hooks/useActivos';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { getArticulos } from '@/services/catalogo';
@@ -129,8 +130,22 @@ export default function ActivosPage() {
   }, [search]);
 
   const handleDelete = useCallback(
-    async (id: string, nombre: string) => {
-      if (!window.confirm(`¿Eliminar el activo "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    async (id: string, codigoActivo: string) => {
+      const { value } = await Swal.fire({
+        title: '¿Eliminar activo?',
+        text: 'Escribe el código del activo para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Ej: ACT-001',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== codigoActivo) {
+        Swal.fire('Error', 'El código no coincide', 'error');
+        return;
+      }
       try {
         await eliminarActivo(id);
       } catch (err) {
@@ -204,7 +219,7 @@ export default function ActivosPage() {
           </Link>
           <button
             type="button"
-            onClick={() => handleDelete(activo.id, activo.nombre)}
+            onClick={() => handleDelete(activo.id, activo.serial)}
             className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
             aria-label={`Eliminar ${activo.nombre}`}
           >

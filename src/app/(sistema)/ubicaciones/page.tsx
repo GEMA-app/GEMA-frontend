@@ -15,6 +15,7 @@ import {
   FolderTree,
   AlertCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { filterUbicaciones, flattenVisibleRows, type FlatUbicacionRow } from '@/lib/ubicaciones';
 import { getActivos } from '@/services/activos';
@@ -154,7 +155,21 @@ export default function UbicacionesPage() {
 
   const handleDelete = useCallback(
     async (id: string, nombre: string) => {
-      if (!window.confirm(`¿Eliminar la ubicación "${nombre}"? Esta acción no se puede deshacer.`)) return;
+      const { value } = await Swal.fire({
+        title: '¿Eliminar ubicación?',
+        text: 'Escribe el nombre de la ubicación para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Nombre de la ubicación',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== nombre) {
+        Swal.fire('Error', 'El nombre no coincide', 'error');
+        return;
+      }
       try {
         await deleteUbicacion(id);
       } catch (err) {
