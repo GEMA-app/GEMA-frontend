@@ -3,8 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, FileText, Calendar, Users, Save, Plus, Trash, Wrench } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, Users, Save, Plus, Trash, Wrench, Pencil } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { RequestState } from '@/components/ui/RequestState';
 import { useOrdenDetalle } from '@/hooks/useOrdenDetalle';
 import { useActivos } from '@/hooks/useActivos';
@@ -13,7 +15,7 @@ import { useIntervenciones } from '@/hooks/useIntervenciones';
 import { updateOrden } from '@/services/ordenes-trabajo';
 import { getRepuestos } from '@/services/repuestos';
 import { getArticulos } from '@/services/catalogo';
-import { createRepuestoUtilizado, deleteRepuestoUtilizado } from '@/services/repuestos-utilizados';
+import { createRepuestoUtilizado, deleteRepuestoUtilizado, updateRepuestoUtilizado } from '@/services/repuestos-utilizados';
 import { formatEstadoOT, transicionesValidas } from '@/lib/orden-trabajo';
 
 import type { EstadoOT, OrdenTrabajo } from '@/types/orden-trabajo';
@@ -123,16 +125,52 @@ export default function OrdenDetallePage() {
       setAddingRepuesto(null); setSelRepuesto(''); setCantidad('');
       await refetchIntervenciones();
       await refetchOrden();
-    } catch (err) { alert(err instanceof Error ? err.message : 'Error al agregar repuesto.'); }
+      Swal.fire({ icon: 'success', title: 'Repuesto registrado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err instanceof Error ? err.message : 'Error al agregar repuesto.' });
+    }
+  };
+
+  const handleUpdateRepuesto = async (intervencionId: string, repuestoId: string, currentCantidad: number) => {
+    const { value: newCant } = await Swal.fire({
+      title: 'Editar cantidad',
+      input: 'number',
+      inputValue: currentCantidad,
+      inputAttributes: { min: '1' },
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!newCant || Number(newCant) === currentCantidad) return;
+    try {
+      await updateRepuestoUtilizado(id, intervencionId, repuestoId, Number(newCant));
+      await refetchIntervenciones();
+      await refetchOrden();
+      Swal.fire({ icon: 'success', title: 'Cantidad actualizada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    } catch (err) {
+      Swal.fire({ icon: 'error', title: 'Error', text: err instanceof Error ? err.message : 'Error al actualizar repuesto.' });
+    }
   };
 
   const handleDeleteRepuesto = async (intervencionId: string, repuestoId: string) => {
-    if (!window.confirm('¿Eliminar repuesto? El stock se restaurará.')) return;
+    const res = await Swal.fire({
+      title: '¿Eliminar repuesto?',
+      text: 'El stock consumido se restaurará en inventario.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#EF4444',
+    });
+    if (!res.isConfirmed) return;
     try {
       await deleteRepuestoUtilizado(id, intervencionId, repuestoId);
       await refetchIntervenciones();
       await refetchOrden();
-    } catch { alert('Error al eliminar repuesto.'); }
+      Swal.fire({ icon: 'success', title: 'Repuesto eliminado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+    } catch {
+      Swal.fire({ icon: 'error', title: 'Error al eliminar repuesto' });
+    }
   };
 
   return (
@@ -398,12 +436,14 @@ export default function OrdenDetallePage() {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Fecha</label>
-                    <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{new Date(intv.fecha_inicio).toLocaleDateString('es')} — {intv.horas_hombre}h</p>
+                    <p className="text-sm text-gray-700 py-1.5 border-b border-gray-300">{new Date(intv.fecha_inicio).toLocaleDateString('es-VE')} — {intv.horas_hombre}h</p>
                   </div>
-                  <button type="button" onClick={() => eliminarIntervencion(intv.id)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
-                    <Trash className="w-4 h-4 text-red-400" />
-                  </button>
+                  <PermissionGuard module="mantenimiento" action="delete">
+                    <button type="button" onClick={() => eliminarIntervencion(intv.id)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+                      <Trash className="w-4 h-4 text-red-400" />
+                    </button>
+                  </PermissionGuard>
                 </div>
                 <div className="mb-4">
                   <label className="block text-xs text-gray-500 mb-1">Técnico</label>
@@ -417,10 +457,12 @@ export default function OrdenDetallePage() {
                 <div className="border-t border-gray-100 pt-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Repuestos utilizados</span>
-                    <button type="button" onClick={() => setAddingRepuesto(addingRepuesto === intv.id ? null : intv.id)}
-                      className="text-xs text-[#E59D12] font-semibold hover:underline cursor-pointer">
-                      {addingRepuesto === intv.id ? 'Cancelar' : '+ Agregar repuesto'}
-                    </button>
+                    <PermissionGuard module="inventario" action="edit">
+                      <button type="button" onClick={() => setAddingRepuesto(addingRepuesto === intv.id ? null : intv.id)}
+                        className="text-xs text-[#E59D12] font-semibold hover:underline cursor-pointer">
+                        {addingRepuesto === intv.id ? 'Cancelar' : '+ Agregar repuesto'}
+                      </button>
+                    </PermissionGuard>
                   </div>
 
                   {addingRepuesto === intv.id && (
@@ -443,15 +485,39 @@ export default function OrdenDetallePage() {
                     <p className="text-xs text-gray-400">Sin repuestos</p>
                   ) : (
                     <div className="space-y-1">
-                      {intv.used_parts.map((up, i) => (
-                        <div key={up.id || `up-${i}`} className="flex items-center justify-between text-sm text-gray-600 py-1.5 border-b border-gray-100">
-                          <span>{(() => { const r = repuestoMap[up.repuesto_id]; return r ? (articuloMap[r.articulo_id]?.name ?? r.articulo_id) : up.repuesto_id; })()} × {up.cantidad_usada}</span>
-                          <button type="button" onClick={() => handleDeleteRepuesto(intv.id, up.id)}
-                            className="p-1 hover:bg-gray-100 rounded cursor-pointer">
-                            <Trash className="w-3 h-3 text-red-300" />
-                          </button>
-                        </div>
-                      ))}
+                      {intv.used_parts.map((up, i) => {
+                        const r = repuestoMap[up.repuesto_id];
+                        const nombreRepuesto = r ? (articuloMap[r.articulo_id]?.name ?? r.articulo_id) : up.repuesto_id;
+                        const unitCost = up.precio_unitario ?? r?.precio_unitario ?? 0;
+                        const totalCost = up.precio_total ?? (unitCost * up.cantidad_usada);
+                        return (
+                          <div key={up.id || `up-${i}`} className="flex items-center justify-between text-sm text-gray-600 py-1.5 border-b border-gray-100">
+                            <div>
+                              <span className="font-medium text-gray-800">{nombreRepuesto}</span>
+                              <span className="text-xs text-gray-500 ml-2">× {up.cantidad_usada}</span>
+                              {unitCost > 0 && (
+                                <span className="text-xs text-gray-400 ml-2">
+                                  (${unitCost.toFixed(2)} {up.moneda} c/u — Total: ${totalCost.toFixed(2)} {up.moneda})
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <PermissionGuard module="inventario" action="edit">
+                                <button type="button" onClick={() => handleUpdateRepuesto(intv.id, up.id, up.cantidad_usada)}
+                                  className="p-1 hover:bg-gray-100 rounded cursor-pointer" title="Editar cantidad">
+                                  <Pencil className="w-3 h-3 text-amber-500" />
+                                </button>
+                              </PermissionGuard>
+                              <PermissionGuard module="inventario" action="delete">
+                                <button type="button" onClick={() => handleDeleteRepuesto(intv.id, up.id)}
+                                  className="p-1 hover:bg-gray-100 rounded cursor-pointer" title="Eliminar repuesto">
+                                  <Trash className="w-3 h-3 text-red-400" />
+                                </button>
+                              </PermissionGuard>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
