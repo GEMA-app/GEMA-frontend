@@ -4,7 +4,7 @@ import type { PaginationMeta } from '@/types/common';
 import type { Reporte, ReporteEstado, ReportePrioridad } from '@/types/reporte';
 
 const PRIORIDADES: ReportePrioridad[] = ['critica', 'alta', 'media', 'baja'];
-const ESTADOS: ReporteEstado[] = ['pendiente', 'en_proceso', 'atendido', 'descartado'];
+const ESTADOS: ReporteEstado[] = ['pendiente', 'en_proceso', 'atendido', 'resuelto', 'descartado', 'cancelado'];
 
 export function normalizePrioridad(raw: string): ReportePrioridad {
   const v = raw.trim().toLowerCase() as ReportePrioridad;
@@ -17,10 +17,10 @@ export function normalizeEstado(raw: string): ReporteEstado {
 }
 
 const PRIORIDAD_LABELS: Record<ReportePrioridad, string> = {
-  critica: 'Critica', alta: 'Alta', media: 'Media', baja: 'Baja',
+  critica: 'Crítica', alta: 'Alta', media: 'Media', baja: 'Baja',
 };
 const ESTADO_LABELS: Record<ReporteEstado, string> = {
-  pendiente: 'Pendiente', en_proceso: 'En proceso', atendido: 'Atendido', descartado: 'Descartado',
+  pendiente: 'Pendiente', en_proceso: 'En proceso', atendido: 'Atendido', resuelto: 'Resuelto', descartado: 'Descartado', cancelado: 'Cancelado',
 };
 
 export function formatPrioridad(p: string): string {
@@ -32,8 +32,12 @@ export function formatEstado(e: string): string {
 }
 
 export function mapReporteFromApi(resource: JsonApiResource): Reporte {
+  const rawId = resource.id;
+  const codigoAttr = getAttr(resource, 'codigo') || getAttr(resource, 'codigo_reporte');
+  const shortId = rawId.length > 8 ? rawId.slice(0, 8).toUpperCase() : rawId.toUpperCase();
+
   return {
-    id: resource.id,
+    id: rawId,
     title: getAttr(resource, 'title'),
     description: getAttr(resource, 'description'),
     location: getAttr(resource, 'location'),
@@ -44,6 +48,9 @@ export function mapReporteFromApi(resource: JsonApiResource): Reporte {
     orden_trabajo_id: getAttr(resource, 'orden_trabajo_id') || null,
     created_at: getAttr(resource, 'created_at'),
     version: getAttrNumber(resource, 'version', 1),
+    codigo: codigoAttr || `REP-${shortId}`,
+    observaciones: getAttr(resource, 'observaciones') || null,
+    tecnico: getAttr(resource, 'tecnico') || getAttr(resource, 'reported_by') || 'Sin asignar',
   };
 }
 
