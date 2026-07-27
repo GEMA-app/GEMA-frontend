@@ -43,3 +43,7 @@ next-env.d.ts
 # referencia local del backend (no versionar)
 Proyecto-GIMA-main/
 Proyecto-GIMA-main.zip
+
+# skills/agents locales
+.agents
+.claude
