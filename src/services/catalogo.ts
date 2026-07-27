@@ -1,6 +1,7 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
-import { buildOffsetQuery } from '@/lib/pagination';
+import { buildOffsetQuery, extractMetaFromResponse } from '@/lib/pagination';
 import { extractResourceList, extractResource, getAttr, type JsonApiResource } from '@/lib/jsonapi';
+import type { PaginationMeta } from '@/types/common';
 
 export interface ArticuloCatalogo {
   id: string;
@@ -46,6 +47,25 @@ export async function getArticulos(params: ArticulosQuery = {}): Promise<Articul
   });
   const payload = await fetchWithAuth<unknown>(`${url}${query}`);
   return extractResourceList(payload).map(mapArticulo);
+}
+
+export async function getArticulosPage(
+  params: ArticulosQuery = {},
+): Promise<{ data: ArticuloCatalogo[]; meta: PaginationMeta }> {
+  const url = await baseUrl();
+  const page = params.page ?? 1;
+  const perPage = params.perPage ?? 15;
+  const query = buildOffsetQuery({
+    page,
+    perPage,
+    category_id: params.category_id,
+    search: params.search,
+  });
+  const payload = await fetchWithAuth<unknown>(`${url}${query}`);
+  return {
+    data: extractResourceList(payload).map(mapArticulo),
+    meta: extractMetaFromResponse(payload, page, perPage),
+  };
 }
 
 export async function getArticulo(id: string): Promise<ArticuloCatalogo> {
@@ -112,5 +132,77 @@ export async function updateArticulo(id: string, input: Partial<{
 
 export async function deleteArticulo(id: string): Promise<void> {
   const url = await baseUrl();
+  await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
+}
+
+export interface CategoriaCatalogo {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+function mapCategoria(resource: JsonApiResource): CategoriaCatalogo {
+  return {
+    id: resource.id,
+    name: getAttr(resource, 'name'),
+    description: getAttr(resource, 'description') || null,
+  };
+}
+
+async function categoriasBaseUrl(): Promise<string> {
+  const empresaId = await requireEmpresaId();
+  return `/v1/empresas/${empresaId}/catalogo/categorias`;
+}
+
+export async function getCategorias(): Promise<CategoriaCatalogo[]> {
+  const url = await categoriasBaseUrl();
+  const payload = await fetchWithAuth<unknown>(url);
+  return extractResourceList(payload).map(mapCategoria);
+}
+
+export async function createCategoria(input: {
+  name: string;
+  description?: string;
+}): Promise<CategoriaCatalogo> {
+  const url = await categoriasBaseUrl();
+  const payload = await fetchWithAuth<unknown>(url, {
+    method: 'POST',
+    contentType: 'json-api',
+    json: {
+      data: {
+        type: 'catalog-categories',
+        attributes: {
+          name: input.name,
+          description: input.description ?? null,
+        },
+      },
+    },
+  });
+  const resource = extractResource(payload);
+  if (!resource) throw new Error('No se pudo interpretar la categoria creada.');
+  return mapCategoria(resource);
+}
+
+export async function updateCategoria(
+  id: string,
+  input: Partial<{ name: string; description: string | null }>,
+): Promise<CategoriaCatalogo> {
+  const url = await categoriasBaseUrl();
+  const attributes: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) attributes[key] = value;
+  }
+  const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
+    method: 'PATCH',
+    contentType: 'json-api',
+    json: { data: { type: 'catalog-categories', attributes } },
+  });
+  const resource = extractResource(payload);
+  if (!resource) throw new Error('No se pudo interpretar la categoria actualizada.');
+  return mapCategoria(resource);
+}
+
+export async function deleteCategoria(id: string): Promise<void> {
+  const url = await categoriasBaseUrl();
   await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
 }
