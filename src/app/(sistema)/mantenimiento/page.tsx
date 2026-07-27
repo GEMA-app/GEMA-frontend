@@ -17,6 +17,7 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useOrdenesTrabajo } from '@/hooks/useOrdenesTrabajo';
 import { useUsuariosMap } from '@/hooks/useUsuariosMap';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
@@ -583,11 +584,21 @@ function OrdenesTrabajoContent() {
 
   const handleDelete = useCallback(
     async (id: string, codigo: string) => {
-      if (!window.confirm(`¿Eliminar la orden "${codigo}"? Esta acción no se puede deshacer.`)) return;
+      const res = await Swal.fire({
+        title: '¿Eliminar orden de trabajo?',
+        text: `Se eliminará la orden "${codigo}". Esta acción no se puede deshacer.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#EF4444',
+      });
+      if (!res.isConfirmed) return;
       try {
         await eliminarOrden(id);
+        Swal.fire({ icon: 'success', title: 'Orden eliminada', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar la orden');
+        Swal.fire({ icon: 'error', title: 'Error al eliminar', text: err instanceof Error ? err.message : 'Error al eliminar la orden' });
       }
     },
     [eliminarOrden]
@@ -659,21 +670,25 @@ function OrdenesTrabajoContent() {
           >
             <Eye className="w-4 h-4" strokeWidth={1.5} />
           </Link>
-          <Link
-            href={`/mantenimiento/${orden.id}/editar`}
-            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={`Editar ${orden.codigo_ot}`}
-          >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleDelete(orden.id, orden.codigo_ot)}
-            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-            aria-label={`Eliminar ${orden.codigo_ot}`}
-          >
-            <Trash className="w-4 h-4" strokeWidth={1.5} />
-          </button>
+          <PermissionGuard module="mantenimiento" action="edit">
+            <Link
+              href={`/mantenimiento/${orden.id}/editar`}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Editar ${orden.codigo_ot}`}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+          </PermissionGuard>
+          <PermissionGuard module="mantenimiento" action="delete">
+            <button
+              type="button"
+              onClick={() => handleDelete(orden.id, orden.codigo_ot)}
+              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+              aria-label={`Eliminar ${orden.codigo_ot}`}
+            >
+              <Trash className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
         </div>
       ),
     },

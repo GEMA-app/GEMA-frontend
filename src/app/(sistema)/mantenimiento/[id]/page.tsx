@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/Badge';
 
 export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>();
-  const { orden, loading, error, empty, cambiarEstado, asignar, validar, refetch: refetchOrden } = useOrdenDetalle(id);
+  const { orden, loading, error, empty, cambiarEstado, asignar, remover, validar, refetch: refetchOrden } = useOrdenDetalle(id);
   const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
 

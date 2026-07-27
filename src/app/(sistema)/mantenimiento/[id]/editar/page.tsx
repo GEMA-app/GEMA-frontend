@@ -5,6 +5,7 @@ import { ArrowLeft, FileText, Calendar, Users, Save, DollarSign } from 'lucide-r
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { getOrdenById, updateOrden, asignarTecnico } from '@/services/ordenes-trabajo';
@@ -105,7 +106,8 @@ export default function EditarOrdenPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
+    <PermissionGuard module="mantenimiento" action="edit">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
       <PageHeader title="Mantenimiento / Editar orden" variant="activos" />
 
       <div className="mb-6">
@@ -267,5 +269,6 @@ export default function EditarOrdenPage() {
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }
