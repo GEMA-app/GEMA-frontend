@@ -29,8 +29,6 @@ export function CrearReporteModal({
   const [activoId, setActivoId] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<ReportePrioridad>('media');
-  const [observaciones, setObservaciones] = useState('');
-
   const [activos, setActivos] = useState<Activo[]>([]);
   const [loadingActivos, setLoadingActivos] = useState(false);
 
@@ -40,8 +38,6 @@ export function CrearReporteModal({
     setActivoId('');
     setDescription('');
     setPriority('media');
-    setObservaciones('');
-
     let cancelled = false;
     setLoadingActivos(true);
     getActivos({ perPage: 200 })
@@ -80,7 +76,6 @@ export function CrearReporteModal({
       priority,
       reported_by: 'Sistema',
       activo_id: activoId || undefined,
-      observaciones: observaciones || undefined,
     });
     onClose();
   };
@@ -178,23 +173,6 @@ export function CrearReporteModal({
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="reporte-observaciones"
-              className="block text-sm font-semibold text-gema-primary dark:text-white mb-1.5"
-            >
-              Observaciones
-            </label>
-            <textarea
-              id="reporte-observaciones"
-              value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              rows={2}
-              placeholder="Observaciones adicionales, síntomas u notas para el equipo..."
-              className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent resize-none"
-            />
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-white/10 mt-6">

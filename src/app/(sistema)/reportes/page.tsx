@@ -22,6 +22,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import { CrearReporteModal } from '@/components/reportes/CrearReporteModal';
 import { CambiarEstadoModal } from '@/components/reportes/CambiarEstadoModal';
 import type { Reporte, ReporteEstado, ReportePrioridad } from '@/types/reporte';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const PER_PAGE = 15;
 
@@ -29,8 +30,8 @@ const ESTADO_FILTER_OPTIONS: { value: ReporteEstado | ''; label: string }[] = [
   { value: '', label: 'Todos los estados' },
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'en_proceso', label: 'En proceso' },
-  { value: 'resuelto', label: 'Resuelto' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'atendido', label: 'Atendido' },
+  { value: 'descartado', label: 'Descartado' },
 ];
 
 const PRIORIDAD_FILTER_OPTIONS: { value: ReportePrioridad | ''; label: string }[] = [
@@ -249,11 +250,7 @@ export default function ReportesPage() {
       key: 'status',
       header: 'Estado',
       render: (r) => (
-        <Badge
-          estado={
-            r.status === 'atendido' ? 'resuelto' : r.status === 'descartado' ? 'cancelado' : r.status
-          }
-        />
+        <Badge estado={r.status} />
       ),
     },
     {
@@ -287,25 +284,29 @@ export default function ReportesPage() {
           >
             <Eye className="w-4 h-4" strokeWidth={1.5} />
           </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedReporte(r);
-              setModalEstadoOpen(true);
-            }}
-            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={`Cambiar estado de ${r.codigo || r.id}`}
-          >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDelete(r.id, r.codigo || r.id)}
-            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-            aria-label={`Eliminar reporte ${r.codigo || r.id}`}
-          >
-            <Trash className="w-4 h-4" strokeWidth={1.5} />
-          </button>
+          <PermissionGuard module="mantenimiento" action="edit">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedReporte(r);
+                setModalEstadoOpen(true);
+              }}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Cambiar estado de ${r.codigo || r.id}`}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
+          <PermissionGuard module="mantenimiento" action="delete">
+            <button
+              type="button"
+              onClick={() => handleDelete(r.id, r.codigo || r.id)}
+              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+              aria-label={`Eliminar reporte ${r.codigo || r.id}`}
+            >
+              <Trash className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -322,14 +323,16 @@ export default function ReportesPage() {
             Seguimiento e historial de incidencias en equipos
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalCrearOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nuevo reporte
-        </button>
+        <PermissionGuard module="mantenimiento" action="create">
+          <button
+            type="button"
+            onClick={() => setModalCrearOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo reporte
+          </button>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
