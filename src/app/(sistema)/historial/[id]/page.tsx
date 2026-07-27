@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Clock, User, Tag, Monitor, Mail } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { ArrowLeft, Clock, User, Tag, Monitor, Mail, Box } from 'lucide-react';
+import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { RequestState } from '@/components/ui/RequestState';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { extractResource } from '@/lib/jsonapi';
@@ -15,8 +15,12 @@ function formatFecha(fecha: string): string {
   try {
     const d = new Date(fecha);
     return d.toLocaleDateString('es-VE', {
-      day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     });
   } catch {
     return fecha;
@@ -25,15 +29,19 @@ function formatFecha(fecha: string): string {
 
 function DetallesTable({ data }: { data: Record<string, unknown> }) {
   const entries = Object.entries(data);
-  if (!entries.length) return <p className="text-sm text-gray-500">Sin detalles adicionales</p>;
+  if (!entries.length) return <p className="text-sm text-gema-primary/50 dark:text-white/40">Sin detalles adicionales</p>;
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200">
+    <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-white/10">
       <table className="w-full text-sm">
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
           {entries.map(([key, value]) => (
             <tr key={key}>
-              <td className="px-4 py-2.5 font-medium text-gray-600 bg-gray-50 w-1/3">{key.replace(/_/g, ' ')}</td>
-              <td className="px-4 py-2.5 text-gray-900">{typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}</td>
+              <td className="px-4 py-2.5 font-medium text-gema-primary/70 dark:text-white/60 bg-gray-50 dark:bg-white/5 w-1/3">
+                {key.replace(/_/g, ' ')}
+              </td>
+              <td className="px-4 py-2.5 text-gema-primary dark:text-white">
+                {typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -42,14 +50,18 @@ function DetallesTable({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-function HistorialDetail() {
+export default function HistorialDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [entry, setEntry] = useState<HistorialEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) { setLoading(false); setError('ID no especificado.'); return; }
+    if (!id) {
+      setLoading(false);
+      setError('ID no especificado.');
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -75,10 +87,14 @@ function HistorialDetail() {
               if (attrs.email) mapped.usuario.email = attrs.email as string;
               const roles = attrs.roles;
               if (Array.isArray(roles)) {
-                mapped.usuario.roles = roles.map((r: unknown) => typeof r === 'string' ? r : (r as Record<string, unknown>)?.nombre as string ?? String(r));
+                mapped.usuario.roles = roles.map((r: unknown) =>
+                  typeof r === 'string'
+                    ? r
+                    : (r as Record<string, unknown>)?.nombre as string ?? String(r),
+                );
               }
             } catch {
-              // fallback al UUID
+              // fallback to extracted info
             }
           }
         }
@@ -91,15 +107,26 @@ function HistorialDetail() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-[#F3F4F6] p-8 w-full font-sans">
-      <PageHeader title="Historial / Detalle" variant="activos" />
-
-      <div className="mb-6">
-        <Link href="/historial" className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+            Detalle del evento
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+            Información completa de auditoría
+          </p>
+        </div>
+        <Link
+          href="/historial"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gema-primary dark:text-white font-medium text-sm transition-colors cursor-pointer w-fit"
+        >
           <ArrowLeft className="w-4 h-4" />
           Volver al historial
         </Link>
@@ -113,74 +140,75 @@ function HistorialDetail() {
         emptyMessage="Registro no encontrado."
       >
         <div className="space-y-6">
-          {/* info general */}
-          <div className="rounded-3xl p-8 border border-gray-100 shadow-sm" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Detalle del registro</h2>
-            <div className="rounded-3xl p-6 bg-white shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6 sm:p-8">
+            <h2 className="text-lg font-bold text-gema-primary dark:text-white mb-6">Información General</h2>
+            <div className="divide-y divide-gray-100 dark:divide-white/5">
               <div className="flex items-start gap-3 py-3">
-                <div className="w-5 h-5 text-[#E5920C] mt-0.5"><User className="w-5 h-5" /></div>
+                <User className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Usuario</p>
-                  <p className="text-sm font-semibold text-gray-900">{entry?.usuario.nombre || '—'}</p>
+                  <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Usuario</p>
+                  <p className="text-sm font-semibold text-gema-primary dark:text-white">{entry?.usuario.nombre || '—'}</p>
                 </div>
               </div>
               {entry?.usuario.email && (
                 <div className="flex items-start gap-3 py-3">
-                  <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Mail className="w-5 h-5" /></div>
+                  <Mail className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Correo</p>
-                    <p className="text-sm font-semibold text-gray-900">{entry.usuario.email}</p>
+                    <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Correo</p>
+                    <p className="text-sm font-semibold text-gema-primary dark:text-white">{entry.usuario.email}</p>
                   </div>
                 </div>
               )}
               {entry?.usuario.roles && entry.usuario.roles.length > 0 && (
                 <div className="flex items-start gap-3 py-3">
-                  <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Tag className="w-5 h-5" /></div>
+                  <Tag className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Rol</p>
-                    <p className="text-sm font-semibold text-gray-900">{entry.usuario.roles.join(', ')}</p>
+                    <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Rol</p>
+                    <p className="text-sm font-semibold text-gema-primary dark:text-white">{entry.usuario.roles.join(', ')}</p>
                   </div>
                 </div>
               )}
               <div className="flex items-start gap-3 py-3">
-                <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Tag className="w-5 h-5" /></div>
+                <Box className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Acción</p>
-                  <p className="text-sm font-semibold text-gray-900">{entry?.accion || '—'}</p>
+                  <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Módulo</p>
+                  <div className="mt-1">
+                    <Badge estado={(entry?.modulo ?? 'sistema').toLowerCase() as EstadoBadgeType} />
+                  </div>
                 </div>
               </div>
               <div className="flex items-start gap-3 py-3">
-                <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Clock className="w-5 h-5" /></div>
+                <Tag className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Fecha</p>
-                  <p className="text-sm font-semibold text-gray-900">{entry?.fecha ? formatFecha(entry.fecha) : '—'}</p>
+                  <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Acción</p>
+                  <p className="text-sm font-semibold text-gema-primary dark:text-white capitalize">{entry?.accion.replace(/_/g, ' ') || '—'}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 py-3">
+                <Clock className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Fecha y Hora</p>
+                  <p className="text-sm font-semibold text-gema-primary dark:text-white">{entry?.fecha ? formatFecha(entry.fecha) : '—'}</p>
                 </div>
               </div>
               {entry?.ip && (
                 <div className="flex items-start gap-3 py-3">
-                  <div className="w-5 h-5 text-[#E5920C] mt-0.5"><Monitor className="w-5 h-5" /></div>
+                  <Monitor className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs text-gray-500 mb-0.5">Dirección IP</p>
-                    <p className="text-sm font-semibold text-gray-900">{entry.ip}</p>
+                    <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Dirección IP</p>
+                    <p className="text-sm font-semibold font-mono text-gema-primary dark:text-white">{entry.ip}</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* detalles clave-valor */}
-          <div className="rounded-3xl p-8 border border-gray-100 shadow-sm" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Detalles</h2>
-            <div className="rounded-3xl p-6 bg-white shadow-sm border border-gray-100">
-              <DetallesTable data={entry?.detalles ?? {}} />
-            </div>
+          <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6 sm:p-8">
+            <h2 className="text-lg font-bold text-gema-primary dark:text-white mb-4">Detalles Técnicos</h2>
+            <DetallesTable data={entry?.detalles ?? {}} />
           </div>
         </div>
       </RequestState>
     </div>
   );
-}
-
-export default function HistorialDetailPage() {
-  return <HistorialDetail />;
 }

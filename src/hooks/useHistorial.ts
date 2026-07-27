@@ -9,9 +9,11 @@ import type { HistorialEntry } from '@/types/historial';
 export interface HistorialFilters {
   search?: string;
   usuario_id?: string;
+  modulo?: string;
   accion?: string;
   fecha_desde?: string;
   fecha_hasta?: string;
+  page?: number;
   limit?: number;
 }
 
@@ -19,13 +21,14 @@ const DEFAULT_META: HistorialMeta = {
   page: 1,
   limit: 20,
   total: 0,
+  lastPage: 1,
   hasMore: false,
 };
 
 export function useHistorial(filters: HistorialFilters = {}) {
   const [entries, setEntries] = useState<HistorialEntry[]>([]);
   const [meta, setMeta] = useState<HistorialMeta>(DEFAULT_META);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(filters.page ?? 1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,7 @@ export function useHistorial(filters: HistorialFilters = {}) {
         limit: parsedFilters.limit ?? 20,
         search: parsedFilters.search,
         usuario_id: parsedFilters.usuario_id,
+        modulo: parsedFilters.modulo,
         accion: parsedFilters.accion,
         fecha_desde: parsedFilters.fecha_desde,
         fecha_hasta: parsedFilters.fecha_hasta,
@@ -63,7 +67,7 @@ export function useHistorial(filters: HistorialFilters = {}) {
         const message =
           err instanceof ApiError
             ? err.message
-            : 'No se pudo cargar el historial de usuarios.';
+            : 'No se pudo cargar el historial de auditoría.';
         setError(message);
         if (!append) {
           setEntries([]);
@@ -78,9 +82,11 @@ export function useHistorial(filters: HistorialFilters = {}) {
   );
 
   useEffect(() => {
-    setPage(1);
-    void fetchPage(1, false);
-  }, [fetchPage]);
+    const parsed = JSON.parse(filtersKey) as HistorialFilters;
+    const initialPage = parsed.page ?? 1;
+    setPage(initialPage);
+    void fetchPage(initialPage, false);
+  }, [fetchPage, filtersKey]);
 
   const loadMore = useCallback(async () => {
     if (!meta.hasMore || loadingMore) {
