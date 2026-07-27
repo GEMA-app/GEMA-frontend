@@ -33,7 +33,7 @@ export interface ReportesResponse {
 }
 
 export interface NuevoReporteInput {
-  title?: string;
+  title: string;
   description: string;
   location?: string;
   priority: ReportePrioridad;

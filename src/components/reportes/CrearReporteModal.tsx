@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { getActivos } from '@/services/activos';
+import { getUserName } from '@/lib/auth';
 import type { Activo } from '@/types/activo';
 import type { NuevoReporteInput, ReportePrioridad } from '@/types/reporte';
 
@@ -74,7 +75,7 @@ export function CrearReporteModal({
       description,
       location,
       priority,
-      reported_by: 'Sistema',
+      reported_by: getUserName() || 'Usuario Sistema',
       activo_id: activoId || undefined,
     });
     onClose();
