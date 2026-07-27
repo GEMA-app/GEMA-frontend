@@ -1,35 +1,69 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash } from 'lucide-react';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { RequestState } from '@/components/ui/RequestState';
+import { Plus, Eye, Pencil, Trash, Users, CheckCircle2, Ban, Shield, AlertCircle, Power } from 'lucide-react';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { getCurrentUser } from '@/services/auth';
+import { StatCard } from '@/components/ui/StatCard';
+import { Badge, RolBadge } from '@/components/ui/Badge';
+import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import type { Usuario } from '@/types/usuario';
 
 const PER_PAGE = 15;
 
-function ActivoBadge({ activo }: { activo: boolean }) {
-  const s = activo
-    ? 'bg-[#E8F5E9] text-[#2E7D32]'
-    : 'bg-[#FCE4EC] text-[#C62828]';
-  return (
-    <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${s}`}>
-      {activo ? 'Activo' : 'Inactivo'}
-    </span>
-  );
+function formatFecha(fechaStr?: string | null): string {
+  if (!fechaStr) return '—';
+  try {
+    return new Date(fechaStr).toLocaleDateString('es-VE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  } catch {
+    return fechaStr;
+  }
 }
 
 export default function UsuariosPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState<'activo' | 'inactivo' | ''>('');
   const [page, setPage] = useState(1);
+  const [currentUser, setCurrentUser] = useState<Usuario | null>(null);
 
-  const { usuarios, total, loading, error, empty, eliminarUsuario } = useUsuarios({
+  const {
+    allUsuarios,
+    usuarios,
+    meta,
+    loading,
+    error,
+    empty,
+    actualizarUsuario,
+    eliminarUsuario,
+  } = useUsuarios({
     search: debouncedSearch,
+    estado: estadoFiltro,
     page,
     perPage: PER_PAGE,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentUser()
+      .then((user) => {
+        if (!cancelled) setCurrentUser(user);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const isAdmin = useMemo(() => {
+    if (!currentUser) return true; // fallback to true if loading auth info
+    return currentUser.roles.some((r) => r.toLowerCase().includes('admin'));
+  }, [currentUser]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -38,6 +72,36 @@ export default function UsuariosPage() {
     }, 300);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  const summary = useMemo(() => {
+    const total = allUsuarios.length;
+    const activos = allUsuarios.filter((u) => u.activo).length;
+    const inactivos = allUsuarios.filter((u) => !u.activo).length;
+    const administradores = allUsuarios.filter((u) =>
+      u.roles.some((r) => r.toLowerCase().includes('admin')),
+    ).length;
+    return { total, activos, inactivos, administradores };
+  }, [allUsuarios]);
+
+  const handleToggleActivo = useCallback(
+    async (usuario: Usuario) => {
+      const accion = usuario.activo ? 'desactivar' : 'activar';
+      const confirmEmail = window.prompt(
+        `Para ${accion} al usuario "${usuario.nombre}", ingresa su correo electrónico para confirmar:\n${usuario.email}`,
+      );
+      if (confirmEmail === null) return;
+      if (confirmEmail.trim().toLowerCase() !== usuario.email.trim().toLowerCase()) {
+        alert('El correo electrónico no coincide. Operación cancelada.');
+        return;
+      }
+      try {
+        await actualizarUsuario(usuario.id, { activo: !usuario.activo });
+      } catch (err) {
+        alert(err instanceof Error ? err.message : `Error al ${accion} el usuario`);
+      }
+    },
+    [actualizarUsuario],
+  );
 
   const handleDelete = useCallback(
     async (id: string, nombre: string) => {
@@ -51,106 +115,201 @@ export default function UsuariosPage() {
     [eliminarUsuario],
   );
 
-  const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
   const emptyMessage = debouncedSearch
     ? `No se encontraron usuarios para "${debouncedSearch}".`
-    : 'No hay usuarios registrados.';
+    : estadoFiltro
+      ? `No hay usuarios con estado "${estadoFiltro}".`
+      : 'No hay usuarios registrados. Crea el primero con el botón "Nuevo usuario".';
+
+  const columns: DataTableColumn<Usuario>[] = [
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      render: (usuario) => (
+        <span className="font-semibold text-gema-primary dark:text-white">{usuario.nombre}</span>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      render: (usuario) => (
+        <span className="text-gema-primary/80 dark:text-white/80">{usuario.email}</span>
+      ),
+    },
+    {
+      key: 'telefono',
+      header: 'Teléfono',
+      render: (usuario) => usuario.telefono || '—',
+    },
+    {
+      key: 'roles',
+      header: 'Roles',
+      render: (usuario) => (
+        <div className="flex flex-wrap gap-1.5">
+          {usuario.roles.length > 0 ? (
+            usuario.roles.map((rol) => <RolBadge key={rol} rol={rol} />)
+          ) : (
+            <span className="text-xs text-gema-primary/40 dark:text-white/40">Sin rol</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      render: (usuario) => <Badge estado={usuario.activo ? 'activo' : 'inactivo'} />,
+    },
+    {
+      key: 'created_at',
+      header: 'Fecha creación',
+      render: (usuario) => formatFecha(usuario.created_at),
+    },
+    {
+      key: 'acciones',
+      header: '',
+      className: 'text-right',
+      render: (usuario) => (
+        <div className="flex items-center justify-end gap-1 sm:gap-2">
+          <Link
+            href={`/usuarios/${usuario.id}`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label={`Ver ${usuario.nombre}`}
+            title="Ver detalle"
+          >
+            <Eye className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          <Link
+            href={`/usuarios/${usuario.id}/editar`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label={`Editar ${usuario.nombre}`}
+            title="Editar usuario"
+          >
+            <Pencil className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => handleToggleActivo(usuario)}
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                usuario.activo
+                  ? 'text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                  : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+              }`}
+              aria-label={`${usuario.activo ? 'Desactivar' : 'Activar'} ${usuario.nombre}`}
+              title={usuario.activo ? 'Desactivar usuario (requiere email)' : 'Activar usuario (requiere email)'}
+            >
+              <Power className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => handleDelete(usuario.id, usuario.nombre)}
+            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+            aria-label={`Eliminar ${usuario.nombre}`}
+            title="Eliminar usuario"
+          >
+            <Trash className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex-1 bg-[#F3F4F6] p-8 overflow-y-auto">
-      <PageHeader
-        title="Usuarios"
-        subtitle="Gestión de usuarios del sistema"
-        variant="activos"
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar usuario..."
-        searchLabel="Buscar usuarios"
-        className="mb-8"
-      />
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+            Usuarios
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+            Gestión de usuarios y accesos al sistema
+          </p>
+        </div>
+        <Link
+          href="/usuarios/nuevo"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+        >
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+          Nuevo usuario
+        </Link>
+      </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Usuarios del sistema</h2>
-          <Link href="/usuarios/nuevo" className="flex items-center gap-2 bg-[#ECA03C] hover:bg-[#d4912f] text-gray-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
-            Agregar usuario
-          </Link>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <StatCard icon={Users} value={summary.total} label="Total usuarios" loading={loading} tone="default" />
+        <StatCard icon={CheckCircle2} value={summary.activos} label="Activos" loading={loading} tone="accent" />
+        <StatCard icon={Ban} value={summary.inactivos} label="Inactivos" loading={loading} tone="danger" />
+        <StatCard icon={Shield} value={summary.administradores} label="Administradores" loading={loading} tone="accent" />
+      </div>
+
+      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre, email o rol..."
+            aria-label="Buscar usuarios"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+          />
+          <select
+            value={estadoFiltro}
+            onChange={(e) => {
+              setEstadoFiltro(e.target.value as 'activo' | 'inactivo' | '');
+              setPage(1);
+            }}
+            aria-label="Filtrar por estado"
+            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
+          >
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
         </div>
 
-        <RequestState
-          loading={loading}
-          error={error}
-          empty={empty}
-          loadingMessage="Cargando usuarios..."
-          emptyMessage={emptyMessage}
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Nombre</th>
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Email</th>
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Teléfono</th>
-                  <th className="pb-4 pr-6 text-sm font-semibold text-gray-900">Estado</th>
-                  <th className="pb-4 text-sm font-semibold text-gray-900 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usuarios.map((usuario) => (
-                  <tr key={usuario.id} className="border-b border-gray-100 last:border-0">
-                    <td className="py-5 pr-6">
-                      <p className="font-semibold text-gray-900">{usuario.nombre}</p>
-                      <p className="text-sm text-gray-500 mt-0.5">{usuario.roles.join(', ')}</p>
-                    </td>
-                    <td className="py-5 pr-6 text-gray-700">{usuario.email}</td>
-                    <td className="py-5 pr-6 text-gray-700">{usuario.telefono || '—'}</td>
-                    <td className="py-5 pr-6">
-                      <ActivoBadge activo={usuario.activo} />
-                    </td>
-                    <td className="py-5">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link
-                          href={`/usuarios/${usuario.id}`}
-                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Ver ${usuario.nombre}`}
-                        >
-                          <Eye className="w-5 h-5" strokeWidth={1.5} />
-                        </Link>
-                        <Link
-                          href={`/usuarios/${usuario.id}/editar`}
-                          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label={`Editar ${usuario.nombre}`}
-                        >
-                          <Pencil className="w-5 h-5" strokeWidth={1.5} />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(usuario.id, usuario.nombre)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label={`Eliminar ${usuario.nombre}`}
-                        >
-                          <Trash className="w-5 h-5" strokeWidth={1.5} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {error && empty ? (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            {error}
           </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={usuarios}
+            keyExtractor={(usuario) => usuario.id}
+            loading={loading}
+            emptyMessage={emptyMessage}
+          />
+        )}
 
-          {!loading && !empty && lastPage > 1 && (
-            <nav className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600" aria-label="Paginación de usuarios">
-              <p>Página {page} de {lastPage} — {total} usuarios</p>
-              <div className="flex gap-2">
-                <button type="button" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}
-                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">Anterior</button>
-                <button type="button" disabled={page >= lastPage} onClick={() => setPage(p => p + 1)}
-                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">Siguiente</button>
-              </div>
-            </nav>
-          )}
-        </RequestState>
+        {!loading && !empty && meta.lastPage > 1 && (
+          <nav
+            className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+            aria-label="Paginación de usuarios"
+          >
+            <p>
+              Página {meta.page} de {meta.lastPage} — {meta.total} usuarios
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={meta.page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={meta.page >= meta.lastPage}
+                onClick={() => setPage((current) => current + 1)}
+                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );

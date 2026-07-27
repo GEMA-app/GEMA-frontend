@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle, AlertCircle, Building2, Factory, FolderTree, Layers, Box, Package, Users, Shield } from 'lucide-react';
+import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle, AlertCircle, Building2, Factory, FolderTree, Layers, Box, Package, Users, Shield, Eye } from 'lucide-react';
 
 export type EstadoActivo =
   | 'operativo'
@@ -49,6 +49,18 @@ export type ModuloBadgeType =
   | 'usuarios'
   | 'sistema';
 
+export type RolUsuarioBadge =
+  | 'Administrador'
+  | 'Supervisor de Activos'
+  | 'Técnico de Mantenimiento'
+  | 'Almacenista'
+  | 'Consultor (Solo Lectura)'
+  | 'admin'
+  | 'supervisor'
+  | 'tecnico'
+  | 'almacenista'
+  | 'consultor';
+
 export type EstadoBadgeType =
   | EstadoActivo
   | EstadoOT
@@ -57,7 +69,8 @@ export type EstadoBadgeType =
   | EstadoProveedor
   | EstadoReporte
   | PrioridadReporte
-  | ModuloBadgeType;
+  | ModuloBadgeType
+  | RolUsuarioBadge;
 
 interface EstadoConfig {
   label: string;
@@ -257,6 +270,66 @@ const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
     className:
       'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
   },
+  Administrador: {
+    label: 'Administrador',
+    icon: Shield,
+    className:
+      'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  },
+  admin: {
+    label: 'Administrador',
+    icon: Shield,
+    className:
+      'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  },
+  'Supervisor de Activos': {
+    label: 'Supervisor de Activos',
+    icon: Shield,
+    className:
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  },
+  supervisor: {
+    label: 'Supervisor de Activos',
+    icon: Shield,
+    className:
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  },
+  'Técnico de Mantenimiento': {
+    label: 'Técnico de Mantenimiento',
+    icon: Wrench,
+    className:
+      'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
+  },
+  tecnico: {
+    label: 'Técnico de Mantenimiento',
+    icon: Wrench,
+    className:
+      'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
+  },
+  Almacenista: {
+    label: 'Almacenista',
+    icon: Package,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  almacenista: {
+    label: 'Almacenista',
+    icon: Package,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  'Consultor (Solo Lectura)': {
+    label: 'Consultor (Solo Lectura)',
+    icon: Eye,
+    className:
+      'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  },
+  consultor: {
+    label: 'Consultor (Solo Lectura)',
+    icon: Eye,
+    className:
+      'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  },
 };
 
 interface BadgeProps {
@@ -283,3 +356,17 @@ export function Badge({ estado, label, className = '' }: BadgeProps) {
     </span>
   );
 }
+
+export function RolBadge({ rol, className = '' }: { rol: string; className?: string }) {
+  const normalized = rol.trim().toLowerCase();
+  let key: EstadoBadgeType = 'consultor';
+  if (normalized.includes('admin')) key = 'Administrador';
+  else if (normalized.includes('supervisor')) key = 'Supervisor de Activos';
+  else if (normalized.includes('téc') || normalized.includes('tec')) key = 'Técnico de Mantenimiento';
+  else if (normalized.includes('almacen')) key = 'Almacenista';
+  else if (normalized.includes('consultor') || normalized.includes('lectura')) key = 'Consultor (Solo Lectura)';
+  else if (ESTADO_CONFIG[rol as EstadoBadgeType]) key = rol as EstadoBadgeType;
+
+  return <Badge estado={key} label={rol} className={className} />;
+}
+
