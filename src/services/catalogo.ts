@@ -41,7 +41,7 @@ export async function getArticulos(params: ArticulosQuery = {}): Promise<Articul
   const url = await baseUrl();
   const query = buildOffsetQuery({
     page: params.page ?? 1,
-    perPage: params.perPage ?? 50,
+    perPage: Math.min(params.perPage ?? 50, 100),
     category_id: params.category_id,
     search: params.search,
   });
@@ -54,7 +54,7 @@ export async function getArticulosPage(
 ): Promise<{ data: ArticuloCatalogo[]; meta: PaginationMeta }> {
   const url = await baseUrl();
   const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
+  const perPage = Math.min(params.perPage ?? 15, 100);
   const query = buildOffsetQuery({
     page,
     perPage,

@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       // Paso 1: Obtener token
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/login`,
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
         {
           method: 'POST',
           headers: {

@@ -60,7 +60,7 @@ const NOTIFICACIONES_INICIALES: NotificacionMock[] = [
 
 export default function Header({ isDark, onToggleTheme }: HeaderProps) {
   const router = useRouter();
-  const [userName] = useState(() => getUserName() ?? 'Usuario');
+  const [userName, setUserName] = useState('Usuario');
   const [email, setEmail] = useState('');
   const [empresaNombre, setEmpresaNombre] = useState('');
   const [open, setOpen] = useState(false);
@@ -89,6 +89,11 @@ export default function Header({ isDark, onToggleTheme }: HeaderProps) {
       }
     })();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const name = getUserName();
+    if (name) setUserName(name);
   }, []);
 
   useEffect(() => {
