@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
 import { getUsuarioById, updateUsuario } from '@/services/usuarios';
 import { getRoles, asignarRol, revocarRol } from '@/services/roles';
 import type { Rol } from '@/types/rol';
@@ -32,7 +31,9 @@ export default function EditarUsuarioPage() {
         setForm({ nombre: u.nombre, email: u.email, telefono: u.telefono ?? '' });
         setActivo(u.activo);
         setRoles(r);
-        const current = r.find(rol => u.roles.some(ur => ur === rol.id || ur === rol.nombre));
+        const current = r.find((rol) =>
+          u.roles.some((ur) => ur === rol.id || ur === rol.nombre),
+        );
         const currentId = current?.id || '';
         setSelectedRol(currentId);
         setOriginalRol(currentId);
@@ -42,13 +43,17 @@ export default function EditarUsuarioPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: '' }));
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
     setStatus('');
   };
 
@@ -56,7 +61,7 @@ export default function EditarUsuarioPage() {
     const next: Record<string, string> = {};
     if (!form.nombre.trim()) next.nombre = 'El nombre es obligatorio.';
     if (!form.email.trim()) next.email = 'El email es obligatorio.';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email invalido.';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Email inválido.';
     return next;
   };
 
@@ -64,92 +69,197 @@ export default function EditarUsuarioPage() {
     e.preventDefault();
     const next = validate();
     setErrors(next);
-    if (Object.keys(next).length) { setStatus('Corrige los errores.'); return; }
+    if (Object.keys(next).length > 0) return;
+
     setSubmitting(true);
     setStatus('Guardando...');
     try {
-      await updateUsuario(id!, { nombre: form.nombre, email: form.email, telefono: form.telefono || undefined, activo });
+      await updateUsuario(id!, {
+        nombre: form.nombre.trim(),
+        email: form.email.trim(),
+        telefono: form.telefono.trim() || undefined,
+        activo,
+      });
+
       if (selectedRol && selectedRol !== originalRol) {
         if (originalRol) await revocarRol(originalRol, id!).catch(() => {});
         await asignarRol(selectedRol, id!).catch(() => {});
       }
-      setStatus('Usuario actualizado.');
-      setTimeout(() => router.push(`/usuarios/${id}`), 800);
+
+      setStatus('Usuario actualizado correctamente.');
+      setTimeout(() => router.push(`/usuarios/${id}`), 600);
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Error al actualizar');
-    } finally {
+      setStatus(err instanceof Error ? err.message : 'Error al actualizar usuario');
       setSubmitting(false);
     }
   };
 
-  if (loading) return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Usuarios / Editar usuario" variant="activos" />
-      <p className="text-sm text-gray-500 mt-4">Cargando usuario...</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-8 text-center text-gema-primary/60 dark:text-white/50">
+        Cargando usuario...
+      </div>
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Usuarios / Editar usuario" variant="activos" />
-
-      <div className="mb-6">
-        <Link href={`/usuarios/${id}`} className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
-          <ArrowLeft className="w-4 h-4" />
-          Volver al detalle
-        </Link>
+    <div className="max-w-4xl mx-auto">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div>
+          <Link
+            href={`/usuarios/${id}`}
+            className="inline-flex items-center gap-2 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50 hover:text-gema-primary dark:hover:text-white mb-2 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al detalle
+          </Link>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+            Editar usuario
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+            Modificar información y rol del usuario
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/usuarios/${id}`}
+            className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark text-gema-primary dark:text-white font-semibold text-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+          >
+            Cancelar
+          </Link>
+          <button
+            type="submit"
+            form="editar-usuario-form"
+            disabled={submitting}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            <Save className="w-4 h-4" strokeWidth={2.5} />
+            {submitting ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-        <div className="flex justify-between items-start border-b-2 border-[#2E4365]/20 pb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Editar Usuario</h2>
-            <p className="text-gray-500 text-xs mt-1">Modifique los datos del usuario.</p>
+      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6 sm:p-8">
+        {status && (
+          <div
+            className={`mb-6 p-4 rounded-xl text-sm flex items-center gap-3 ${
+              Object.keys(errors).length > 0 || status.includes('Error')
+                ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20'
+                : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20'
+            }`}
+          >
+            {Object.keys(errors).length > 0 || status.includes('Error') ? (
+              <AlertCircle className="w-5 h-5 shrink-0" />
+            ) : null}
+            {status}
           </div>
-          <div className="flex gap-3">
-            <Link href={`/usuarios/${id}`} className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">Cancelar</Link>
-            <button type="submit" form="editar-usuario-form" disabled={submitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-              {submitting ? 'Guardando...' : 'Guardar cambios'}
-            </button>
-          </div>
-        </div>
+        )}
 
-        <form id="editar-usuario-form" onSubmit={handleSubmit} className="max-w-xl space-y-6">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Nombre completo</label>
-            <input id="nombre" name="nombre" type="text" value={form.nombre} onChange={handleChange}
-              className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.nombre ? 'border-red-500' : 'border-gray-400'}`} />
-            {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="email">Correo electronico</label>
-            <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
-              className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.email ? 'border-red-500' : 'border-gray-400'}`} />
-            {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="telefono">Telefono</label>
-            <input id="telefono" name="telefono" type="text" value={form.telefono} onChange={handleChange}
-              className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400" />
-          </div>
-          <div className="flex items-center gap-3">
-            <input id="activo" type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)}
-              className="w-4 h-4 rounded accent-[#E59D12]" />
-            <label htmlFor="activo" className="text-sm text-gray-700">Usuario activo</label>
-          </div>
+        <form id="editar-usuario-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label
+                htmlFor="nombre"
+                className="block text-xs font-semibold uppercase tracking-wider text-gema-primary/70 dark:text-white/60 mb-2"
+              >
+                Nombre completo *
+              </label>
+              <input
+                id="nombre"
+                name="nombre"
+                type="text"
+                value={form.nombre}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent ${
+                  errors.nombre
+                    ? 'border-red-500'
+                    : 'border-gray-200 dark:border-white/10'
+                }`}
+              />
+              {errors.nombre && (
+                <p className="mt-1.5 text-xs text-red-500">{errors.nombre}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-xs text-gray-500 mb-1" htmlFor="rol">Rol</label>
-            <select id="rol" value={selectedRol} onChange={e => setSelectedRol(e.target.value)}
-              className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-              <option value="">Seleccione un rol...</option>
-              {roles.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-            </select>
-          </div>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-xs font-semibold uppercase tracking-wider text-gema-primary/70 dark:text-white/60 mb-2"
+              >
+                Correo electrónico *
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent ${
+                  errors.email
+                    ? 'border-red-500'
+                    : 'border-gray-200 dark:border-white/10'
+                }`}
+              />
+              {errors.email && (
+                <p className="mt-1.5 text-xs text-red-500">{errors.email}</p>
+              )}
+            </div>
 
-          {status && <p className={`text-sm ${Object.keys(errors).length ? 'text-red-600' : 'text-emerald-700'}`}>{status}</p>}
+            <div>
+              <label
+                htmlFor="telefono"
+                className="block text-xs font-semibold uppercase tracking-wider text-gema-primary/70 dark:text-white/60 mb-2"
+              >
+                Teléfono
+              </label>
+              <input
+                id="telefono"
+                name="telefono"
+                type="text"
+                value={form.telefono}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="rol"
+                className="block text-xs font-semibold uppercase tracking-wider text-gema-primary/70 dark:text-white/60 mb-2"
+              >
+                Rol del sistema
+              </label>
+              <select
+                id="rol"
+                value={selectedRol}
+                onChange={(e) => setSelectedRol(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+              >
+                <option value="">Seleccione un rol...</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-2 flex items-center gap-3 pt-2">
+              <input
+                id="activo"
+                type="checkbox"
+                checked={activo}
+                onChange={(e) => setActivo(e.target.checked)}
+                className="w-4 h-4 rounded accent-gema-accent cursor-pointer"
+              />
+              <label
+                htmlFor="activo"
+                className="text-sm font-medium text-gema-primary dark:text-white cursor-pointer"
+              >
+                Usuario activo
+              </label>
+            </div>
+          </div>
         </form>
       </div>
     </div>
