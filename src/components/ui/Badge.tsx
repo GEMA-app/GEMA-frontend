@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Wrench, XCircle, Ban, Clock, PauseCircle, AlertCircle, Building2, Factory, FolderTree, Layers } from 'lucide-react';
 
 export type EstadoActivo =
   | 'operativo'
@@ -19,7 +19,13 @@ export type EstadoRepuesto =
   | 'bajo_minimo'
   | 'sin_stock';
 
-export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto;
+export type TipoUbicacionBadge =
+  | 'sede'
+  | 'planta'
+  | 'area'
+  | 'seccion';
+
+export type EstadoBadgeType = EstadoActivo | EstadoOT | EstadoRepuesto | TipoUbicacionBadge;
 
 interface EstadoConfig {
   label: string;
@@ -98,6 +104,30 @@ const ESTADO_CONFIG: Record<EstadoBadgeType, EstadoConfig> = {
     icon: XCircle,
     className:
       'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  },
+  sede: {
+    label: 'Sede',
+    icon: Building2,
+    className:
+      'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  },
+  planta: {
+    label: 'Planta',
+    icon: Factory,
+    className:
+      'bg-gema-accent/10 text-gema-accent-dark dark:text-gema-accent border-gema-accent/25',
+  },
+  area: {
+    label: 'Área',
+    icon: FolderTree,
+    className:
+      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  },
+  seccion: {
+    label: 'Sección',
+    icon: Layers,
+    className:
+      'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
   },
 };
 
