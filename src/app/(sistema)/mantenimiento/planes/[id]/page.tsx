@@ -3,12 +3,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Clock, Save, CheckCircle2 } from 'lucide-react';
 import { RequestState } from '@/components/ui/RequestState';
 import { getPlanById } from '@/services/planes-mantenimiento';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { useEjecucionesPlan } from '@/hooks/useEjecucionesPlan';
 import type { PlanMantenimiento } from '@/types/plan-mantenimiento';
 
 const TIPOS = [
@@ -27,6 +28,7 @@ export default function EditarPlanPage() {
   const { editarPlan } = usePlanesMantenimiento();
   const { activos } = useActivos({ perPage: 100 });
   const { usuarios } = useUsuarios();
+  const { ejecuciones, loading: loadingEjecuciones } = useEjecucionesPlan(id);
   const tecnicos = usuarios.filter((u) =>
     u.roles.some((r) =>
       r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes('tecnico')
@@ -122,7 +124,8 @@ export default function EditarPlanPage() {
         loadingMessage="Cargando plan..."
         emptyMessage="Plan no encontrado."
       >
-        {plan && (
+        {plan && (<>  
+          
           <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
             {saveError && (
               <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
@@ -244,7 +247,49 @@ export default function EditarPlanPage() {
               </div>
             </form>
           </div>
-        )}
+
+          <div className="mt-8 bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
+            <h2 className="text-base font-bold text-gema-primary dark:text-white mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gema-accent" />
+              Historial de ejecuciones ({ejecuciones.length})
+            </h2>
+            {loadingEjecuciones ? (
+              <p className="text-xs text-gray-500 dark:text-white/50">Cargando ejecuciones...</p>
+            ) : ejecuciones.length === 0 ? (
+              <p className="text-xs text-gray-500 dark:text-white/50">Sin ejecuciones registradas aún para este plan.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-white/70">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">Fecha de ejecución</th>
+                      <th className="px-3 py-2 text-left font-semibold">Orden de trabajo</th>
+                      <th className="px-3 py-2 text-left font-semibold">Observaciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/5 text-gray-800 dark:text-white/80">
+                    {ejecuciones.map((e) => (
+                      <tr key={e.id}>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {new Date(e.execution_date).toLocaleDateString('es-VE')}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-[11px]">
+                          <Link
+                            href={`/mantenimiento/${e.work_order_id}`}
+                            className="text-gema-accent-dark hover:underline"
+                          >
+                            {e.work_order_id.substring(0, 8)}...
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2 max-w-xs truncate">{e.observations || 'Sin observaciones'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>)}
       </RequestState>
     </div>
   );

@@ -17,6 +17,7 @@ export interface PlanMantenimiento {
 }
 
 export interface EjecucionResumen {
+  id: string;
   work_order_id: string;
   execution_date: string;
   observations: string | null;

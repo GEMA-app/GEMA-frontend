@@ -16,6 +16,7 @@ function mapEjecuciones(raw: unknown): EjecucionResumen[] {
   return raw.map((e) => {
     const item = (e ?? {}) as Record<string, unknown>;
     return {
+      id: String(item.id ?? ''),
       work_order_id: String(item.work_order_id ?? ''),
       execution_date: String(item.execution_date ?? ''),
       observations: (item.observations as string) ?? null,
