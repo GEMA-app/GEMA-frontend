@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Eye, Pencil, Trash, Users, CheckCircle2, Ban, Shield, AlertCircle, Power } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { getCurrentUser } from '@/services/auth';
 import { StatCard } from '@/components/ui/StatCard';
@@ -104,8 +105,22 @@ export default function UsuariosPage() {
   );
 
   const handleDelete = useCallback(
-    async (id: string, nombre: string) => {
-      if (!window.confirm(`¿Eliminar el usuario "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    async (id: string, email: string) => {
+      const { value } = await Swal.fire({
+        title: '¿Eliminar usuario?',
+        text: 'Escribe el correo del usuario para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Ej: usuario@empresa.com',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== email) {
+        Swal.fire('Error', 'El correo no coincide', 'error');
+        return;
+      }
       try {
         await eliminarUsuario(id);
       } catch (err) {
@@ -203,7 +218,7 @@ export default function UsuariosPage() {
           )}
           <button
             type="button"
-            onClick={() => handleDelete(usuario.id, usuario.nombre)}
+            onClick={() => handleDelete(usuario.id, usuario.email)}
             className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
             aria-label={`Eliminar ${usuario.nombre}`}
             title="Eliminar usuario"

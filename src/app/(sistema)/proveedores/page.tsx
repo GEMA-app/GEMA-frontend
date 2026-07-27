@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, Ban, AlertCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useProveedores } from '@/hooks/useProveedores';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoProveedor } from '@/components/ui/Badge';
@@ -48,17 +49,25 @@ export default function ProveedoresPage() {
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
-      const confirmName = window.prompt(
-        `Para eliminar el proveedor, escriba exactamente su nombre "${name}":`,
-      );
-      if (confirmName === name) {
-        try {
-          await eliminarProveedor(id);
-        } catch (err) {
-          alert(err instanceof Error ? err.message : 'Error al eliminar el proveedor');
-        }
-      } else if (confirmName !== null) {
-        alert('El nombre ingresado no coincide con el proveedor. Operación cancelada.');
+      const { value } = await Swal.fire({
+        title: '¿Eliminar proveedor?',
+        text: 'Escribe el nombre del proveedor para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Nombre del proveedor',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== name) {
+        Swal.fire('Error', 'El nombre no coincide', 'error');
+        return;
+      }
+      try {
+        await eliminarProveedor(id);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Error al eliminar el proveedor');
       }
     },
     [eliminarProveedor],
