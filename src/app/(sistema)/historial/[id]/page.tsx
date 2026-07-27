@@ -6,9 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Clock, User, Tag, Monitor, Mail, Box } from 'lucide-react';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { RequestState } from '@/components/ui/RequestState';
-import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
-import { extractResource } from '@/lib/jsonapi';
-import { mapApiHistorialToUi } from '@/lib/historial';
+import { getHistorialEntry } from '@/services/historial';
 import type { HistorialEntry } from '@/types/historial';
 
 function formatFecha(fecha: string): string {
@@ -65,40 +63,8 @@ export default function HistorialDetailPage() {
     let cancelled = false;
     (async () => {
       try {
-        const empresaId = await requireEmpresaId();
-        const payload = await fetchWithAuth<Record<string, unknown>>(
-          `/v1/empresas/${empresaId}/auditorias/${id}`,
-        );
+        const mapped = await getHistorialEntry(id);
         if (cancelled) return;
-
-        const resource = extractResource(payload);
-        const mapped = resource ? mapApiHistorialToUi(resource) : null;
-
-        if (mapped) {
-          const attrs = (resource?.attributes ?? {}) as Record<string, unknown>;
-          const usuarioId = attrs.usuario_id as string | undefined;
-          if (usuarioId) {
-            try {
-              const userPayload = await fetchWithAuth<{ data: { attributes: Record<string, unknown> } }>(
-                `/v1/empresas/${empresaId}/usuarios/${usuarioId}`,
-              );
-              const attrs = userPayload?.data?.attributes ?? {};
-              if (attrs.nombre) mapped.usuario.nombre = attrs.nombre as string;
-              if (attrs.email) mapped.usuario.email = attrs.email as string;
-              const roles = attrs.roles;
-              if (Array.isArray(roles)) {
-                mapped.usuario.roles = roles.map((r: unknown) =>
-                  typeof r === 'string'
-                    ? r
-                    : (r as Record<string, unknown>)?.nombre as string ?? String(r),
-                );
-              }
-            } catch {
-              // fallback to extracted info
-            }
-          }
-        }
-
         setEntry(mapped);
         if (!mapped) setError('Registro no encontrado');
       } catch (err) {

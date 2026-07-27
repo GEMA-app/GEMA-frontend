@@ -2,8 +2,10 @@ import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import {
   extractHistorialFromResponse,
   extractHistorialMeta,
+  mapApiHistorialToUi,
   type HistorialMeta,
 } from '@/lib/historial';
+import { extractResource } from '@/lib/jsonapi';
 import type { HistorialEntry } from '@/types/historial';
 
 export interface HistorialQuery {
@@ -58,6 +60,8 @@ function buildHistorialQuery(params: HistorialQuery): string {
   return query ? `?${query}` : '';
 }
 
+
+
 export async function getHistorial(params: HistorialQuery = {}): Promise<HistorialResponse> {
   const page = params.page ?? 1;
   const limit = params.limit ?? 20;
@@ -70,4 +74,11 @@ export async function getHistorial(params: HistorialQuery = {}): Promise<Histori
     entries: extractHistorialFromResponse(payload),
     meta: extractHistorialMeta(payload, page, limit),
   };
+}
+
+export async function getHistorialEntry(id: string): Promise<HistorialEntry | null> {
+  const url = await baseUrl();
+  const payload = await fetchWithAuth<unknown>(`${url}/${id}`);
+  const resource = extractResource(payload as Record<string, unknown>);
+  return resource ? mapApiHistorialToUi(resource) : null;
 }
