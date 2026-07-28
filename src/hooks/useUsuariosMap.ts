@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getUsuarios } from '@/services/usuarios';
+import { getUsuariosBasicos } from '@/services/usuarios';
 
 /**
  * Carga todos los usuarios de la empresa y devuelve un mapa id → nombre.
@@ -16,7 +16,7 @@ export function useUsuariosMap() {
     (async () => {
       try {
         // Pedimos hasta 200 usuarios para cubrir el listado completo
-        const { usuarios } = await getUsuarios({ perPage: 200 });
+        const { usuarios } = await getUsuariosBasicos({ perPage: 200 });
         if (cancelled) return;
         const map = new Map<string, string>();
         for (const u of usuarios) {

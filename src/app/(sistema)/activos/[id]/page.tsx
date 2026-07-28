@@ -209,7 +209,6 @@ export default function FichaDeActivoPage() {
     setCambiandoEstado(true);
     try {
       await updateActivo(asset.id, { estadoInicial: nuevoEstado, version: asset.version });
-      await loadAll(asset.id);
       setModalOpen(false);
     } catch (err) {
       await Swal.fire({
@@ -217,6 +216,16 @@ export default function FichaDeActivoPage() {
         title: 'Error al cambiar estado',
         text: err instanceof Error ? err.message : 'No se pudo cambiar el estado del activo.',
       });
+      setCambiandoEstado(false);
+      return; // Stop here if patch failed
+    }
+
+    try {
+      // Reload asset data separately to prevent a GET error from appearing as a PATCH error
+      await loadAll(asset.id);
+    } catch (err) {
+      console.error('Error al recargar el activo tras cambiar de estado:', err);
+      // We don't block the UI, just log it, but wait, maybe we should show a warning?
     } finally {
       setCambiandoEstado(false);
     }
@@ -330,7 +339,15 @@ export default function FichaDeActivoPage() {
             </div>
             <div>
               <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-1">Ubicación</p>
-              <p className="font-semibold text-gema-primary dark:text-white">{ubicacionName || '—'}</p>
+              <p className="font-semibold text-gema-primary dark:text-white">
+                {ubicacionName ? (
+                  <Link href={`/ubicaciones/${asset.ubicacion_id}`} className="text-gema-accent-dark dark:text-gema-accent hover:underline">
+                    {ubicacionName}
+                  </Link>
+                ) : (
+                  '—'
+                )}
+              </p>
             </div>
             <div>
               <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-1">Fecha de adquisición</p>
