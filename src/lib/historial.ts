@@ -29,12 +29,7 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
 
   if (!id) return null;
 
-  const rawModulo =
-    asString(attributes.modulo) ||
-    asString(attributes.resource_type) ||
-    asString(attributes.entidad) ||
-    asString(attributes.target_type) ||
-    'sistema';
+  const rawModulo = asString(attributes.modulo) || asString(attributes.resource_type) || 'sistema';
 
   const moduloLower = rawModulo.toLowerCase();
   let modulo = 'sistema';

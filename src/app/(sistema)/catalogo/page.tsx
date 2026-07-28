@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import type { ArticuloCatalogo } from '@/services/catalogo';
 import type { PaginationMeta } from '@/types/common';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const PER_PAGE = 15;
 const EMPTY_META: PaginationMeta = { page: 1, perPage: PER_PAGE, total: 0, lastPage: 1 };
@@ -84,7 +85,7 @@ export default function CatalogoPage() {
         cancelButtonText: 'Cancelar',
       });
       if (value === undefined) return;
-      if (value !== nombre) {
+      if (value?.trim().toLowerCase() !== nombre.trim().toLowerCase()) {
         Swal.fire('Error', 'El nombre no coincide', 'error');
         return;
       }
@@ -92,7 +93,13 @@ export default function CatalogoPage() {
         await deleteArticulo(id);
         loadArticulos();
       } catch (err) {
-        Swal.fire('Error', err instanceof ApiError ? err.message : 'Error al eliminar el artículo', 'error');
+        const is409 = err instanceof ApiError && err.status === 409;
+        const msg = is409
+          ? 'No se puede eliminar el artículo porque está asociado a activos u órdenes existentes.'
+          : err instanceof ApiError
+            ? err.message
+            : 'Error al eliminar el artículo.';
+        Swal.fire('Error', msg, 'error');
       }
     },
     [loadArticulos],
@@ -141,21 +148,25 @@ export default function CatalogoPage() {
       className: 'text-right',
       render: (articulo) => (
         <div className="flex items-center justify-end gap-2">
-          <Link
-            href={`/catalogo/${articulo.id}/editar`}
-            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={`Editar ${articulo.name}`}
-          >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleDelete(articulo.id, articulo.name)}
-            className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-            aria-label={`Eliminar ${articulo.name}`}
-          >
-            <Trash className="w-4 h-4" strokeWidth={1.5} />
-          </button>
+          <PermissionGuard module="administracion" action="edit">
+            <Link
+              href={`/catalogo/${articulo.id}/editar`}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Editar ${articulo.name}`}
+            >
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+          </PermissionGuard>
+          <PermissionGuard module="administracion" action="delete">
+            <button
+              type="button"
+              onClick={() => handleDelete(articulo.id, articulo.name)}
+              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+              aria-label={`Eliminar ${articulo.name}`}
+            >
+              <Trash className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -172,13 +183,15 @@ export default function CatalogoPage() {
             Artículos y categorías del catálogo maestro
           </p>
         </div>
-        <Link
-          href="/catalogo/nuevo"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nuevo artículo
-        </Link>
+        <PermissionGuard module="administracion" action="create">
+          <Link
+            href="/catalogo/nuevo"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo artículo
+          </Link>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">

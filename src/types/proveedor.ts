@@ -5,9 +5,6 @@ export interface Proveedor {
   phone: string | null;
   email: string | null;
   contact: string | null;
-  address: string | null;
-  is_active: boolean;
-  estado: 'activo' | 'inactivo';
   version: number;
 }
 
@@ -19,7 +16,6 @@ export interface ProveedorDetalle extends Proveedor {
 
 export interface ProveedoresQuery {
   search?: string;
-  estado?: 'activo' | 'inactivo' | '';
 }
 
 export interface ProveedoresResponse {
@@ -32,8 +28,6 @@ export interface CreateProveedorForm {
   phone?: string;
   email?: string;
   contact?: string;
-  address?: string;
-  is_active?: boolean;
 }
 
 export interface UpdateProveedorForm {
@@ -42,7 +36,5 @@ export interface UpdateProveedorForm {
   phone?: string;
   email?: string;
   contact?: string;
-  address?: string;
-  is_active?: boolean;
   version: number;
 }

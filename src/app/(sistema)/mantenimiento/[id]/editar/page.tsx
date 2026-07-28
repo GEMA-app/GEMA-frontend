@@ -5,9 +5,10 @@ import { ArrowLeft, FileText, Calendar, Users, Save, DollarSign } from 'lucide-r
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
-import { getOrdenById, updateOrden } from '@/services/ordenes-trabajo';
+import { getOrdenById, updateOrden, asignarTecnico } from '@/services/ordenes-trabajo';
 import { formatEstadoOT, formatTipoMantenimiento } from '@/lib/orden-trabajo';
 import type { TipoMantenimiento, OrdenTrabajo } from '@/types/orden-trabajo';
 
@@ -16,7 +17,7 @@ type Prioridad = 'baja' | 'media' | 'alta';
 export default function EditarOrdenPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { activos, loading: loadingActivos } = useActivos({ perPage: 200 });
+  const { activos, loading: loadingActivos } = useActivos({ perPage: 100 });
   const { usuarios, loading: loadingUsuarios } = useUsuarios();
 
   const supervisores = useMemo(() => {
@@ -27,10 +28,19 @@ export default function EditarOrdenPage() {
     return filtered.length > 0 ? filtered : usuarios;
   }, [usuarios]);
 
+  const tecnicos = useMemo(() => {
+    const filtered = usuarios.filter(u => u.roles.some(r => {
+      const role = r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return role.includes('tecnico');
+    }));
+    return filtered.length > 0 ? filtered : usuarios;
+  }, [usuarios]);
+
   const [orden, setOrden] = useState<OrdenTrabajo | null>(null);
   const [form, setForm] = useState({
     descripcion_trabajo: '',
     supervisor_id: '',
+    tecnico_id: '',
     costo_estimado: '',
   });
   const [loading, setLoading] = useState(true);
@@ -48,6 +58,7 @@ export default function EditarOrdenPage() {
         setForm({
           descripcion_trabajo: o.descripcion_trabajo ?? '',
           supervisor_id: o.supervisor_id ?? '',
+          tecnico_id: '',
           costo_estimado: o.costo_estimado?.toString() ?? '',
         });
       } catch (err) {
@@ -75,6 +86,9 @@ export default function EditarOrdenPage() {
         supervisor_id: form.supervisor_id || undefined,
         costo_estimado: form.costo_estimado ? Number(form.costo_estimado) : undefined,
       });
+      if (form.tecnico_id) {
+        await asignarTecnico(id!, form.tecnico_id);
+      }
       setStatus('Orden actualizada.');
       setTimeout(() => router.push(`/mantenimiento/${id}`), 800);
     } catch (err) {
@@ -92,7 +106,8 @@ export default function EditarOrdenPage() {
   );
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
+    <PermissionGuard module="mantenimiento" action="edit">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
       <PageHeader title="Mantenimiento / Editar orden" variant="activos" />
 
       <div className="mb-6">
@@ -174,10 +189,12 @@ export default function EditarOrdenPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Técnico</label>
-                  <select disabled
-                    className="w-full bg-transparent border-b py-1.5 outline-none text-sm border-gray-300 opacity-60 cursor-not-allowed">
-                    <option value="">Asignar desde detalle</option>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="tecnico_id">Técnico</label>
+                  <select id="tecnico_id" name="tecnico_id" value={form.tecnico_id} onChange={handleChange}
+                    disabled={loadingUsuarios}
+                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
+                    <option value="">{loadingUsuarios ? 'Cargando...' : 'Sin técnico asignado'}</option>
+                    {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>)}
                   </select>
                 </div>
               </div>
@@ -252,5 +269,6 @@ export default function EditarOrdenPage() {
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

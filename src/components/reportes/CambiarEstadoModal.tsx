@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { ReporteEstado } from '@/types/reporte';
+import { TRANSICIONES_REPORTE } from '@/types/reporte';
 
 interface CambiarEstadoModalProps {
   estadoActual: ReporteEstado;
@@ -14,8 +15,8 @@ interface CambiarEstadoModalProps {
 const ESTADO_OPTIONS: { value: ReporteEstado; label: string }[] = [
   { value: 'pendiente', label: 'Pendiente' },
   { value: 'en_proceso', label: 'En proceso' },
-  { value: 'resuelto', label: 'Resuelto' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'atendido', label: 'Atendido' },
+  { value: 'descartado', label: 'Descartado' },
 ];
 
 export function CambiarEstadoModal({
@@ -24,9 +25,10 @@ export function CambiarEstadoModal({
   onClose,
   onConfirm,
 }: CambiarEstadoModalProps) {
-  const [seleccion, setSeleccion] = useState<ReporteEstado>(
-    estadoActual === 'atendido' ? 'resuelto' : estadoActual === 'descartado' ? 'cancelado' : estadoActual,
-  );
+  const transicionesValidas = TRANSICIONES_REPORTE[estadoActual] ?? [];
+  const opcionesDisponibles = ESTADO_OPTIONS.filter(o => transicionesValidas.includes(o.value));
+
+  const [seleccion, setSeleccion] = useState<ReporteEstado>(estadoActual);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -57,7 +59,11 @@ export function CambiarEstadoModal({
         </div>
 
         <div className="space-y-2 mb-6">
-          {ESTADO_OPTIONS.map((option) => (
+          {opcionesDisponibles.length === 0 ? (
+            <p className="text-sm text-gema-primary/60 dark:text-white/50 text-center py-4">
+              No hay transiciones disponibles para este estado.
+            </p>
+          ) : opcionesDisponibles.map((option) => (
             <label
               key={option.value}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${

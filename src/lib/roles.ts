@@ -58,7 +58,7 @@ export function permisosToApi(permisos: PermisoGranular[]): Array<{
   can_edit: boolean;
   can_delete: boolean;
 }> {
-  const modules = ['activos', 'mantenimiento', 'inventario', 'reportes', 'administracion', 'preferencias'];
+  const modules = MODULO_VALUES;
   return modules.map(m => {
     const p = permisos.find(x => x.modulo === m);
     const acciones = p ? p.acciones : [];
@@ -77,6 +77,7 @@ export function mapRolFromApi(resource: JsonApiResource): Rol {
   return {
     id: resource.id,
     nombre: (attrs.nombre as string) || 'Sin nombre',
+    descripcion: (attrs.descripcion as string) || '',
     permisos: parsePermisos(attrs.permisos ?? attrs.permissions ?? []),
     version: (attrs.version as number) || 1,
   };

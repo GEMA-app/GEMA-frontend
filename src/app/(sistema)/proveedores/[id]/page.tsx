@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Truck, Mail, Phone, MapPin, UserCheck, Calendar, Package, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, Truck, Mail, Phone, UserCheck, Calendar, Package, AlertCircle } from 'lucide-react';
 import { getProveedor } from '@/services/proveedores';
 import { getRepuestos } from '@/services/repuestos';
 import { getArticulos } from '@/services/catalogo';
@@ -179,7 +179,6 @@ export default function ProveedorDetallePage() {
             <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
               {supplier.name}
             </h1>
-            <Badge estado={supplier.estado} />
           </div>
           <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
             RIF: {supplier.rif || 'Sin RIF especificado'}
@@ -240,16 +239,6 @@ export default function ProveedorDetallePage() {
             <div>
               <p className="text-xs text-gema-primary/50 dark:text-white/40 font-medium">Teléfono</p>
               <p className="font-semibold text-gema-primary dark:text-white mt-0.5">{supplier.phone || '—'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-gema-primary/5 dark:bg-white/5 text-gema-primary dark:text-white">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs text-gema-primary/50 dark:text-white/40 font-medium">Dirección</p>
-              <p className="font-semibold text-gema-primary dark:text-white mt-0.5">{supplier.address || '—'}</p>
             </div>
           </div>
 

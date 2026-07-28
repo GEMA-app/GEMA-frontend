@@ -1,4 +1,7 @@
 import type { UsuarioPermiso } from '@/types/usuario';
+import { MODULOS_RBAC, rolSlugFromLabel, type ModuloRBAC } from './permisos-rbac';
+
+export { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from './permisos-rbac';
 
 export const PERMISOS_UI = [
   { id: 'dashboard', nombre: 'Acceso dashboard' },
@@ -12,65 +15,39 @@ export const PERMISOS_UI = [
 ] as const;
 
 const FULL_ACCESS = new Set(['admin']);
-const ALL_USERS = new Set(['admin', 'supervisor', 'tecnico', 'reporter']);
-const OPERATIONAL = new Set(['admin', 'supervisor', 'tecnico']);
-const READ_REPORTS = new Set(['admin', 'supervisor', 'reporter']);
+
+/** Mapa: id de PERMISOS_UI → módulo en MATRIZ_RBAC (null si no existe en RBAC) */
+const UI_TO_MODULE: Record<string, ModuloRBAC | null> = {
+  dashboard: null,
+  activos: 'activos',
+  inventario: 'inventario',
+  mantenimiento: 'mantenimiento',
+  reportes: 'reportes',
+  preferencias: 'preferencias',
+  administracion: 'administracion',
+  configuracion: null,
+};
 
 export function buildPermisosFromRol(rolSlug: string): UsuarioPermiso[] {
   const normalized = rolSlug.trim().toLowerCase();
+  const { MATRIZ_RBAC } = require('./permisos-rbac');
 
   return PERMISOS_UI.map((permiso) => {
     let activo = false;
+    const modulo = UI_TO_MODULE[permiso.id];
 
     if (permiso.id === 'dashboard') {
       activo = true;
-    } else if (permiso.id === 'activos') {
-      activo = OPERATIONAL.has(normalized);
-    } else if (permiso.id === 'inventario') {
-      activo = OPERATIONAL.has(normalized);
-    } else if (permiso.id === 'mantenimiento') {
-      activo = OPERATIONAL.has(normalized);
-    } else if (permiso.id === 'reportes') {
-      activo = READ_REPORTS.has(normalized);
-    } else if (permiso.id === 'preferencias') {
-      activo = ALL_USERS.has(normalized);
-    } else if (permiso.id === 'administracion') {
-      activo = FULL_ACCESS.has(normalized);
     } else if (permiso.id === 'configuracion') {
       activo = FULL_ACCESS.has(normalized);
+    } else if (modulo) {
+      const row = MATRIZ_RBAC[normalized];
+      activo = row?.[modulo]?.view ?? false;
     }
 
-    return {
-      id: permiso.id,
-      nombre: permiso.nombre,
-      activo,
-    };
+    return { id: permiso.id, nombre: permiso.nombre, activo };
   });
 }
 
-export function rolSlugFromLabel(rol: string): string {
-  const normalized = rol.trim().toLowerCase();
-  if (normalized.includes('admin')) return 'admin';
-  if (normalized.includes('supervisor')) return 'supervisor';
-  if (normalized.includes('técnico') || normalized.includes('tecnico')) return 'tecnico';
-  if (normalized.includes('reporter')) return 'reporter';
-  return normalized;
-}
-
-// ── Constantes RBAC (alineadas con PermissionModule del backend) ──
-// Estos módulos corresponden 1:1 con los PermissionModule del backend.
-// Usar en PermissionGuard y en hasPermission() cuando se implemente en Fase 8.
-
-export const MODULOS_RBAC = {
-  ACTIVOS: 'activos',
-  MANTENIMIENTO: 'mantenimiento',
-  INVENTARIO: 'inventario',
-  REPORTES: 'reportes',
-  ADMINISTRACION: 'administracion',
-  PREFERENCIAS: 'preferencias',
-} as const;
-
-export const ACCIONES_RBAC = ['view', 'create', 'edit', 'delete'] as const;
-
-export type ModuloRBAC = (typeof MODULOS_RBAC)[keyof typeof MODULOS_RBAC];
-export type AccionRBAC = (typeof ACCIONES_RBAC)[number];
+// Re-export para compatibilidad con import existentes
+export { rolSlugFromLabel } from './permisos-rbac';

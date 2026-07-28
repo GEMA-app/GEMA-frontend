@@ -25,9 +25,14 @@ export function usePreferencias() {
   useEffect(() => { void fetchPreferencias(); }, [fetchPreferencias]);
 
   const cambiarTema = useCallback(async (tema: TemaPreferencia) => {
-    if (!preferencia) return;
-    const actualizada = await updatePreferencias(preferencia, { tema, version: preferencia.version });
-    setPreferencia(actualizada);
+    const current = preferencia || { id: '', empresa_id: '', tema: 'oscuro', version: 1 };
+    try {
+      setError(null);
+      const actualizada = await updatePreferencias(current, { tema, version: current.version });
+      setPreferencia(actualizada);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error al actualizar el tema.');
+    }
   }, [preferencia]);
 
   return { preferencia, loading, error, cambiarTema, refetch: fetchPreferencias };

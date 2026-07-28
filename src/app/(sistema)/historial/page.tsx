@@ -7,6 +7,7 @@ import { useHistorial } from '@/hooks/useHistorial';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { HistorialEntry } from '@/types/historial';
 
 const PER_PAGE = 15;
@@ -238,139 +239,141 @@ export default function HistorialPage() {
   ];
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
-        <div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
-            Historial
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
-            Registro de auditoría y actividades del sistema
-          </p>
+    <PermissionGuard module="administracion" action="view">
+      <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+          <div>
+            <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+              Historial
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+              Registro de auditoría y actividades del sistema
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-        <StatCard icon={History} value={summary.total} label="Total eventos" loading={loading} tone="default" />
-        <StatCard icon={Clock} value={summary.hoy} label="Eventos hoy" loading={loading} tone="accent" />
-        <StatCard icon={Users} value={summary.usuariosActivos} label="Usuarios activos" loading={loading} tone="accent" />
-        <StatCard icon={ShieldAlert} value={summary.accionesCriticas} label="Acciones críticas" loading={loading} tone="danger" />
-      </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <StatCard icon={History} value={summary.total} label="Total eventos" loading={loading} tone="default" />
+          <StatCard icon={Clock} value={summary.hoy} label="Eventos hoy" loading={loading} tone="accent" />
+          <StatCard icon={Users} value={summary.usuariosActivos} label="Usuarios activos" loading={loading} tone="accent" />
+          <StatCard icon={ShieldAlert} value={summary.accionesCriticas} label="Acciones críticas" loading={loading} tone="danger" />
+        </div>
 
-      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por usuario, acción o descripción..."
-            aria-label="Buscar eventos"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
-          />
-          <select
-            value={moduloFiltro}
-            onChange={(e) => {
-              setModuloFiltro(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Filtrar por módulo"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
-          >
-            {MODULO_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            value={usuarioFiltro}
-            onChange={(e) => {
-              setUsuarioFiltro(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Filtrar por usuario..."
-            aria-label="Filtrar por usuario"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
-          />
-          <input
-            type="date"
-            value={fechaDesde}
-            onChange={(e) => {
-              setFechaDesde(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Fecha desde"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
-          />
-          <div className="flex gap-2">
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
             <input
-              type="date"
-              value={fechaHasta}
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por usuario, acción o descripción..."
+              aria-label="Buscar eventos"
+              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+            />
+            <select
+              value={moduloFiltro}
               onChange={(e) => {
-                setFechaHasta(e.target.value);
+                setModuloFiltro(e.target.value);
                 setPage(1);
               }}
-              aria-label="Fecha hasta"
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+              aria-label="Filtrar por módulo"
+              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+            >
+              {MODULO_FILTER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={usuarioFiltro}
+              onChange={(e) => {
+                setUsuarioFiltro(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Filtrar por usuario..."
+              aria-label="Filtrar por usuario"
+              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
             />
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                title="Limpiar filtros"
-                className="p-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gema-primary/60 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {error && empty ? (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            {error}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={sortedEntries}
-            keyExtractor={(entry) => entry.id}
-            loading={loading}
-            emptyMessage={emptyMessage}
-          />
-        )}
-
-        {!loading && !empty && meta.lastPage > 1 && (
-          <nav
-            className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
-            aria-label="Paginación de historial"
-          >
-            <p>
-              Página {meta.page} de {meta.lastPage} — {meta.total} registros
-            </p>
+            <input
+              type="date"
+              value={fechaDesde}
+              onChange={(e) => {
+                setFechaDesde(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Fecha desde"
+              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+            />
             <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={meta.page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                disabled={meta.page >= meta.lastPage}
-                onClick={() => setPage((current) => current + 1)}
-                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
+              <input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => {
+                  setFechaHasta(e.target.value);
+                  setPage(1);
+                }}
+                aria-label="Fecha hasta"
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+              />
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  title="Limpiar filtros"
+                  className="p-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gema-primary/60 dark:text-white/60 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
             </div>
-          </nav>
-        )}
+          </div>
+
+          {error && empty ? (
+            <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              {error}
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={sortedEntries}
+              keyExtractor={(entry) => entry.id}
+              loading={loading}
+              emptyMessage={emptyMessage}
+            />
+          )}
+
+          {!loading && !empty && meta.lastPage > 1 && (
+            <nav
+              className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+              aria-label="Paginación de historial"
+            >
+              <p>
+                Página {meta.page} de {meta.lastPage} — {meta.total} registros
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={meta.page <= 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  disabled={meta.page >= meta.lastPage}
+                  onClick={() => setPage((current) => current + 1)}
+                  className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </nav>
+          )}
+        </div>
       </div>
-    </div>
+    </PermissionGuard>
   );
 }

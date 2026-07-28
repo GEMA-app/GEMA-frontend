@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Mail, KeyRound, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { setSession } from '@/lib/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -28,7 +29,7 @@ export default function LoginPage() {
           },
           body: JSON.stringify({
             data: {
-              type: 'tokens',
+              type: 'login',
               attributes: { email, password },
             },
           }),
@@ -43,25 +44,24 @@ export default function LoginPage() {
         return;
       }
 
+      setSession(result);
+
       const token = result.data?.attributes?.access_token;
-      if (token) localStorage.setItem('token', token);
-
-      // Paso 2: Obtener perfil, empresa_id y roles
-      const perfilResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.api+json',
-          },
+      if (token) {
+        // Paso 2: Obtener perfil, empresa_id y roles
+        const perfilResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/vnd.api+json',
+            },
+          }
+        );
+        if (perfilResponse.ok) {
+          const perfil = await perfilResponse.json();
+          setSession(perfil);
         }
-      );
-      const perfil = await perfilResponse.json();
-      const attrs = perfil.data?.attributes;
-
-      if (attrs?.empresa_id) localStorage.setItem('empresa_id', attrs.empresa_id);
-      if (attrs?.roles && attrs.roles.length > 0) {
-        localStorage.setItem('roles', JSON.stringify(attrs.roles));
       }
 
       window.location.href = '/dashboard';

@@ -7,7 +7,7 @@ export function mapRepuestoFromApi(resource: JsonApiResource): Repuesto {
   return {
     id: resource.id,
     articulo_id: getAttr(resource, 'articulo_id'),
-    proveedor_id: getAttr(resource, 'proveedor_id') || null,
+    proveedor_id: getAttr(resource, 'proveedor_id'),
     stock_actual: getAttrNumber(resource, 'stock_actual'),
     stock_minimo: getAttrNumber(resource, 'stock_minimo'),
     ubicacion_almacen: getAttr(resource, 'ubicacion_almacen'),
@@ -34,16 +34,16 @@ export function mapMovimientoFromApi(resource: JsonApiResource): MovimientoInven
   return {
     id: resource.id,
     repuesto_id: getAttr(resource, 'repuesto_id'),
-    movement_type: (getAttr(resource, 'movement_type') || 'entrada') as TipoMovimiento,
+    movement_type: (getAttr(resource, 'movement_type') ?? 'entrada') as TipoMovimiento,
     quantity: getAttrNumber(resource, 'quantity'),
-    work_order_id: getAttr(resource, 'work_order_id') || null,
-    usuario_id: getAttr(resource, 'usuario_id') || null,
+    work_order_id: getAttr(resource, 'work_order_id') ?? null,
+    usuario_id: getAttr(resource, 'usuario_id') ?? null,
     precio_unitario: resource.attributes.precio_unitario != null
       ? getAttrNumber(resource, 'precio_unitario')
       : null,
     moneda: getAttr(resource, 'moneda', 'USD'),
-    fecha_movimiento: getAttr(resource, 'fecha_movimiento') || null,
-    reason: getAttr(resource, 'reason') || null,
+    fecha_movimiento: getAttr(resource, 'fecha_movimiento') ?? null,
+    reason: getAttr(resource, 'reason') ?? null,
   };
 }
 
@@ -51,6 +51,6 @@ export function extractMovimientosFromResponse(payload: unknown): MovimientoInve
   return extractResourceList(payload).map(mapMovimientoFromApi);
 }
 
-export function stockBajo(repuesto: Repuesto): boolean {
-  return repuesto.stock_actual <= repuesto.stock_minimo;
+export function extractMovimientosMeta(payload: unknown, page = 1, perPage = 20): PaginationMeta {
+  return extractMetaFromResponse(payload, page, perPage);
 }

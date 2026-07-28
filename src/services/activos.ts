@@ -82,7 +82,7 @@ export async function createActivo(data: CreateActivoForm): Promise<void> {
     });
   } catch (err) {
     if (articuloCreado) {
-      try { await deleteArticulo(articuloId); } catch { /* ponytail: rollback silencioso */ }
+      try { await deleteArticulo(articuloId); } catch (e) { console.error('rollback: fallo al eliminar articulo huerfano', e); }
     }
     throw err;
   }
@@ -213,6 +213,7 @@ export async function getHistorialEstadosActivo(activoId: string): Promise<LogEs
   );
   return extractResourceList(payload).map((r) => ({
     id: r.id,
+    empresa_id: (r.attributes.empresa_id as string) ?? empresaId,
     activo_id: (r.attributes.activo_id as string) ?? activoId,
     estado_anterior: r.attributes.estado_anterior
       ? normalizeAssetStatus(r.attributes.estado_anterior as string)
@@ -221,5 +222,6 @@ export async function getHistorialEstadosActivo(activoId: string): Promise<LogEs
     motivo: (r.attributes.motivo as string) || null,
     fecha_cambio: (r.attributes.fecha_cambio as string) ?? '',
     usuario_id: (r.attributes.usuario_id as string) || null,
+    version: (r.attributes.version as number) ?? 1,
   }));
 }

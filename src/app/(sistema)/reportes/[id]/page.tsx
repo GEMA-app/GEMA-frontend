@@ -10,6 +10,7 @@ import type { Reporte, ReporteEstado } from '@/types/reporte';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { CambiarEstadoModal } from '@/components/reportes/CambiarEstadoModal';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 export default function FichaReportePage() {
   const { id: reporteId } = useParams<{ id: string }>();
@@ -115,12 +116,7 @@ export default function FichaReportePage() {
     );
   }
 
-  const estadoBadge =
-    reporte.status === 'atendido'
-      ? 'resuelto'
-      : reporte.status === 'descartado'
-        ? 'cancelado'
-        : reporte.status;
+  const estadoBadge = reporte.status;
 
   return (
     <div>
@@ -144,14 +140,16 @@ export default function FichaReportePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="w-4 h-4" strokeWidth={2} />
-            Cambiar estado
-          </button>
+          <PermissionGuard module="mantenimiento" action="edit">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="w-4 h-4" strokeWidth={2} />
+              Cambiar estado
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -201,14 +199,6 @@ export default function FichaReportePage() {
                 {reporte.description || 'Sin descripción'}
               </p>
             </div>
-            {reporte.observaciones && (
-              <div className="sm:col-span-2">
-                <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-1">Observaciones</p>
-                <p className="text-gema-primary dark:text-white whitespace-pre-wrap">
-                  {reporte.observaciones}
-                </p>
-              </div>
-            )}
           </div>
         </Card>
 

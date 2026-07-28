@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, History, RefreshCw, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import {
@@ -12,10 +13,12 @@ import {
   getHistorialEstadosActivo,
   updateActivo,
 } from '@/services/activos';
+import { normalizeAssetStatus } from '@/lib/activos';
 import type { ActivoResponse, CatalogArticleResponse } from '@/services/activos';
 import type { ActivoEstado, LogEstadoActivo } from '@/types/activo';
 import { Badge, type EstadoActivo } from '@/components/ui/Badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const ESTADO_OPTIONS: { value: ActivoEstado; label: string }[] = [
   { value: 'operativo', label: 'Operativo' },
@@ -23,14 +26,6 @@ const ESTADO_OPTIONS: { value: ActivoEstado; label: string }[] = [
   { value: 'fuera_de_servicio', label: 'Fuera de servicio' },
   { value: 'dado_de_baja', label: 'Dado de baja' },
 ];
-
-function normalizeEstado(estado: string): ActivoEstado {
-  return (['operativo', 'en_mantenimiento', 'fuera_de_servicio', 'dado_de_baja'] as const).includes(
-    estado as ActivoEstado,
-  )
-    ? (estado as ActivoEstado)
-    : 'operativo';
-}
 
 interface CambiarEstadoModalProps {
   estadoActual: ActivoEstado;
@@ -127,6 +122,7 @@ export default function FichaDeActivoPage() {
   );
   const [historial, setHistorial] = useState<LogEstadoActivo[]>([]);
   const [loadingHistorial, setLoadingHistorial] = useState(() => Boolean(activoId));
+  const [historialError, setHistorialError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
@@ -146,21 +142,31 @@ export default function FichaDeActivoPage() {
     return walk(ubicaciones);
   }, [asset?.ubicacion_id, ubicaciones]);
 
+  const fetchHistorial = async (id: string) => {
+    setLoadingHistorial(true);
+    setHistorialError(null);
+    try {
+      const h = await getHistorialEstadosActivo(id);
+      setHistorial(h);
+    } catch (err) {
+      setHistorialError(err instanceof Error ? err.message : 'Error al cargar historial');
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
   const loadAll = async (id: string) => {
     try {
       const a = await getActivo(id);
       setAsset(a);
-      const [c, h] = await Promise.all([
-        getCatalogArticle(a.articulo_id).catch(() => null as unknown as CatalogArticleResponse),
-        getHistorialEstadosActivo(id).catch(() => [] as LogEstadoActivo[]),
-      ]);
-      if (c) setCatalog(c);
-      setHistorial(h);
+      getCatalogArticle(a.articulo_id)
+        .then(setCatalog)
+        .catch(() => null);
+      await fetchHistorial(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar activo');
     } finally {
       setLoading(false);
-      setLoadingHistorial(false);
     }
   };
 
@@ -172,13 +178,18 @@ export default function FichaDeActivoPage() {
         const a = await getActivo(activoId);
         if (cancelled) return;
         setAsset(a);
-        const [c, h] = await Promise.all([
-          getCatalogArticle(a.articulo_id).catch(() => null as unknown as CatalogArticleResponse),
-          getHistorialEstadosActivo(activoId).catch(() => [] as LogEstadoActivo[]),
-        ]);
-        if (cancelled) return;
-        if (c) setCatalog(c);
-        setHistorial(h);
+        getCatalogArticle(a.articulo_id)
+          .then((c) => {
+            if (!cancelled && c) setCatalog(c);
+          })
+          .catch(() => null);
+        
+        try {
+          const h = await getHistorialEstadosActivo(activoId);
+          if (!cancelled) setHistorial(h);
+        } catch (hErr) {
+          if (!cancelled) setHistorialError(hErr instanceof Error ? hErr.message : 'Error al cargar historial de estados.');
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar activo');
       } finally {
@@ -201,13 +212,32 @@ export default function FichaDeActivoPage() {
       await loadAll(asset.id);
       setModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo cambiar el estado del activo.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error al cambiar estado',
+        text: err instanceof Error ? err.message : 'No se pudo cambiar el estado del activo.',
+      });
     } finally {
       setCambiandoEstado(false);
     }
   };
 
-  const estado = asset ? normalizeEstado(asset.estado) : null;
+  const getEstadoDotColor = (estado: string) => {
+    switch (estado) {
+      case 'operativo':
+        return 'bg-emerald-500';
+      case 'en_mantenimiento':
+        return 'bg-amber-500';
+      case 'fuera_de_servicio':
+        return 'bg-red-500';
+      case 'dado_de_baja':
+        return 'bg-gray-400';
+      default:
+        return 'bg-gema-accent';
+    }
+  };
+
+  const estado = asset ? normalizeAssetStatus(asset.estado) : null;
 
   if (loading) {
     return (
@@ -260,13 +290,15 @@ export default function FichaDeActivoPage() {
             <RefreshCw className="w-4 h-4" strokeWidth={2} />
             Cambiar estado
           </button>
-          <Link
-            href={`/activos/${asset.id}/editar`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer"
-          >
-            <Pencil className="w-4 h-4" strokeWidth={2} />
-            Editar
-          </Link>
+          <PermissionGuard module="activos" action="edit">
+            <Link
+              href={`/activos/${asset.id}/editar`}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer"
+            >
+              <Pencil className="w-4 h-4" strokeWidth={2} />
+              Editar
+            </Link>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -338,33 +370,55 @@ export default function FichaDeActivoPage() {
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 rounded-full border-2 border-gema-primary/20 dark:border-white/20 border-t-gema-accent animate-spin" />
           </div>
+        ) : historialError ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <p className="text-sm text-red-600 dark:text-red-400 mb-3">{historialError}</p>
+            <button
+              type="button"
+              onClick={() => fetchHistorial(activoId)}
+              className="px-4 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 text-xs font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              Reintentar
+            </button>
+          </div>
         ) : historial.length === 0 ? (
           <p className="text-sm text-gema-primary/50 dark:text-white/40 text-center py-4">
             Sin cambios de estado registrados.
           </p>
         ) : (
           <div className="space-y-4">
-            {historial.map((log) => (
-              <div key={log.id} className="relative pl-6 border-l-2 border-gema-accent/30 last:pb-0 pb-4">
-                <div className="absolute -left-1.25 top-1 w-2.5 h-2.5 rounded-full bg-gema-accent" />
-                <p className="text-xs text-gema-primary/40 dark:text-white/40">
-                  {new Date(log.fecha_cambio).toLocaleString('es')}
-                </p>
-                <p className="text-sm text-gema-primary dark:text-white/90">
-                  <span className="font-semibold">
-                    {log.estado_anterior ? ESTADO_OPTIONS.find((o) => o.value === log.estado_anterior)?.label : '—'}
-                  </span>
-                  {' → '}
-                  <span className="font-semibold">
-                    {ESTADO_OPTIONS.find((o) => o.value === log.estado_nuevo)?.label ?? log.estado_nuevo}
-                  </span>
-                </p>
-                {log.motivo && <p className="text-xs text-gema-primary/50 dark:text-white/40 italic">&quot;{log.motivo}&quot;</p>}
-                <p className="text-xs text-gema-primary/40 dark:text-white/30 mt-0.5">
-                  {usuarioMap[log.usuario_id ?? '']?.nombre ?? 'Sistema'}
-                </p>
-              </div>
-            ))}
+            {historial.map((log, idx) => {
+              const dotColor = getEstadoDotColor(log.estado_nuevo);
+              const isActual = idx === 0;
+              return (
+                <div key={log.id} className="relative pl-6 border-l-2 border-gray-200 dark:border-white/10 last:pb-0 pb-4">
+                  <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gema-primary/40 dark:text-white/40">
+                      {new Date(log.fecha_cambio).toLocaleString('es')}
+                    </p>
+                    {isActual && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gema-accent/20 text-gema-primary dark:text-gema-accent">
+                        ACTUAL
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gema-primary dark:text-white/90 mt-0.5">
+                    <span className="font-semibold">
+                      {log.estado_anterior ? ESTADO_OPTIONS.find((o) => o.value === log.estado_anterior)?.label : '—'}
+                    </span>
+                    {' → '}
+                    <span className="font-semibold">
+                      {ESTADO_OPTIONS.find((o) => o.value === log.estado_nuevo)?.label ?? log.estado_nuevo}
+                    </span>
+                  </p>
+                  {log.motivo && <p className="text-xs text-gema-primary/50 dark:text-white/40 italic mt-0.5">&quot;{log.motivo}&quot;</p>}
+                  <p className="text-xs text-gema-primary/40 dark:text-white/30 mt-0.5">
+                    {usuarioMap[log.usuario_id ?? '']?.nombre ?? 'Sistema'}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>

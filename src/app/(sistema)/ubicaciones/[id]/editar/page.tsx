@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
-import { getUbicacion, updateUbicacion } from '@/services/ubicaciones';
+import { getUbicacion } from '@/services/ubicaciones';
 import { ApiError } from '@/lib/api';
-import type { Ubicacion } from '@/types/ubicacion';
+import type { TipoUbicacion, Ubicacion } from '@/types/ubicacion';
 
 const labelClass = 'block text-[13px] font-semibold text-gema-primary dark:text-white/80 mb-1.5';
 const inputClass =
@@ -19,7 +19,7 @@ export default function EditarUbicacionPage() {
   const ubicacionId = params.id as string;
   const router = useRouter();
 
-  const { ubicaciones, loading: loadingUbicaciones } = useUbicaciones();
+  const { ubicaciones, loading: loadingUbicaciones, updateUbicacion } = useUbicaciones();
   const ubicacionOptions = useMemo(
     () => flattenUbicacionesForSelect(ubicaciones),
     [ubicaciones],
@@ -39,9 +39,10 @@ export default function EditarUbicacionPage() {
 
   const [formData, setFormData] = useState({
     nombre: '',
-    tipo: 'area',
+    tipo: 'area' as TipoUbicacion,
     parentId: '',
     descripcion: '',
+    version: undefined as number | undefined,
   });
 
   const [loadingUbicacion, setLoadingUbicacion] = useState(true);
@@ -70,6 +71,7 @@ export default function EditarUbicacionPage() {
             tipo: u.tipo || 'area',
             parentId: u.parentId || '',
             descripcion: u.descripcion || '',
+            version: u.version,
           });
         }
       } catch (err) {
@@ -115,6 +117,7 @@ export default function EditarUbicacionPage() {
         tipo: formData.tipo,
         parentId: formData.parentId || null,
         descripcion: formData.descripcion.trim() || null,
+        version: formData.version,
       });
       router.push(`/ubicaciones/${ubicacionId}`);
     } catch (err) {

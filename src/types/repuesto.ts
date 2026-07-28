@@ -3,7 +3,7 @@ import type { PaginationMeta } from '@/types/common';
 export interface Repuesto {
   id: string;
   articulo_id: string;
-  proveedor_id: string | null;
+  proveedor_id: string;
   stock_actual: number;
   stock_minimo: number;
   ubicacion_almacen: string;
@@ -27,6 +27,11 @@ export interface MovimientoInventario {
   reason: string | null;
 }
 
+export interface MovimientosResponse {
+  movimientos: MovimientoInventario[];
+  meta: PaginationMeta;
+}
+
 export interface RepuestosQuery {
   page?: number;
   perPage?: number;
@@ -39,7 +44,7 @@ export interface RepuestosResponse {
 
 export interface NuevoRepuestoInput {
   articulo_id: string;
-  proveedor_id: string;
+  proveedor_id?: string;
   ubicacion_almacen: string;
   stock_actual?: number;
   stock_minimo?: number;

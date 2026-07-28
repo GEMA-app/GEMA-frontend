@@ -1,6 +1,6 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { buildOffsetQuery, extractMetaFromResponse } from '@/lib/pagination';
-import { extractResourceList, extractResource, getAttr, type JsonApiResource } from '@/lib/jsonapi';
+import { extractResourceList, extractResource, getAttr, getAttrNumber, type JsonApiResource } from '@/lib/jsonapi';
 import type { PaginationMeta } from '@/types/common';
 
 export interface ArticuloCatalogo {
@@ -41,7 +41,7 @@ export async function getArticulos(params: ArticulosQuery = {}): Promise<Articul
   const url = await baseUrl();
   const query = buildOffsetQuery({
     page: params.page ?? 1,
-    perPage: params.perPage ?? 50,
+    perPage: Math.min(params.perPage ?? 50, 100),
     category_id: params.category_id,
     search: params.search,
   });
@@ -54,7 +54,7 @@ export async function getArticulosPage(
 ): Promise<{ data: ArticuloCatalogo[]; meta: PaginationMeta }> {
   const url = await baseUrl();
   const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
+  const perPage = Math.min(params.perPage ?? 15, 100);
   const query = buildOffsetQuery({
     page,
     perPage,
@@ -139,6 +139,8 @@ export interface CategoriaCatalogo {
   id: string;
   name: string;
   description: string | null;
+  version: number;
+  articulos_count: number;
 }
 
 function mapCategoria(resource: JsonApiResource): CategoriaCatalogo {
@@ -146,6 +148,8 @@ function mapCategoria(resource: JsonApiResource): CategoriaCatalogo {
     id: resource.id,
     name: getAttr(resource, 'name'),
     description: getAttr(resource, 'description') || null,
+    version: getAttrNumber(resource, 'version', 1),
+    articulos_count: getAttrNumber(resource, 'articulos_count', 0),
   };
 }
 
@@ -170,7 +174,7 @@ export async function createCategoria(input: {
     contentType: 'json-api',
     json: {
       data: {
-        type: 'catalog-categories',
+        type: 'article_categories',
         attributes: {
           name: input.name,
           description: input.description ?? null,
@@ -185,7 +189,7 @@ export async function createCategoria(input: {
 
 export async function updateCategoria(
   id: string,
-  input: Partial<{ name: string; description: string | null }>,
+  input: Partial<{ name: string; description: string | null; version: number }>,
 ): Promise<CategoriaCatalogo> {
   const url = await categoriasBaseUrl();
   const attributes: Record<string, unknown> = {};
@@ -195,7 +199,7 @@ export async function updateCategoria(
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',
     contentType: 'json-api',
-    json: { data: { type: 'catalog-categories', attributes } },
+    json: { data: { type: 'article_categories', attributes } },
   });
   const resource = extractResource(payload);
   if (!resource) throw new Error('No se pudo interpretar la categoria actualizada.');

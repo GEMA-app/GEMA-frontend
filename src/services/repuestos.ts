@@ -2,6 +2,7 @@ import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { buildOffsetQuery } from '@/lib/pagination';
 import {
   extractMovimientosFromResponse,
+  extractMovimientosMeta,
   extractRepuestosFromResponse,
   extractRepuestosMeta,
   mapRepuestoFromResponse,
@@ -9,6 +10,7 @@ import {
 import type {
   ActualizarRepuestoInput,
   MovimientoInventario,
+  MovimientosResponse,
   NuevoMovimientoInput,
   NuevoRepuestoInput,
   Repuesto,
@@ -24,7 +26,7 @@ async function baseUrl(): Promise<string> {
 export async function getRepuestos(params: RepuestosQuery = {}): Promise<RepuestosResponse> {
   const url = await baseUrl();
   const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
+  const perPage = Math.min(params.perPage ?? 15, 100);
   const payload = await fetchWithAuth<unknown>(`${url}${buildOffsetQuery({ page, perPage })}`);
   return {
     repuestos: extractRepuestosFromResponse(payload),
@@ -87,12 +89,15 @@ export async function deleteRepuesto(id: string): Promise<void> {
   await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
 }
 
-export async function getMovimientos(repuestoId: string, page = 1, perPage = 20): Promise<MovimientoInventario[]> {
+export async function getMovimientos(repuestoId: string, page = 1, perPage = 20): Promise<MovimientosResponse> {
   const url = await baseUrl();
   const payload = await fetchWithAuth<unknown>(
     `${url}/${repuestoId}/movimientos${buildOffsetQuery({ page, perPage })}`,
   );
-  return extractMovimientosFromResponse(payload);
+  return {
+    movimientos: extractMovimientosFromResponse(payload),
+    meta: extractMovimientosMeta(payload, page, perPage),
+  };
 }
 
 export async function createMovimiento(repuestoId: string, input: NuevoMovimientoInput): Promise<void> {

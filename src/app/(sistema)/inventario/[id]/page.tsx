@@ -6,7 +6,9 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/repuestos';
 import { Badge } from '@/components/ui/Badge';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { getEstadoRepuesto } from '../page';
+import type { PaginationMeta } from '@/types/common';
 import type { Repuesto, MovimientoInventario, TipoMovimiento } from '@/types/repuesto';
 
 const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
@@ -25,18 +27,22 @@ export default function InventarioDetallePage() {
   const [reason, setReason] = useState('');
   const [movError, setMovError] = useState<string | null>(null);
   const [submittingMov, setSubmittingMov] = useState(false);
+  const [movimientoMeta, setMovimientoMeta] = useState<PaginationMeta | null>(null);
+  const [movimientoPage, setMovimientoPage] = useState(1);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError(null);
     try {
-      const [r, m] = await Promise.all([
+      const [r, result] = await Promise.all([
         getRepuestoById(id),
-        getMovimientos(id),
+        getMovimientos(id, 1, 20),
       ]);
       setRepuesto(r);
-      setMovimientos(m);
+      setMovimientos(result.movimientos);
+      setMovimientoMeta(result.meta);
+      setMovimientoPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar repuesto.');
     } finally {
@@ -44,7 +50,32 @@ export default function InventarioDetallePage() {
     }
   }, [id]);
 
-  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!id) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const [r, result] = await Promise.all([
+          getRepuestoById(id),
+          getMovimientos(id, 1, 20),
+        ]);
+        if (cancelled) return;
+        setRepuesto(r);
+        setMovimientos(result.movimientos);
+        setMovimientoMeta(result.meta);
+        setMovimientoPage(1);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar repuesto.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleMovimiento = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +97,19 @@ export default function InventarioDetallePage() {
       setSubmittingMov(false);
     }
   }, [id, cantidad, tipoMov, reason, fetchData]);
+
+  const handleLoadMore = useCallback(async () => {
+    if (!id || !movimientoMeta) return;
+    const nextPage = movimientoPage + 1;
+    try {
+      const result = await getMovimientos(id, nextPage, 20);
+      setMovimientos(prev => [...prev, ...result.movimientos]);
+      setMovimientoMeta(result.meta);
+      setMovimientoPage(nextPage);
+    } catch (err) {
+      console.error('Error al cargar más movimientos:', err);
+    }
+  }, [id, movimientoPage, movimientoMeta]);
 
   if (loading) {
     return (
@@ -176,57 +220,59 @@ export default function InventarioDetallePage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
-          <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
-            Registrar movimiento de stock
-          </h2>
-          <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className={labelClass}>Tipo</label>
-              <select
-                value={tipoMov}
-                onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
-                className={inputClass}
+        <PermissionGuard module="inventario" action="create">
+          <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
+            <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
+              Registrar movimiento de stock
+            </h2>
+            <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className={labelClass}>Tipo</label>
+                <select
+                  value={tipoMov}
+                  onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
+                  className={inputClass}
+                >
+                  <option value="entrada">Entrada (+)</option>
+                  <option value="salida">Salida (-)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Cantidad</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={cantidad}
+                  onChange={(e) => setCantidad(e.target.value)}
+                  className={`${inputClass} w-28`}
+                />
+              </div>
+
+              <div className="flex-1 min-w-[200px]">
+                <label className={labelClass}>Motivo / Observación</label>
+                <input
+                  type="text"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Ej: Reposición de inventario / Ajuste"
+                  className={`${inputClass} w-full`}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={submittingMov}
+                className="px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
               >
-                <option value="entrada">Entrada (+)</option>
-                <option value="salida">Salida (-)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClass}>Cantidad</label>
-              <input
-                type="number"
-                min="1"
-                value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
-                className={`${inputClass} w-28`}
-              />
-            </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label className={labelClass}>Motivo / Observación</label>
-              <input
-                type="text"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder="Ej: Reposición de inventario / Ajuste"
-                className={`${inputClass} w-full`}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submittingMov}
-              className="px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
-            >
-              {submittingMov ? 'Registrando...' : 'Registrar'}
-            </button>
-          </form>
-          {movError && (
-            <p className="text-xs text-red-600 dark:text-red-400 mt-2">{movError}</p>
-          )}
-        </div>
+                {submittingMov ? 'Registrando...' : 'Registrar'}
+              </button>
+            </form>
+            {movError && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">{movError}</p>
+            )}
+          </div>
+        </PermissionGuard>
 
         <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-6">
           <h2 className="font-heading font-bold text-lg text-gema-primary dark:text-white mb-4">
@@ -263,6 +309,16 @@ export default function InventarioDetallePage() {
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+          {movimientoMeta && movimientoPage < movimientoMeta.lastPage && (
+            <div className="text-center pt-4">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2 rounded-xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-sm font-medium text-gema-primary/70 dark:text-white/60 transition-colors cursor-pointer"
+              >
+                Cargar más movimientos ({movimientos.length} de {movimientoMeta.total})
+              </button>
             </div>
           )}
         </div>

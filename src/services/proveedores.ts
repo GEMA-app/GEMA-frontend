@@ -12,7 +12,6 @@ export async function getProveedores(params: ProveedoresQuery = {}): Promise<Pro
   const empresaId = await requireEmpresaId();
   const queryParts: string[] = [];
   if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
-  if (params.estado) queryParts.push(`estado=${encodeURIComponent(params.estado)}`);
   const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
 
   const payload = await fetchWithAuth<unknown>(
@@ -51,8 +50,6 @@ export async function createProveedor(data: CreateProveedorForm): Promise<void> 
           phone: data.phone || null,
           email: data.email || null,
           contact: data.contact || null,
-          address: data.address || null,
-          is_active: data.is_active ?? true,
         },
       },
     },
@@ -67,8 +64,6 @@ export async function updateProveedor(id: string, data: UpdateProveedorForm): Pr
   if (data.phone !== undefined) attrs.phone = data.phone || null;
   if (data.email !== undefined) attrs.email = data.email || null;
   if (data.contact !== undefined) attrs.contact = data.contact || null;
-  if (data.address !== undefined) attrs.address = data.address || null;
-  if (data.is_active !== undefined) attrs.is_active = data.is_active;
 
   await fetchWithAuth(`/v1/empresas/${empresaId}/proveedores/${id}`, {
     method: 'PATCH',

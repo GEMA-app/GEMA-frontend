@@ -1,6 +1,6 @@
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { buildOffsetQuery } from '@/lib/pagination';
-import { extractReportesFromResponse, extractReportesMeta, mapReporteFromResponse } from '@/lib/reportes';
+import { extractReportesFromResponse, extractReportesMeta, mapEstadoToBackend, mapReporteFromResponse } from '@/lib/reportes';
 import type {
   ActualizarReporteInput,
   NuevoReporteInput,
@@ -70,6 +70,9 @@ export async function updateReporte(id: string, input: ActualizarReporteInput): 
   const attributes: Record<string, unknown> = { version };
   for (const [key, value] of Object.entries(rest)) {
     if (value !== undefined) attributes[key] = value;
+  }
+  if (attributes.status) {
+    attributes.status = mapEstadoToBackend(attributes.status as string);
   }
   const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
     method: 'PATCH',

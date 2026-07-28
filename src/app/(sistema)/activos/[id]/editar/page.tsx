@@ -25,6 +25,8 @@ export default function EditarActivoPage() {
     marca: '',
     ubicacion: '',
     fechaCompra: '',
+    valorMonetario: '',
+    moneda: 'USD',
     estadoInicial: 'Operativo',
     version: 0,
   });
@@ -63,6 +65,8 @@ export default function EditarActivoPage() {
             marca,
             ubicacion: a.ubicacion_id || '',
             fechaCompra: a.fecha_adquisicion || '',
+            valorMonetario: a.valor_monetario?.toString() || '',
+            moneda: a.moneda || 'USD',
             estadoInicial: estadoMap[a.estado] || 'Operativo',
             version: a.version,
           });
@@ -232,6 +236,27 @@ export default function EditarActivoPage() {
                     style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
                     className="date-input w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="valorMonetario">Valor Monetario</label>
+                  <input
+                    id="valorMonetario" name="valorMonetario" type="text" inputMode="decimal"
+                    value={formData.valorMonetario} onChange={handleInputChange}
+                    placeholder="0.00"
+                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1" htmlFor="moneda">Moneda</label>
+                  <select
+                    id="moneda" name="moneda"
+                    value={formData.moneda} onChange={handleInputChange}
+                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="VES">VES</option>
+                    <option value="EUR">EUR</option>
+                  </select>
                 </div>
               </div>
             </div>

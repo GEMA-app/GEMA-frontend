@@ -8,17 +8,20 @@ export interface PermisoGranular {
 export interface Rol {
   id: string;
   nombre: string;
+  descripcion?: string;
   permisos: PermisoGranular[];
   version: number;
 }
 
 export interface NuevoRolInput {
   nombre: string;
+  descripcion?: string;
   permisos: PermisoGranular[];
 }
 
 export interface ActualizarRolInput {
   nombre?: string;
+  descripcion?: string;
   permisos?: PermisoGranular[];
   version: number;
 }

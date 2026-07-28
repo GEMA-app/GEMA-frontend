@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { ArrowLeft, Save } from 'lucide-react';
 import { createArticulo, getCategorias, type CategoriaCatalogo } from '@/services/catalogo';
 import { ApiError } from '@/lib/api';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const initialForm = {
   name: '',
@@ -88,128 +89,146 @@ export default function NuevoArticuloPage() {
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <Link
-          href="/catalogo"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al catálogo
-        </Link>
-      </div>
+    <PermissionGuard
+      module="administracion"
+      action="create"
+      fallback={
+        <div className="text-center py-24">
+          <p className="text-gema-primary dark:text-white text-lg font-medium">
+            No tienes permisos para crear artículos en el catálogo.
+          </p>
+          <Link
+            href="/catalogo"
+            className="mt-4 inline-block text-sm font-semibold text-gema-accent-dark dark:text-gema-accent hover:underline"
+          >
+            Volver al catálogo
+          </Link>
+        </div>
+      }
+    >
+      <div>
+        <div className="mb-6">
+          <Link
+            href="/catalogo"
+            className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver al catálogo
+          </Link>
+        </div>
 
-      <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white mb-6 sm:mb-8">
-        Nuevo artículo
-      </h1>
+        <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white mb-6 sm:mb-8">
+          Nuevo artículo
+        </h1>
 
-      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
-        {error && (
-          <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
-            {error}
-          </div>
-        )}
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
+          {error && (
+            <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="md:col-span-2">
-            <label className={labelClass}>Nombre*</label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Motor eléctrico 5HP"
-              required
-              className={inputClass}
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="md:col-span-2">
+              <label className={labelClass}>Nombre*</label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Motor eléctrico 5HP"
+                required
+                className={inputClass}
+              />
+            </div>
 
-          <div>
-            <label className={labelClass}>Fabricante</label>
-            <input
-              type="text"
-              name="manufacturer"
-              value={form.manufacturer}
-              onChange={handleChange}
-              placeholder="Siemens"
-              className={inputClass}
-            />
-          </div>
+            <div>
+              <label className={labelClass}>Fabricante</label>
+              <input
+                type="text"
+                name="manufacturer"
+                value={form.manufacturer}
+                onChange={handleChange}
+                placeholder="Siemens"
+                className={inputClass}
+              />
+            </div>
 
-          <div>
-            <label className={labelClass}>Modelo</label>
-            <input
-              type="text"
-              name="model"
-              value={form.model}
-              onChange={handleChange}
-              placeholder="1LE0001"
-              className={inputClass}
-            />
-          </div>
+            <div>
+              <label className={labelClass}>Modelo</label>
+              <input
+                type="text"
+                name="model"
+                value={form.model}
+                onChange={handleChange}
+                placeholder="1LE0001"
+                className={inputClass}
+              />
+            </div>
 
-          <div>
-            <label className={labelClass}>Categoría</label>
-            <select
-              name="category_id"
-              value={form.category_id}
-              onChange={handleChange}
-              disabled={loadingCategorias}
-              className={inputClass}
-            >
-              <option value="">
-                {loadingCategorias ? 'Cargando categorías...' : 'Sin categoría'}
-              </option>
-              {categorias.map((categoria) => (
-                <option key={categoria.id} value={categoria.id}>
-                  {categoria.name}
+            <div>
+              <label className={labelClass}>Categoría</label>
+              <select
+                name="category_id"
+                value={form.category_id}
+                onChange={handleChange}
+                disabled={loadingCategorias}
+                className={inputClass}
+              >
+                <option value="">
+                  {loadingCategorias ? 'Cargando categorías...' : 'Sin categoría'}
                 </option>
-              ))}
-            </select>
-          </div>
+                {categorias.map((categoria) => (
+                  <option key={categoria.id} value={categoria.id}>
+                    {categoria.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className={labelClass}>Unidad de medida</label>
-            <input
-              type="text"
-              name="unit_of_measure"
-              value={form.unit_of_measure}
-              onChange={handleChange}
-              placeholder="Unidad, kg, litro..."
-              className={inputClass}
-            />
-          </div>
+            <div>
+              <label className={labelClass}>Unidad de medida</label>
+              <input
+                type="text"
+                name="unit_of_measure"
+                value={form.unit_of_measure}
+                onChange={handleChange}
+                placeholder="Unidad, kg, litro..."
+                className={inputClass}
+              />
+            </div>
 
-          <div className="md:col-span-2">
-            <label className={labelClass}>Descripción</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Detalles adicionales del artículo"
-              className={`${inputClass} resize-none`}
-            />
-          </div>
+            <div className="md:col-span-2">
+              <label className={labelClass}>Descripción</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                rows={3}
+                placeholder="Detalles adicionales del artículo"
+                className={`${inputClass} resize-none`}
+              />
+            </div>
 
-          <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">
-            <Link
-              href="/catalogo"
-              className="px-6 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              Cancelar
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
-            >
-              <Save className="w-4 h-4" strokeWidth={2.5} />
-              {loading ? 'Guardando...' : 'Guardar artículo'}
-            </button>
-          </div>
-        </form>
+            <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">
+              <Link
+                href="/catalogo"
+                className="px-6 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </Link>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
+              >
+                <Save className="w-4 h-4" strokeWidth={2.5} />
+                {loading ? 'Guardando...' : 'Guardar artículo'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </PermissionGuard>
   );
 }

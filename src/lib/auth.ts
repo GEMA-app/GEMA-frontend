@@ -22,12 +22,18 @@ function pickString(...values: unknown[]): string | null {
 
 const ROLE_SLUG_MAP: Record<string, string> = {
   administrador: 'admin',
-  'supervisor de activos': 'supervisor',
-  'supervisor de operaciones': 'supervisor',
+  admin: 'admin',
+  'supervisor de activos': 'supervisor-activos',
+  'supervisor de operaciones': 'supervisor-operaciones',
+  supervisor: 'supervisor-operaciones',
   'técnico de mantenimiento': 'tecnico',
-  almacenista: 'tecnico',
-  reporter: 'reporter',
+  'tecnico de mantenimiento': 'tecnico',
+  técnico: 'tecnico',
+  tecnico: 'tecnico',
+  almacenista: 'almacenista',
+  'consultor (solo lectura)': 'consultor',
   consultor: 'consultor',
+  reporter: 'reporter',
 };
 
 function normalizeRoles(value: unknown): string[] {

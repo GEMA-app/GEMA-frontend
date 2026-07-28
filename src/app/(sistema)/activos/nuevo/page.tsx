@@ -10,6 +10,7 @@ import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { getArticulos, type ArticuloCatalogo } from '@/services/catalogo';
 import { createActivoDirecto } from '@/services/activos';
 import { ApiError } from '@/lib/api';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
 
@@ -94,13 +95,33 @@ export default function NuevoActivoPage() {
       });
       router.push('/activos');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo registrar el activo.');
+      if (err instanceof ApiError && err.status === 409) {
+        const details = err.details as { errors?: Array<{ code?: string }> } | undefined;
+        const code = details?.errors?.[0]?.code;
+        if (code === 'ERR_ASSET_CODE_EXISTS') {
+          setError('Ya existe un activo con ese código.');
+        } else if (code === 'ERR_ASSET_SERIAL_EXISTS') {
+          setError('Ya existe un activo con ese serial interno.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError(err instanceof ApiError ? err.message : 'No se pudo registrar el activo.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
+    <PermissionGuard module="activos" action="create" fallback={
+      <div className="text-center py-24">
+        <p className="text-gema-primary dark:text-white text-lg font-medium">No tienes permisos para crear activos.</p>
+        <Link href="/activos" className="mt-4 inline-block text-sm font-semibold text-gema-accent-dark dark:text-gema-accent hover:underline">
+          Volver a activos
+        </Link>
+      </div>
+    }>
     <div>
       <div className="mb-6">
         <Link
@@ -245,5 +266,6 @@ export default function NuevoActivoPage() {
         </form>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

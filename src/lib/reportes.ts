@@ -4,7 +4,7 @@ import type { PaginationMeta } from '@/types/common';
 import type { Reporte, ReporteEstado, ReportePrioridad } from '@/types/reporte';
 
 const PRIORIDADES: ReportePrioridad[] = ['critica', 'alta', 'media', 'baja'];
-const ESTADOS: ReporteEstado[] = ['pendiente', 'en_proceso', 'atendido', 'resuelto', 'descartado', 'cancelado'];
+const ESTADOS: ReporteEstado[] = ['pendiente', 'en_proceso', 'atendido', 'descartado'];
 
 export function normalizePrioridad(raw: string): ReportePrioridad {
   const v = raw.trim().toLowerCase() as ReportePrioridad;
@@ -16,11 +16,19 @@ export function normalizeEstado(raw: string): ReporteEstado {
   return ESTADOS.includes(v) ? v : 'pendiente';
 }
 
+const FRONTEND_TO_BACKEND: Record<string, string> = {
+  resuelto: 'atendido',
+  cancelado: 'descartado',
+};
+export function mapEstadoToBackend(estado: string): string {
+  return FRONTEND_TO_BACKEND[estado] ?? estado;
+}
+
 const PRIORIDAD_LABELS: Record<ReportePrioridad, string> = {
   critica: 'Crítica', alta: 'Alta', media: 'Media', baja: 'Baja',
 };
 const ESTADO_LABELS: Record<ReporteEstado, string> = {
-  pendiente: 'Pendiente', en_proceso: 'En proceso', atendido: 'Atendido', resuelto: 'Resuelto', descartado: 'Descartado', cancelado: 'Cancelado',
+  pendiente: 'Pendiente', en_proceso: 'En proceso', atendido: 'Atendido', descartado: 'Descartado',
 };
 
 export function formatPrioridad(p: string): string {
@@ -49,7 +57,6 @@ export function mapReporteFromApi(resource: JsonApiResource): Reporte {
     created_at: getAttr(resource, 'created_at'),
     version: getAttrNumber(resource, 'version', 1),
     codigo: codigoAttr || `REP-${shortId}`,
-    observaciones: getAttr(resource, 'observaciones') || null,
     tecnico: getAttr(resource, 'tecnico') || getAttr(resource, 'reported_by') || 'Sin asignar',
   };
 }

@@ -6,7 +6,6 @@ import { ArrowLeft, Plus, Pencil, Trash, AlertCircle } from 'lucide-react';
 import Swal from 'sweetalert2';
 import {
   getCategorias,
-  getArticulos,
   createCategoria,
   updateCategoria,
   deleteCategoria,
@@ -14,13 +13,25 @@ import {
 } from '@/services/catalogo';
 import { ApiError } from '@/lib/api';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 async function promptCategoriaForm(defaults?: { name: string; description: string }) {
+  const safeName = defaults?.name ? escapeHtml(defaults.name) : '';
+  const safeDesc = defaults?.description ? escapeHtml(defaults.description) : '';
   return Swal.fire({
     title: defaults ? 'Editar categoría' : 'Nueva categoría',
     html: `
-      <input id="swal-name" class="swal2-input" placeholder="Nombre" value="${defaults?.name ?? ''}">
-      <textarea id="swal-description" class="swal2-textarea" placeholder="Descripción">${defaults?.description ?? ''}</textarea>
+      <input id="swal-name" class="swal2-input" placeholder="Nombre" value="${safeName}">
+      <textarea id="swal-description" class="swal2-textarea" placeholder="Descripción">${safeDesc}</textarea>
     `,
     focusConfirm: false,
     showCancelButton: true,
@@ -41,7 +52,6 @@ async function promptCategoriaForm(defaults?: { name: string; description: strin
 
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<CategoriaCatalogo[]>([]);
-  const [conteo, setConteo] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,18 +59,8 @@ export default function CategoriasPage() {
     setLoading(true);
     setError(null);
     try {
-      const [categoriasData, articulosData] = await Promise.all([
-        getCategorias(),
-        getArticulos({ perPage: 500 }),
-      ]);
+      const categoriasData = await getCategorias();
       setCategorias(categoriasData);
-      const counts: Record<string, number> = {};
-      for (const articulo of articulosData) {
-        if (articulo.category_id) {
-          counts[articulo.category_id] = (counts[articulo.category_id] ?? 0) + 1;
-        }
-      }
-      setConteo(counts);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudieron cargar las categorías.');
     } finally {
@@ -80,7 +80,13 @@ export default function CategoriasPage() {
       await Swal.fire({ icon: 'success', title: 'Categoría creada', confirmButtonColor: '#ECA03C' });
       load();
     } catch (err) {
-      Swal.fire('Error', err instanceof ApiError ? err.message : 'No se pudo crear la categoría.', 'error');
+      const is409 = err instanceof ApiError && err.status === 409;
+      const msg = is409
+        ? 'Ya existe una categoría con ese nombre.'
+        : err instanceof ApiError
+          ? err.message
+          : 'No se pudo crear la categoría.';
+      Swal.fire('Error', msg, 'error');
     }
   }, [load]);
 
@@ -92,11 +98,21 @@ export default function CategoriasPage() {
       });
       if (!value) return;
       try {
-        await updateCategoria(categoria.id, { name: value.name, description: value.description || null });
+        await updateCategoria(categoria.id, {
+          name: value.name,
+          description: value.description || null,
+          version: categoria.version,
+        });
         await Swal.fire({ icon: 'success', title: 'Categoría actualizada', confirmButtonColor: '#ECA03C' });
         load();
       } catch (err) {
-        Swal.fire('Error', err instanceof ApiError ? err.message : 'No se pudo actualizar la categoría.', 'error');
+        const is409 = err instanceof ApiError && err.status === 409;
+        const msg = is409
+          ? 'Ya existe una categoría con ese nombre.'
+          : err instanceof ApiError
+            ? err.message
+            : 'No se pudo actualizar la categoría.';
+        Swal.fire('Error', msg, 'error');
       }
     },
     [load],
@@ -115,7 +131,7 @@ export default function CategoriasPage() {
         cancelButtonText: 'Cancelar',
       });
       if (value === undefined) return;
-      if (value !== nombre) {
+      if (value?.trim().toLowerCase() !== nombre.trim().toLowerCase()) {
         Swal.fire('Error', 'El nombre no coincide', 'error');
         return;
       }
@@ -150,7 +166,7 @@ export default function CategoriasPage() {
         header: 'Artículos',
         className: 'text-center',
         render: (categoria) => (
-          <span className="text-gema-primary/80 dark:text-white/80">{conteo[categoria.id] ?? 0}</span>
+          <span className="text-gema-primary/80 dark:text-white/80">{categoria.articulos_count ?? 0}</span>
         ),
       },
       {
@@ -159,27 +175,31 @@ export default function CategoriasPage() {
         className: 'text-right',
         render: (categoria) => (
           <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => handleEdit(categoria)}
-              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
-              aria-label={`Editar ${categoria.name}`}
-            >
-              <Pencil className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDelete(categoria.id, categoria.name)}
-              className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
-              aria-label={`Eliminar ${categoria.name}`}
-            >
-              <Trash className="w-4 h-4" strokeWidth={1.5} />
-            </button>
+            <PermissionGuard module="administracion" action="edit">
+              <button
+                type="button"
+                onClick={() => handleEdit(categoria)}
+                className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label={`Editar ${categoria.name}`}
+              >
+                <Pencil className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </PermissionGuard>
+            <PermissionGuard module="administracion" action="delete">
+              <button
+                type="button"
+                onClick={() => handleDelete(categoria.id, categoria.name)}
+                className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+                aria-label={`Eliminar ${categoria.name}`}
+              >
+                <Trash className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </PermissionGuard>
           </div>
         ),
       },
     ],
-    [conteo, handleEdit, handleDelete],
+    [handleEdit, handleDelete],
   );
 
   return (
@@ -203,14 +223,16 @@ export default function CategoriasPage() {
             Categorías del catálogo de artículos
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Nueva categoría
-        </button>
+        <PermissionGuard module="administracion" action="create">
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nueva categoría
+          </button>
+        </PermissionGuard>
       </div>
 
       <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">

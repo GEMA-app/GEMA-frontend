@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import Link from 'next/link';
 import Swal from 'sweetalert2';
-import { ArrowLeft, Save, KeyRound, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, KeyRound, Loader2, Moon, Sun, Monitor } from 'lucide-react';
 import { getCurrentUser } from '@/services/auth';
 import { updateUsuario } from '@/services/usuarios';
+import { usePreferencias } from '@/hooks/usePreferencias';
 
 const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
 const inputClass =
@@ -20,6 +21,7 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { preferencia, cambiarTema } = usePreferencias();
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +73,44 @@ export default function PerfilPage() {
       setError(err instanceof Error ? err.message : 'Error al actualizar el perfil');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSelectTema = async (nuevoTema: 'oscuro' | 'claro' | 'sistema') => {
+    let isDarkTarget = false;
+    if (nuevoTema === 'oscuro') {
+      isDarkTarget = true;
+    } else if (nuevoTema === 'claro') {
+      isDarkTarget = false;
+    } else if (typeof window !== 'undefined') {
+      isDarkTarget = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    localStorage.setItem('gema-theme', isDarkTarget ? 'dark' : 'light');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('gema-theme-change', { detail: isDarkTarget }));
+    }
+
+    try {
+      await cambiarTema(nuevoTema);
+      await Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `Tema guardado: ${nuevoTema}`,
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true,
+      });
+    } catch {
+      await Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'error',
+        title: 'Error al guardar la preferencia',
+        showConfirmButton: false,
+        timer: 2500,
+      });
     }
   };
 
@@ -152,6 +192,57 @@ export default function PerfilPage() {
             </form>
           </>
         )}
+      </div>
+
+      <div className="mt-6 bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-2xl">
+        <h2 className="text-base font-bold text-gema-primary dark:text-white mb-2 flex items-center gap-2">
+          <Moon className="w-4 h-4 text-gema-accent" />
+          Preferencias visuales
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-white/50 mb-5">
+          Selecciona la apariencia del sistema para tu cuenta.
+        </p>
+
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => void handleSelectTema('oscuro')}
+            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              preferencia?.tema === 'oscuro'
+                ? 'border-gema-accent bg-gema-accent/10 text-gema-primary dark:text-white'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-50 dark:hover:bg-white/5'
+            }`}
+          >
+            <Moon className="w-5 h-5" />
+            Oscuro
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleSelectTema('claro')}
+            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              preferencia?.tema === 'claro'
+                ? 'border-gema-accent bg-gema-accent/10 text-gema-primary dark:text-white'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-50 dark:hover:bg-white/5'
+            }`}
+          >
+            <Sun className="w-5 h-5" />
+            Claro
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleSelectTema('sistema')}
+            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+              preferencia?.tema === 'sistema'
+                ? 'border-gema-accent bg-gema-accent/10 text-gema-primary dark:text-white'
+                : 'border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50 hover:bg-gray-50 dark:hover:bg-white/5'
+            }`}
+          >
+            <Monitor className="w-5 h-5" />
+            Sistema
+          </button>
+        </div>
       </div>
     </div>
   );
