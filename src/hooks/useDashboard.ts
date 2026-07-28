@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { getReportes } from '@/services/reportes';
+import { getRoles } from '@/lib/auth';
+import { hasPermisoAccion } from '@/lib/permisos-rbac';
 
 export interface PlanRow {
   id: string;
@@ -65,6 +67,10 @@ export function useDashboard() {
     async function fetchDashboard() {
       try {
         const empresaId = await requireEmpresaId();
+        
+        const roles = getRoles();
+        const role = roles.length > 0 ? roles[0] : 'consultor';
+        const canViewMantenimiento = hasPermisoAccion(role, 'mantenimiento', 'view');
 
         const resumenPromise = fetchWithAuth<DashboardResumenResponse>(
           `/v1/empresas/${empresaId}/dashboard/resumen`,
@@ -72,8 +78,8 @@ export function useDashboard() {
 
         const [resumenRes, planes, reportesPendientes] = await Promise.all([
           resumenPromise,
-          fetchPlanes(empresaId),
-          fetchReportesPendientes(),
+          canViewMantenimiento ? fetchPlanes(empresaId) : Promise.resolve([]),
+          canViewMantenimiento ? fetchReportesPendientes() : Promise.resolve(0),
         ]);
 
         if (!cancelled) {
