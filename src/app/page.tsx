@@ -39,14 +39,14 @@ import {
 } from "lucide-react";
 
 const ScrambleNumber = ({ text }: { text: string | number }) => {
-  const stringValue = String(text); 
+  const stringValue = String(text);
   const [display, setDisplay] = useState(stringValue);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.5 }); 
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
 
   useEffect(() => {
     if (!isInView) return;
-    const chars = "0123456789!@#$%^&*"; 
+    const chars = "0123456789!@#$%^&*";
     let iteration = 0;
     const interval = setInterval(() => {
       setDisplay((currentDisplay) =>
@@ -59,32 +59,32 @@ const ScrambleNumber = ({ text }: { text: string | number }) => {
             if (char === " ") return char;
             return chars[Math.floor(Math.random() * chars.length)];
           })
-          .join("")
+          .join(""),
       );
-      iteration += 1 / 3; 
+      iteration += 1 / 3;
       if (iteration >= stringValue.length) {
         clearInterval(interval);
         setDisplay(stringValue);
       }
-    }, 40); 
+    }, 40);
     return () => clearInterval(interval);
   }, [stringValue, isInView]);
 
   return <span ref={ref}>{display}</span>;
 };
 
-const OrbitNode = ({ 
-  name, 
-  radius, 
-  duration, 
-  reverse, 
-  startAngle 
-}: { 
-  name: string; 
-  radius: number; 
-  duration: number; 
-  reverse: boolean; 
-  startAngle: number 
+const OrbitNode = ({
+  name,
+  radius,
+  duration,
+  reverse,
+  startAngle,
+}: {
+  name: string;
+  radius: number;
+  duration: number;
+  reverse: boolean;
+  startAngle: number;
 }) => {
   const endAngle = reverse ? startAngle - 360 : startAngle + 360;
   return (
@@ -103,7 +103,7 @@ const OrbitNode = ({
         transition={{ duration, repeat: Infinity, ease: "linear" }}
       >
         <div className="w-2 h-2 rounded-full bg-gema-accent shadow-[0_0_12px_theme(colors.gema.accent)]" />
-        
+
         <div className="absolute top-4 pointer-events-auto text-[10px] tracking-widest uppercase text-white/80 bg-white/5 border border-white/10 px-2 py-1 rounded backdrop-blur-md whitespace-nowrap hover:bg-white/10 hover:text-white transition-all cursor-pointer">
           {name}
         </div>
@@ -113,7 +113,16 @@ const OrbitNode = ({
 };
 
 const StarField = () => {
-  const [stars, setStars] = useState<{ id: number; left: string; top: string; size: string; delay: string; duration: string }[]>([]);
+  const [stars, setStars] = useState<
+    {
+      id: number;
+      left: string;
+      top: string;
+      size: string;
+      delay: string;
+      duration: string;
+    }[]
+  >([]);
 
   useEffect(() => {
     const generateStars = () => {
@@ -121,9 +130,9 @@ const StarField = () => {
         id: i,
         left: `${Math.random() * 100}%`,
         top: `${Math.random() * 100}%`,
-        size: `${Math.random() * 5 + 2.5}px`, 
-        delay: `${Math.random() * 5}s`,       
-        duration: `${Math.random() * 3 + 3}s` 
+        size: `${Math.random() * 5 + 2.5}px`,
+        delay: `${Math.random() * 5}s`,
+        duration: `${Math.random() * 3 + 3}s`,
       }));
     };
     setStars(generateStars());
@@ -197,12 +206,48 @@ const SOLUTIONS = [
 ];
 
 const REGIONS = [
-  { name: "America del Norte", radius: 120, duration: 25, reverse: false, startAngle: 0 },
-  { name: "Europa", radius: 120, duration: 25, reverse: false, startAngle: 180 },
-  { name: "Asia-Pacífico", radius: 180, duration: 35, reverse: true, startAngle: 45 },
-  { name: "Latinoamérica", radius: 180, duration: 35, reverse: true, startAngle: 225 },
-  { name: "Medio Oriente", radius: 240, duration: 45, reverse: false, startAngle: 90 },
-  { name: "África", radius: 240, duration: 45, reverse: false, startAngle: 270 },
+  {
+    name: "America del Norte",
+    radius: 120,
+    duration: 25,
+    reverse: false,
+    startAngle: 0,
+  },
+  {
+    name: "Europa",
+    radius: 120,
+    duration: 25,
+    reverse: false,
+    startAngle: 180,
+  },
+  {
+    name: "Asia-Pacífico",
+    radius: 180,
+    duration: 35,
+    reverse: true,
+    startAngle: 45,
+  },
+  {
+    name: "Latinoamérica",
+    radius: 180,
+    duration: 35,
+    reverse: true,
+    startAngle: 225,
+  },
+  {
+    name: "Medio Oriente",
+    radius: 240,
+    duration: 45,
+    reverse: false,
+    startAngle: 90,
+  },
+  {
+    name: "África",
+    radius: 240,
+    duration: 45,
+    reverse: false,
+    startAngle: 270,
+  },
 ];
 
 const BENEFITS = [
@@ -306,29 +351,33 @@ const PLANS = [
 ];
 
 const TEAM_MEMBERS = [
-  { 
-    name: "Sebastián Ortiz", 
-    role: "UX/UI, Jefe del departamento de diseño", 
+  {
+    name: "Sebastián Ortiz",
+    role: "UX/UI, Jefe del departamento de diseño",
     photo: "/foto-sebastian.jpeg",
-    description: "Encargado de diseñar interfaces intuitivas que transforman datos complejos en experiencias de usuario fluidas y eficientes para el sector industrial." 
+    description:
+      "Encargado de diseñar interfaces intuitivas que transforman datos complejos en experiencias de usuario fluidas y eficientes para el sector industrial.",
   },
-  { 
-    name: "José Miserol", 
-    role: "Jefe del departamento de desarrollo lógico y computacional", 
-    photo: "/foto-miserol.jpg", 
-    description: "Arquitecto de la infraestructura técnica. Lidera la implementación de sistemas robustos garantizando el máximo rendimiento y escalabilidad de GEMA." 
+  {
+    name: "José Miserol",
+    role: "Jefe del departamento de desarrollo lógico y computacional",
+    photo: "/foto-miserol.jpg",
+    description:
+      "Arquitecto de la infraestructura técnica. Lidera la implementación de sistemas robustos garantizando el máximo rendimiento y escalabilidad de GEMA.",
   },
-  { 
-    name: "Jesús Rodríguez", 
-    role: "Crudmaster", 
-    photo: "/foto-jesus.png", 
-    description: "Especialista en la gestión y estructuración de bases de datos, asegurando que cada orden de trabajo y repuesto fluya de manera impecable en el sistema." 
+  {
+    name: "Jesús Rodríguez",
+    role: "Jefe infrastrucctura & Crudmaster",
+    photo: "/foto-jesus.png",
+    description:
+      "Especialista en la gestión y estructuración de bases de datos, asegurando que cada orden de trabajo y repuesto fluya de manera impecable en el sistema.",
   },
-  { 
-    name: "Sheen Albuquerque", 
-    role: "CEO y relaciones públicas", 
-    photo: "/foto-sheen.png", 
-    description: "Líder estratégico de GEMA. Construye puentes con la industria pesada y guía la visión a largo plazo del producto para satisfacer las necesidades del mercado." 
+  {
+    name: "Sheen Albuquerque",
+    role: "CEO y relaciones públicas",
+    photo: "/foto-sheen.png",
+    description:
+      "Líder estratégico de GEMA. Construye puentes con la industria pesada y guía la visión a largo plazo del producto para satisfacer las necesidades del mercado.",
   },
 ];
 
@@ -340,8 +389,8 @@ const FOOTER_PRODUCT_LINKS = [
 ];
 
 const FOOTER_LEGAL_LINKS = [
-  { label: "Términos de servicio", href: "#" },
-  { label: "Política de privacidad", href: "#" },
+  { label: "Términos de servicio", href: "/terminos" },
+  { label: "Política de privacidad", href: "/privacidad" },
   { label: "Seguridad de datos", href: "#" },
 ];
 
@@ -350,20 +399,24 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const fullTitleText = "Gestiona el mantenimiento de tus activos sin sorpresas";
+  const fullTitleText =
+    "Gestiona el mantenimiento de tus activos sin sorpresas";
   const accentStartIndex = 41;
   const [displayedCount, setDisplayedCount] = useState(0);
   const [titleComplete, setTitleComplete] = useState(false);
   const [showBadge, setShowBadge] = useState(false);
   const [activeBenefitIndex, setActiveBenefitIndex] = useState(0);
-  const problemTitleText = "El mantenimiento reactivo le cuesta caro a tu planta";
+  const problemTitleText =
+    "El mantenimiento reactivo le cuesta caro a tu planta";
   const [problemTitleCount, setProblemTitleCount] = useState(0);
 
-
   const [currentMemberIndex, setCurrentMemberIndex] = useState(0);
-  const nextMember = () => setCurrentMemberIndex((prev) => (prev + 1) % TEAM_MEMBERS.length);
-  const prevMember = () => setCurrentMemberIndex((prev) => (prev - 1 + TEAM_MEMBERS.length) % TEAM_MEMBERS.length);
-
+  const nextMember = () =>
+    setCurrentMemberIndex((prev) => (prev + 1) % TEAM_MEMBERS.length);
+  const prevMember = () =>
+    setCurrentMemberIndex(
+      (prev) => (prev - 1 + TEAM_MEMBERS.length) % TEAM_MEMBERS.length,
+    );
 
   useEffect(() => {
     const onScroll = () => {
@@ -410,9 +463,10 @@ export default function HomePage() {
   }, [titleComplete]);
 
   return (
-    <div className={`${isDark ? "dark" : ""} ${sora.variable} ${inter.variable}`}>
+    <div
+      className={`${isDark ? "dark" : ""} ${sora.variable} ${inter.variable}`}
+    >
       <main className="min-h-screen font-[family-name:var(--font-inter)] bg-white text-gema-primary dark:bg-gema-bg-dark dark:text-white overflow-x-hidden transition-colors duration-300">
-        
         <header className="absolute top-0 left-0 right-0 z-40 bg-white/60 dark:bg-gema-bg-dark/60 backdrop-blur-sm border-b border-gema-primary/10 dark:border-white/10">
           <div className="md:hidden">
             <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -635,14 +689,11 @@ export default function HomePage() {
               >
                 {fullTitleText.substring(
                   0,
-                  Math.min(displayedCount, accentStartIndex)
+                  Math.min(displayedCount, accentStartIndex),
                 )}
                 {displayedCount > accentStartIndex && (
                   <span className="text-gema-accent">
-                    {fullTitleText.substring(
-                      accentStartIndex,
-                      displayedCount
-                    )}
+                    {fullTitleText.substring(accentStartIndex, displayedCount)}
                   </span>
                 )}
                 {displayedCount < fullTitleText.length && (
@@ -653,9 +704,7 @@ export default function HomePage() {
               <motion.p
                 initial={{ opacity: 0, y: 30 }}
                 animate={
-                  titleComplete
-                    ? { opacity: 1, y: 0 }
-                    : { opacity: 0, y: 30 }
+                  titleComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
                 }
                 transition={{ duration: 0.6, ease: easeOut }}
                 className="mt-6 text-lg md:text-xl text-gema-primary/70 dark:text-white/70 max-w-2xl"
@@ -668,9 +717,7 @@ export default function HomePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={
-                  titleComplete
-                    ? { opacity: 1, y: 0 }
-                    : { opacity: 0, y: 20 }
+                  titleComplete ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
                 }
                 transition={{ duration: 0.6, delay: 0.3, ease: easeOut }}
                 className="mt-9 flex flex-col sm:flex-row items-center gap-4"
@@ -868,13 +915,12 @@ export default function HomePage() {
             </div>
           </motion.div>
         </section>
-          
+
         {/* --- DASHBOARD ORBITAL --- */}
         <section className="relative min-h-screen bg-gema-bg-dark flex flex-col items-center justify-center py-20 px-6 font-[family-name:var(--font-inter)] overflow-hidden">
-          
           <StarField />
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.8 }}
@@ -883,14 +929,16 @@ export default function HomePage() {
           >
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="w-2 h-2 bg-gema-accent rounded-sm" />
-              <span className="text-gema-accent text-xs tracking-widest uppercase font-bold">Monitoreo Global</span>
+              <span className="text-gema-accent text-xs tracking-widest uppercase font-bold">
+                Monitoreo Global
+              </span>
             </div>
             <h2 className="text-4xl md:text-5xl font-[family-name:var(--font-sora)] font-bold text-white tracking-tight">
               Control total, todo el tiempo
             </h2>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -915,7 +963,9 @@ export default function HomePage() {
             {/* Núcleo Central (En) */}
             <div className="absolute w-14 h-14 rounded-full bg-gema-accent/10 border border-gema-accent/30 flex items-center justify-center shadow-[0_0_40px_rgba(var(--gema-accent-rgb),0.3)] z-10">
               <div className="w-8 h-8 rounded-full bg-gema-accent/20 flex items-center justify-center">
-                <span className="text-xs font-bold tracking-widest text-gema-accent uppercase">En</span>
+                <span className="text-xs font-bold tracking-widest text-gema-accent uppercase">
+                  En
+                </span>
               </div>
             </div>
 
@@ -926,100 +976,100 @@ export default function HomePage() {
           </motion.div>
         </section>
 
-      {/* --- BENEFICIOS --- */}
-      <section className="max-w-7xl mx-auto px-6 py-24">
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={fadeUp}
-          className="text-left max-w-3xl mb-12"
-        >
-          <h2 className="font-[family-name:var(--font-sora)] font-bold text-3xl md:text-4xl text-gema-primary dark:text-white">
-            Todo lo que tu equipo de mantenimiento necesita
-          </h2>
-        </motion.div>
-        {/* Estructura interactiva inspirada en la Imagen 2 */}
-        <div className="grid md:grid-cols-12 border border-gema-primary/20 dark:border-white/20 rounded-xl overflow-hidden bg-white dark:bg-gema-surface-dark">
-          {/* Columna Izquierda: Lista de Navegación Interactiva (5 Columnas en desktop) */}
-          <div className="md:col-span-5 border-b md:border-b-0 md:border-r border-gema-primary/20 dark:border-white/20 bg-gema-bg-light/50 dark:bg-black/30">
-            {BENEFITS.map((benefit, index) => {
-              const isActive = activeBenefitIndex === index;
-              return (
-                <button
-                  key={benefit.id}
-                  onClick={() => setActiveBenefitIndex(index)}
-                  className={`w-full text-left p-4 md:p-5 flex items-center gap-4 transition-colors duration-150 border-b last:border-b-0 border-gema-primary/10 dark:border-white/10 ${
-                    isActive
-                      ? "bg-gema-accent text-white font-semibold"
-                      : "hover:bg-gema-accent/10 text-gema-primary/80 dark:text-white/80"
-                  }`}
-                >
-                  <span
-                    className={`font-mono text-xs md:text-sm font-bold ${
-                      isActive ? "text-white" : "text-gema-accent"
+        {/* --- BENEFICIOS --- */}
+        <section className="max-w-7xl mx-auto px-6 py-24">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={fadeUp}
+            className="text-left max-w-3xl mb-12"
+          >
+            <h2 className="font-[family-name:var(--font-sora)] font-bold text-3xl md:text-4xl text-gema-primary dark:text-white">
+              Todo lo que tu equipo de mantenimiento necesita
+            </h2>
+          </motion.div>
+          {/* Estructura interactiva inspirada en la Imagen 2 */}
+          <div className="grid md:grid-cols-12 border border-gema-primary/20 dark:border-white/20 rounded-xl overflow-hidden bg-white dark:bg-gema-surface-dark">
+            {/* Columna Izquierda: Lista de Navegación Interactiva (5 Columnas en desktop) */}
+            <div className="md:col-span-5 border-b md:border-b-0 md:border-r border-gema-primary/20 dark:border-white/20 bg-gema-bg-light/50 dark:bg-black/30">
+              {BENEFITS.map((benefit, index) => {
+                const isActive = activeBenefitIndex === index;
+                return (
+                  <button
+                    key={benefit.id}
+                    onClick={() => setActiveBenefitIndex(index)}
+                    className={`w-full text-left p-4 md:p-5 flex items-center gap-4 transition-colors duration-150 border-b last:border-b-0 border-gema-primary/10 dark:border-white/10 ${
+                      isActive
+                        ? "bg-gema-accent text-white font-semibold"
+                        : "hover:bg-gema-accent/10 text-gema-primary/80 dark:text-white/80"
                     }`}
                   >
-                    {benefit.id}
-                  </span>
-                  <span className="font-[family-name:var(--font-sora)] uppercase tracking-wide text-xs md:text-sm">
-                    {benefit.title}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {/* Columna Derecha: Vista del Detalle del Beneficio (7 Columnas en desktop) */}
-          <div className="md:col-span-7 p-6 md:p-10 flex flex-col justify-center bg-white dark:bg-gema-surface-dark">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-gema-accent font-mono text-sm font-bold">
-                {activeBenefit.id}
-              </span>
-              <span className="text-xs uppercase font-mono tracking-widest text-gema-accent">
-                BENEFICIO GEMA
-              </span>
+                    <span
+                      className={`font-mono text-xs md:text-sm font-bold ${
+                        isActive ? "text-white" : "text-gema-accent"
+                      }`}
+                    >
+                      {benefit.id}
+                    </span>
+                    <span className="font-[family-name:var(--font-sora)] uppercase tracking-wide text-xs md:text-sm">
+                      {benefit.title}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            <h3 className="font-[family-name:var(--font-sora)] font-bold text-xl md:text-3xl text-gema-primary dark:text-white mb-4">
-              {activeBenefit.title}
-            </h3>
-            <p className="text-sm md:text-base leading-relaxed text-gema-primary/80 dark:text-white/70">
-              {activeBenefit.description}
-            </p>
+            {/* Columna Derecha: Vista del Detalle del Beneficio (7 Columnas en desktop) */}
+            <div className="md:col-span-7 p-6 md:p-10 flex flex-col justify-center bg-white dark:bg-gema-surface-dark">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-gema-accent font-mono text-sm font-bold">
+                  {activeBenefit.id}
+                </span>
+                <span className="text-xs uppercase font-mono tracking-widest text-gema-accent">
+                  BENEFICIO GEMA
+                </span>
+              </div>
+              <h3 className="font-[family-name:var(--font-sora)] font-bold text-xl md:text-3xl text-gema-primary dark:text-white mb-4">
+                {activeBenefit.title}
+              </h3>
+              <p className="text-sm md:text-base leading-relaxed text-gema-primary/80 dark:text-white/70">
+                {activeBenefit.description}
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
         {/* --- METRICAS --- */}
         <section className="bg-gema-primary dark:bg-gema-surface-dark py-20">
-  <div className="max-w-7xl mx-auto px-6">
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
-      {METRICS.map((metric, i) => (
-        <motion.div
-          key={metric.label}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={fadeUp}
-          custom={i}
-          className="flex flex-col items-center text-center gap-3"
-        >
-          <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center">
-            <metric.icon size={20} className="text-gema-accent" />
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+              {METRICS.map((metric, i) => (
+                <motion.div
+                  key={metric.label}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.4 }}
+                  variants={fadeUp}
+                  custom={i}
+                  className="flex flex-col items-center text-center gap-3"
+                >
+                  <div className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center">
+                    <metric.icon size={20} className="text-gema-accent" />
+                  </div>
+
+                  {/* Aquí inyectamos nuestro componente ScrambleNumber conservando tus clases intactas */}
+                  <span className="font-[family-name:var(--font-sora)] font-extrabold text-3xl md:text-4xl text-white tabular-nums">
+                    <ScrambleNumber text={metric.value} />
+                  </span>
+
+                  <span className="text-sm text-white/60 max-w-[14ch]">
+                    {metric.label}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
           </div>
-          
-          {/* Aquí inyectamos nuestro componente ScrambleNumber conservando tus clases intactas */}
-          <span className="font-[family-name:var(--font-sora)] font-extrabold text-3xl md:text-4xl text-white tabular-nums">
-            <ScrambleNumber text={metric.value} />
-          </span>
-          
-          <span className="text-sm text-white/60 max-w-[14ch]">
-            {metric.label}
-          </span>
-        </motion.div>
-      ))}
-    </div>
-  </div>
-</section>
+        </section>
 
         {/* --- PRICING --- */}
         <section id="precios" className="max-w-7xl mx-auto px-6 py-24">
@@ -1153,7 +1203,10 @@ export default function HomePage() {
         </section>
 
         {/* --- EQUIPO --- */}
-        <section id="nosotros" className="max-w-7xl mx-auto px-6 py-24 overflow-hidden">
+        <section
+          id="nosotros"
+          className="max-w-7xl mx-auto px-6 py-24 overflow-hidden"
+        >
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -1204,7 +1257,11 @@ export default function HomePage() {
                   // Animación de levitación infinita (y)
                   animate={{ y: [-12, 8, -12] }}
                   // Puedes ajustar la duración de la levitación aquí:
-                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 5,
+                    ease: "easeInOut",
+                  }}
                   className="relative z-10 bg-gema-bg-light dark:bg-gema-surface-dark-2 border border-gema-primary/10 dark:border-white/10 p-8 rounded-3xl flex flex-col items-center text-center shadow-2xl dark:shadow-black/50"
                 >
                   {/* Contenedor de Foto con perspectiva 3D */}
@@ -1245,12 +1302,16 @@ export default function HomePage() {
                 <motion.div
                   // La sombra se hace más pequeña y clara cuando la card sube
                   animate={{ scale: [1, 0.7, 1], opacity: [0.4, 0.15, 0.4] }}
-                  transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 5,
+                    ease: "easeInOut",
+                  }}
                   className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-6 bg-black/20 dark:bg-black/60 blur-[12px] rounded-[100%] z-0 pointer-events-none"
                 />
               </motion.div>
             </AnimatePresence>
-            
+
             {/* Indicadores (Puntos) opcionales debajo del carrusel */}
             <div className="flex gap-2 mt-12 z-10">
               {TEAM_MEMBERS.map((_, idx) => (
@@ -1268,7 +1329,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
 
         {/* --- FOOTER --- */}
         <footer className="bg-gema-bg-dark text-white border-t border-white/10">
