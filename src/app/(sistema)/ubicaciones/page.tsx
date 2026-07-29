@@ -22,6 +22,7 @@ import { getActivos } from '@/services/activos';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { Select } from '@/components/ui/Select';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { Ubicacion } from '@/types/ubicacion';
 
@@ -318,18 +319,13 @@ export default function UbicacionesPage() {
             aria-label="Buscar ubicaciones"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
+          <Select
             value={tipoFiltro}
-            onChange={(e) => setTipoFiltro(e.target.value)}
+            onChange={(value) => setTipoFiltro(value)}
+            options={TIPO_FILTER_OPTIONS}
             aria-label="Filtrar por tipo"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-          >
-            {TIPO_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            className="sm:w-56"
+          />
         </div>
 
         {error && empty ? (

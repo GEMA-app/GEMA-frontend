@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getArticulo, getCategorias, updateArticulo, type CategoriaCatalogo } from '@/services/catalogo';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Select } from '@/components/ui/Select';
 
 export default function EditarArticuloPage() {
   const { id } = useParams<{ id: string }>();
@@ -163,20 +164,17 @@ export default function EditarArticuloPage() {
                 <label className="block text-xs text-gray-500 mb-1" htmlFor="category_id">
                   Categoría
                 </label>
-                <select
+                <Select
                   id="category_id"
                   name="category_id"
                   value={form.category_id}
-                  onChange={handleChange}
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400"
-                >
-                  <option value="">Sin categoría</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setForm((prev) => ({ ...prev, category_id: value }))}
+                  options={[
+                    { value: '', label: 'Sin categoría' },
+                    ...categorias.map((c) => ({ value: c.id, label: c.name })),
+                  ]}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1" htmlFor="unit_of_measure">

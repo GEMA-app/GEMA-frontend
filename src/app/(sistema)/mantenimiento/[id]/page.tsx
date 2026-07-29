@@ -22,6 +22,7 @@ import type { EstadoOT, OrdenTrabajo } from '@/types/orden-trabajo';
 import type { Repuesto } from '@/types/repuesto';
 import type { ArticuloCatalogo } from '@/services/catalogo';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 
 
 
@@ -251,35 +252,36 @@ export default function OrdenDetallePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1" htmlFor="supervisor_id">Supervisor</label>
-                    <select id="supervisor_id" name="supervisor_id" value={form.supervisor_id} onChange={handleChange}
-                      className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                      <option value="">Sin supervisor</option>
-                      {supervisores.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                    </select>
+                    <Select
+                      id="supervisor_id"
+                      name="supervisor_id"
+                      value={form.supervisor_id}
+                      onChange={(value) => {
+                        setForm(prev => ({ ...prev, supervisor_id: value }));
+                        setSaveStatus('');
+                      }}
+                      options={[{ value: '', label: 'Sin supervisor' }, ...supervisores.map(u => ({ value: u.id, label: u.nombre }))]}
+                      className="w-full"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Técnico</label>
-                    <select
+                    <Select
                       value={techId}
-                      onChange={async (e) => {
-                        const val = e.target.value;
-                        setTechId(val);
-                        if (val) {
+                      onChange={async (value) => {
+                        setTechId(value);
+                        if (value) {
                           try {
-                            await asignar(val);
+                            await asignar(value);
                             setSaveStatus('Técnico asignado.');
                           } catch (err) {
                             setSaveStatus(err instanceof Error ? err.message : 'Error al asignar técnico');
                           }
                         }
                       }}
-                      className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                    >
-                      <option value="">Sin técnico asignado</option>
-                      {tecnicos.map(u => (
-                        <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>
-                      ))}
-                    </select>
+                      options={[{ value: '', label: 'Sin técnico asignado' }, ...tecnicos.map(u => ({ value: u.id, label: `${u.nombre} (${u.email})` }))]}
+                      className="w-full"
+                    />
                   </div>
                 </div>
               </div>
@@ -395,11 +397,12 @@ export default function OrdenDetallePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Técnico *</label>
-                <select value={techId} onChange={e => setTechId(e.target.value)} required
-                  className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] text-sm border-gray-400">
-                  <option value="">Seleccionar...</option>
-                  {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>)}
-                </select>
+                <Select
+                  value={techId}
+                  onChange={(value) => setTechId(value)}
+                  options={[{ value: '', label: 'Seleccionar...' }, ...tecnicos.map(u => ({ value: u.id, label: `${u.nombre} (${u.email})` }))]}
+                  className="w-full"
+                />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Fecha inicio *</label>
@@ -467,11 +470,12 @@ export default function OrdenDetallePage() {
 
                   {addingRepuesto === intv.id && (
                     <div className="flex items-center gap-2 mb-3 bg-gray-50 p-3 rounded-xl">
-                      <select value={selRepuesto} onChange={e => setSelRepuesto(e.target.value)}
-                        className="flex-1 bg-transparent border-b py-1 text-sm outline-none border-gray-400">
-                        <option value="">Seleccionar...</option>
-                        {repuestos.map(r => <option key={r.id} value={r.id}>{articuloMap[r.articulo_id]?.name ?? r.articulo_id} (stock: {r.stock_actual})</option>)}
-                      </select>
+                      <Select
+                        value={selRepuesto}
+                        onChange={(value) => setSelRepuesto(value)}
+                        options={[{ value: '', label: 'Seleccionar...' }, ...repuestos.map(r => ({ value: r.id, label: `${articuloMap[r.articulo_id]?.name ?? r.articulo_id} (stock: ${r.stock_actual})` }))]}
+                        className="flex-1"
+                      />
                       <input type="number" min="1" value={cantidad} onChange={e => setCantidad(e.target.value)} placeholder="Cant."
                         className="w-20 bg-transparent border-b py-1 text-sm outline-none border-gray-400" />
                       <button type="button" onClick={() => handleAddRepuesto(intv.id)}

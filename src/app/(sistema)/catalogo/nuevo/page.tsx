@@ -8,6 +8,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { createArticulo, getCategorias, type CategoriaCatalogo } from '@/services/catalogo';
 import { ApiError } from '@/lib/api';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Select } from '@/components/ui/Select';
 
 const initialForm = {
   name: '',
@@ -168,22 +169,20 @@ export default function NuevoArticuloPage() {
 
             <div>
               <label className={labelClass}>Categoría</label>
-              <select
+              <Select
                 name="category_id"
                 value={form.category_id}
-                onChange={handleChange}
+                onChange={(value) => {
+                  setForm((prev) => ({ ...prev, category_id: value }));
+                  setError(null);
+                }}
                 disabled={loadingCategorias}
-                className={inputClass}
-              >
-                <option value="">
-                  {loadingCategorias ? 'Cargando categorías...' : 'Sin categoría'}
-                </option>
-                {categorias.map((categoria) => (
-                  <option key={categoria.id} value={categoria.id}>
-                    {categoria.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: loadingCategorias ? 'Cargando categorías...' : 'Sin categoría' },
+                  ...categorias.map((categoria) => ({ value: categoria.id, label: categoria.name })),
+                ]}
+                className="w-full"
+              />
             </div>
 
             <div>

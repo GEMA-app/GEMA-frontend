@@ -28,6 +28,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoOT } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Select } from '@/components/ui/Select';
 import type { OrdenTrabajo } from '@/types/orden-trabajo';
 import type { PlanMantenimiento, TipoMantenimiento as TipoPlan } from '@/types/plan-mantenimiento';
 
@@ -419,21 +420,16 @@ function PlanesTabContent() {
             className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
         </div>
-        <select
+        <Select
           value={filtroTipo}
-          onChange={(e) => {
-            setFiltroTipo(e.target.value);
+          onChange={(value) => {
+            setFiltroTipo(value);
             setPage(1);
           }}
           aria-label="Filtrar por tipo"
-          className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-        >
-          {TIPO_PLAN_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          options={TIPO_PLAN_OPTIONS}
+          className="sm:w-56"
+        />
         <label className="flex items-center gap-2 text-sm text-gema-primary/80 dark:text-white/80 cursor-pointer select-none px-2">
           <input
             type="checkbox"
@@ -749,21 +745,16 @@ function OrdenesTrabajoContent() {
                 aria-label="Buscar órdenes de trabajo"
                 className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
               />
-              <select
+              <Select
                 value={filtroEstado}
-                onChange={(e) => {
-                  setFiltroEstado(e.target.value as EstadoOT | '');
+                onChange={(value) => {
+                  setFiltroEstado(value as EstadoOT | '');
                   setPage(1);
                 }}
                 aria-label="Filtrar por estado"
-                className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-              >
-                {ESTADO_FILTER_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={ESTADO_FILTER_OPTIONS}
+                className="sm:w-56"
+              />
             </div>
 
             {error && empty ? (

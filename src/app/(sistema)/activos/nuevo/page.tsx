@@ -11,6 +11,7 @@ import { getArticulos, type ArticuloCatalogo } from '@/services/catalogo';
 import { createActivoDirecto } from '@/services/activos';
 import { ApiError } from '@/lib/api';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import { Select } from '@/components/ui/Select';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
 
@@ -58,6 +59,11 @@ export default function NuevoActivoPage() {
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+  };
+
+  const handleSelectChange = (name: keyof typeof initialForm, value: string) => {
     setForm((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
@@ -147,43 +153,30 @@ export default function NuevoActivoPage() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
             <label className={labelClass}>Artículo*</label>
-            <select
+            <Select
               name="articuloId"
               value={form.articuloId}
-              onChange={handleChange}
+              onChange={(value) => handleSelectChange('articuloId', value)}
               disabled={loadingArticulos}
-              required
-              className={inputClass}
-            >
-              <option value="">
-                {loadingArticulos ? 'Cargando artículos...' : 'Selecciona un artículo del catálogo'}
-              </option>
-              {articulos.map((articulo) => (
-                <option key={articulo.id} value={articulo.id}>
-                  {articulo.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: loadingArticulos ? 'Cargando artículos...' : 'Selecciona un artículo del catálogo' },
+                ...articulos.map((articulo) => ({ value: articulo.id, label: articulo.name })),
+              ]}
+            />
           </div>
 
           <div>
             <label className={labelClass}>Ubicación</label>
-            <select
+            <Select
               name="ubicacionId"
               value={form.ubicacionId}
-              onChange={handleChange}
+              onChange={(value) => handleSelectChange('ubicacionId', value)}
               disabled={loadingUbicaciones}
-              className={inputClass}
-            >
-              <option value="">
-                {loadingUbicaciones ? 'Cargando ubicaciones...' : 'Sin ubicación asignada'}
-              </option>
-              {ubicacionOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: loadingUbicaciones ? 'Cargando ubicaciones...' : 'Sin ubicación asignada' },
+                ...ubicacionOptions.map((option) => ({ value: option.id, label: option.label })),
+              ]}
+            />
           </div>
 
           <div>
@@ -238,13 +231,12 @@ export default function NuevoActivoPage() {
 
           <div>
             <label className={labelClass}>Moneda</label>
-            <select name="moneda" value={form.moneda} onChange={handleChange} className={inputClass}>
-              {MONEDAS.map((moneda) => (
-                <option key={moneda} value={moneda}>
-                  {moneda}
-                </option>
-              ))}
-            </select>
+            <Select
+              name="moneda"
+              value={form.moneda}
+              onChange={(value) => handleSelectChange('moneda', value)}
+              options={MONEDAS.map((moneda) => ({ value: moneda, label: moneda }))}
+            />
           </div>
 
           <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">

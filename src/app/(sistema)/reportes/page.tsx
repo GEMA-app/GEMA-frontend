@@ -17,6 +17,7 @@ import { useReportes } from '@/hooks/useReportes';
 import { getActivos } from '@/services/activos';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
 import { StatCard } from '@/components/ui/StatCard';
+import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import { CrearReporteModal } from '@/components/reportes/CrearReporteModal';
@@ -376,36 +377,26 @@ export default function ReportesPage() {
             aria-label="Buscar reportes"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
+          <Select
             value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value as ReporteEstado | '');
+            onChange={(value) => {
+              setEstadoFiltro(value as ReporteEstado | '');
               setPage(1);
             }}
+            options={ESTADO_FILTER_OPTIONS}
             aria-label="Filtrar por estado"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-48"
-          >
-            {ESTADO_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <select
+            className="sm:w-48"
+          />
+          <Select
             value={prioridadFiltro}
-            onChange={(e) => {
-              setPrioridadFiltro(e.target.value as ReportePrioridad | '');
+            onChange={(value) => {
+              setPrioridadFiltro(value as ReportePrioridad | '');
               setPage(1);
             }}
+            options={PRIORIDAD_FILTER_OPTIONS}
             aria-label="Filtrar por prioridad"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-48"
-          >
-            {PRIORIDAD_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            className="sm:w-48"
+          />
         </div>
 
         {error && empty ? (

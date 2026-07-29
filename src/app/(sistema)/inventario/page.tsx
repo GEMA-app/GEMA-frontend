@@ -8,6 +8,7 @@ import { useRepuestos } from '@/hooks/useRepuestos';
 import { getRepuestos } from '@/services/repuestos';
 import { getArticulos as getArticulosCatalogo, getCategorias, type ArticuloCatalogo } from '@/services/catalogo';
 import { StatCard } from '@/components/ui/StatCard';
+import { Select } from '@/components/ui/Select';
 import { Badge, type EstadoRepuesto } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
@@ -319,21 +320,16 @@ export default function InventarioPage() {
             aria-label="Buscar en inventario"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
+          <Select
             value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value as EstadoRepuesto | '');
+            onChange={(value) => {
+              setEstadoFiltro(value as EstadoRepuesto | '');
               setPage(1);
             }}
+            options={ESTADO_FILTER_OPTIONS}
             aria-label="Filtrar por estado"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-          >
-            {ESTADO_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            className="sm:w-56"
+          />
         </div>
 
         {error && empty ? (

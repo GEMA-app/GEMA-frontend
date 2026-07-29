@@ -8,6 +8,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { getArticulos, type ArticuloCatalogo } from '@/services/catalogo';
 import { useProveedores } from '@/hooks/useProveedores';
 import { useRepuestos } from '@/hooks/useRepuestos';
+import { Select } from '@/components/ui/Select';
 import type { Proveedor } from '@/types/proveedor';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
@@ -55,6 +56,11 @@ export default function NuevoInventarioPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+  };
+
+  const handleSelectChange = (name: keyof typeof initialFormState, value: string) => {
     setForm((prev) => ({ ...prev, [name]: value }));
     setError(null);
   };
@@ -124,41 +130,30 @@ export default function NuevoInventarioPage() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
             <label className={labelClass}>Artículo del catálogo*</label>
-            <select
-              name="articuloId"
+            <Select
               value={form.articuloId}
-              onChange={handleChange}
+              onChange={(value) => handleSelectChange('articuloId', value)}
               disabled={loadingArticulos}
-              required
-              className={inputClass}
-            >
-              <option value="">
-                {loadingArticulos ? 'Cargando artículos...' : 'Seleccionar artículo del catálogo'}
-              </option>
-              {articulos.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                  {a.model ? ` (${a.model})` : ''}
-                </option>
-              ))}
-            </select>
+              placeholder={loadingArticulos ? 'Cargando artículos...' : 'Seleccionar artículo del catálogo'}
+              options={articulos.map((a) => ({
+                value: a.id,
+                label: `${a.name}${a.model ? ` (${a.model})` : ''}`,
+              }))}
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className={labelClass}>Proveedor</label>
-            <select
-              name="proveedorId"
+            <Select
               value={form.proveedorId}
-              onChange={handleChange}
-              className={inputClass}
-            >
-              <option value="">Sin proveedor asignado</option>
-              {proveedores.map((p: Proveedor) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => handleSelectChange('proveedorId', value)}
+              options={[
+                { value: '', label: 'Sin proveedor asignado' },
+                ...proveedores.map((p: Proveedor) => ({ value: p.id, label: p.name })),
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -214,13 +209,12 @@ export default function NuevoInventarioPage() {
 
           <div>
             <label className={labelClass}>Moneda</label>
-            <select name="moneda" value={form.moneda} onChange={handleChange} className={inputClass}>
-              {MONEDAS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={form.moneda}
+              onChange={(value) => handleSelectChange('moneda', value)}
+              options={MONEDAS.map((m) => ({ value: m, label: m }))}
+              className="w-full"
+            />
           </div>
 
           <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">

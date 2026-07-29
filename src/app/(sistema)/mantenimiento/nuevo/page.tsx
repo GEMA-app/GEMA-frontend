@@ -9,6 +9,7 @@ import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { createOrden, asignarTecnico } from '@/services/ordenes-trabajo';
 import type { TipoMantenimiento } from '@/types/orden-trabajo';
+import { Select } from '@/components/ui/Select';
 
 type Prioridad = 'baja' | 'media' | 'alta';
 
@@ -143,17 +144,19 @@ function NuevaOrdenContent() {
               </div>
               <div>
                 <label className={labelClass} htmlFor="activo_id">Activo*</label>
-                <select
+                <Select
                   id="activo_id"
                   name="activo_id"
                   value={formData.activo_id}
-                  onChange={handleInputChange}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, activo_id: value }));
+                    setErrors(prev => ({ ...prev, activo_id: '' }));
+                    setSubmitStatus('');
+                  }}
                   disabled={loadingActivos}
-                  className={`${inputClass} ${errors.activo_id ? 'border-red-500' : ''}`}
-                >
-                  <option value="">{loadingActivos ? 'Cargando activos...' : 'Seleccione un activo'}</option>
-                  {activos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
-                </select>
+                  options={[{ value: '', label: loadingActivos ? 'Cargando activos...' : 'Seleccione un activo' }, ...activos.map(a => ({ value: a.id, label: a.nombre }))]}
+                  className={`w-full ${errors.activo_id ? 'ring-1 ring-red-500 rounded-xl' : ''}`}
+                />
                 {errors.activo_id && <p className="text-xs text-red-500 mt-1">{errors.activo_id}</p>}
               </div>
             </div>
@@ -199,31 +202,35 @@ function NuevaOrdenContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass} htmlFor="supervisor_id">Supervisor</label>
-                  <select
+                  <Select
                     id="supervisor_id"
                     name="supervisor_id"
                     value={formData.supervisor_id}
-                    onChange={handleInputChange}
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, supervisor_id: value }));
+                      setErrors(prev => ({ ...prev, supervisor_id: '' }));
+                      setSubmitStatus('');
+                    }}
                     disabled={loadingUsuarios}
-                    className={inputClass}
-                  >
-                    <option value="">{loadingUsuarios ? 'Cargando usuarios...' : 'Sin supervisor'}</option>
-                    {supervisores.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </select>
+                    options={[{ value: '', label: loadingUsuarios ? 'Cargando usuarios...' : 'Sin supervisor' }, ...supervisores.map(u => ({ value: u.id, label: u.nombre }))]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className={labelClass} htmlFor="tecnico_id">Técnico</label>
-                  <select
+                  <Select
                     id="tecnico_id"
                     name="tecnico_id"
                     value={formData.tecnico_id}
-                    onChange={handleInputChange}
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, tecnico_id: value }));
+                      setErrors(prev => ({ ...prev, tecnico_id: '' }));
+                      setSubmitStatus('');
+                    }}
                     disabled={loadingUsuarios}
-                    className={inputClass}
-                  >
-                    <option value="">{loadingUsuarios ? 'Cargando usuarios...' : 'Sin técnico asignado'}</option>
-                    {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </select>
+                    options={[{ value: '', label: loadingUsuarios ? 'Cargando usuarios...' : 'Sin técnico asignado' }, ...tecnicos.map(u => ({ value: u.id, label: u.nombre }))]}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>

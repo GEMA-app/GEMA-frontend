@@ -11,6 +11,7 @@ import { useUsuarios } from '@/hooks/useUsuarios';
 import { getOrdenById, updateOrden, asignarTecnico } from '@/services/ordenes-trabajo';
 import { formatEstadoOT, formatTipoMantenimiento } from '@/lib/orden-trabajo';
 import type { TipoMantenimiento, OrdenTrabajo } from '@/types/orden-trabajo';
+import { Select } from '@/components/ui/Select';
 
 type Prioridad = 'baja' | 'media' | 'alta';
 
@@ -181,21 +182,33 @@ export default function EditarOrdenPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="supervisor_id">Supervisor</label>
-                  <select id="supervisor_id" name="supervisor_id" value={form.supervisor_id} onChange={handleChange}
+                  <Select
+                    id="supervisor_id"
+                    name="supervisor_id"
+                    value={form.supervisor_id}
+                    onChange={(value) => {
+                      setForm(prev => ({ ...prev, supervisor_id: value }));
+                      setStatus('');
+                    }}
                     disabled={loadingUsuarios}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                    <option value="">{loadingUsuarios ? 'Cargando...' : 'Sin supervisor'}</option>
-                    {supervisores.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </select>
+                    options={[{ value: '', label: loadingUsuarios ? 'Cargando...' : 'Sin supervisor' }, ...supervisores.map(u => ({ value: u.id, label: u.nombre }))]}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="tecnico_id">Técnico</label>
-                  <select id="tecnico_id" name="tecnico_id" value={form.tecnico_id} onChange={handleChange}
+                  <Select
+                    id="tecnico_id"
+                    name="tecnico_id"
+                    value={form.tecnico_id}
+                    onChange={(value) => {
+                      setForm(prev => ({ ...prev, tecnico_id: value }));
+                      setStatus('');
+                    }}
                     disabled={loadingUsuarios}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400">
-                    <option value="">{loadingUsuarios ? 'Cargando...' : 'Sin técnico asignado'}</option>
-                    {tecnicos.map(u => <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>)}
-                  </select>
+                    options={[{ value: '', label: loadingUsuarios ? 'Cargando...' : 'Sin técnico asignado' }, ...tecnicos.map(u => ({ value: u.id, label: `${u.nombre} (${u.email})` }))]}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>

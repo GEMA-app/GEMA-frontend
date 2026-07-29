@@ -7,6 +7,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Swal from 'sweetalert2';
 import { getRepuestoById, updateRepuesto } from '@/services/repuestos';
 import { getProveedores } from '@/services/proveedores';
+import { Select } from '@/components/ui/Select';
 import type { Repuesto } from '@/types/repuesto';
 import type { Proveedor } from '@/types/proveedor';
 
@@ -161,18 +162,15 @@ export default function EditarInventarioPage() {
 
           <div>
             <label className={labelClass}>Proveedor</label>
-            <select
+            <Select
               value={proveedorId}
-              onChange={(e) => setProveedorId(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Sin proveedor asignado</option>
-              {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name || p.id}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setProveedorId(value)}
+              options={[
+                { value: '', label: 'Sin proveedor asignado' },
+                ...proveedores.map((p) => ({ value: p.id, label: p.name || p.id })),
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -211,13 +209,12 @@ export default function EditarInventarioPage() {
 
           <div className="md:col-span-2">
             <label className={labelClass}>Moneda</label>
-            <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className={inputClass}>
-              {MONEDAS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={moneda}
+              onChange={(value) => setMoneda(value)}
+              options={MONEDAS.map((m) => ({ value: m, label: m }))}
+              className="w-full"
+            />
           </div>
 
           <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">
