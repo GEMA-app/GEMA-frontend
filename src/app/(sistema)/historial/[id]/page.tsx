@@ -3,11 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Clock, User, Tag, Monitor, Mail, Box } from 'lucide-react';
+import { ArrowLeft, Clock, User, Tag, Monitor, Mail, Box, FileText } from 'lucide-react';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { RequestState } from '@/components/ui/RequestState';
 import { getHistorialEntry } from '@/services/historial';
 import type { HistorialEntry } from '@/types/historial';
+import { getActivo, getCatalogArticle } from '@/services/activos';
+import { getEmpresa } from '@/services/empresa';
 
 function formatFecha(fecha: string): string {
   try {
@@ -25,6 +27,68 @@ function formatFecha(fecha: string): string {
   }
 }
 
+function ReferenceLink({ type, id }: { type: 'activo' | 'empresa'; id: string }) {
+  const [name, setName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchName() {
+      try {
+        let fetchedName = null;
+        if (type === 'activo') {
+          const activo = await getActivo(id);
+          if (activo.articulo_id) {
+            const articulo = await getCatalogArticle(activo.articulo_id);
+            fetchedName = articulo.name;
+          } else {
+            fetchedName = activo.codigo_activo || id;
+          }
+        } else if (type === 'empresa') {
+          const empresa = await getEmpresa();
+          if (empresa.id === id) {
+            fetchedName = empresa.nombre;
+          }
+        }
+        if (!cancelled) setName(fetchedName);
+      } catch (err) {
+        // ignore errors
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    fetchName();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, type]);
+
+  const href = type === 'activo' ? `/activos/${id}` : `/configuracion/empresa`;
+
+  if (loading) {
+    return <span className="animate-pulse text-gema-primary/50 dark:text-white/40">{id}</span>;
+  }
+
+  return (
+    <Link href={href} className="text-gema-accent hover:underline break-all" title={id}>
+      {name || id}
+    </Link>
+  );
+}
+
+function renderValue(key: string, value: unknown) {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'string') {
+    if (key === 'activo_id' || key === 'asset_id') {
+      return <ReferenceLink type="activo" id={value} />;
+    }
+    if (key === 'empresa_id') {
+      return <ReferenceLink type="empresa" id={value} />;
+    }
+  }
+  return String(value);
+}
+
 function DetallesTable({ data }: { data: Record<string, unknown> }) {
   const entries = Object.entries(data);
   if (!entries.length) return <p className="text-sm text-gema-primary/50 dark:text-white/40">Sin detalles adicionales</p>;
@@ -38,7 +102,24 @@ function DetallesTable({ data }: { data: Record<string, unknown> }) {
                 {key.replace(/_/g, ' ')}
               </td>
               <td className="px-4 py-2.5 text-gema-primary dark:text-white">
-                {typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}
+                {typeof value === 'object' && value !== null ? (
+                  Array.isArray(value) ? (
+                    <pre className="whitespace-pre-wrap font-mono text-xs bg-gray-100 dark:bg-white/5 p-2 rounded-md border border-gray-200 dark:border-white/10">
+                      {JSON.stringify(value, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
+                        <span key={k}>
+                          <span className="text-gema-primary/50 dark:text-white/40 text-xs">{k.replace(/_/g, ' ')}:</span>{' '}
+                          <span className="text-sm">{typeof v === 'object' && v !== null ? JSON.stringify(v) : renderValue(k, v)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  renderValue(key, value)
+                )}
               </td>
             </tr>
           ))}
@@ -150,6 +231,15 @@ export default function HistorialDetailPage() {
                   <p className="text-sm font-semibold text-gema-primary dark:text-white capitalize">{entry?.accion.replace(/_/g, ' ') || '—'}</p>
                 </div>
               </div>
+              {entry?.descripcion && (
+                <div className="flex items-start gap-3 py-3">
+                  <FileText className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-gema-primary/50 dark:text-white/40 mb-0.5">Descripción</p>
+                    <p className="text-sm text-gema-primary dark:text-white">{entry.descripcion}</p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3 py-3">
                 <Clock className="w-5 h-5 text-gema-accent shrink-0 mt-0.5" />
                 <div>
