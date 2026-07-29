@@ -203,7 +203,14 @@ export default function EditarActivoPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="ubicacion">Ubicación Física</label>
+                  <label className="flex items-center text-xs text-gray-500 mb-1" htmlFor="ubicacion">
+                    Ubicación Física
+                    {formData.ubicacion && (
+                      <Link href={`/ubicaciones/${formData.ubicacion}`} className="ml-2 text-[#E59D12] hover:underline">
+                        (Ver actual)
+                      </Link>
+                    )}
+                  </label>
                   <select
                     id="ubicacion" name="ubicacion"
                     value={formData.ubicacion} onChange={handleInputChange}

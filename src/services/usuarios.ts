@@ -25,6 +25,15 @@ export async function getUsuarios(params: UsuariosQuery = {}): Promise<{ usuario
   };
 }
 
+export async function getUsuariosBasicos(params: UsuariosQuery = {}): Promise<{ usuarios: Usuario[]; meta: { total: number; offset: number; limit: number } }> {
+  const empresaId = await requireEmpresaId();
+  const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios/basico${buildQuery(params)}`);
+  return {
+    usuarios: extractUsuariosFromResponse(payload),
+    meta: extractUsuariosMeta(payload, 0, params.perPage ?? 15),
+  };
+}
+
 export async function getUsuarioById(id: string): Promise<Usuario> {
   const empresaId = await requireEmpresaId();
   const payload = await fetchWithAuth<unknown>(`/v1/empresas/${empresaId}/usuarios/${id}`);
