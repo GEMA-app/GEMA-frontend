@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Truck, Mail, Phone, UserCheck, Calendar, Package, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, Truck, Mail, Phone, UserCheck, Calendar, Package, AlertCircle, Eye } from 'lucide-react';
 import { getProveedor } from '@/services/proveedores';
 import { getRepuestos } from '@/services/repuestos';
 import { getArticulos } from '@/services/catalogo';
@@ -53,7 +53,7 @@ export default function ProveedorDetallePage() {
       try {
         setLoadingRepuestos(true);
         const [repuestosRes, articulos] = await Promise.all([
-          getRepuestos({ perPage: 100 }),
+          getRepuestos({ proveedorId, perPage: 100 }),
           getArticulos({ perPage: 200 }).catch(() => []),
         ]);
 
@@ -61,11 +61,7 @@ export default function ProveedorDetallePage() {
 
         const map = Object.fromEntries(articulos.map((a) => [a.id, a.name]));
         setArticuloMap(map);
-
-        const repuestosDelProveedor = repuestosRes.repuestos.filter(
-          (r) => r.proveedor_id === proveedorId,
-        );
-        setRepuestos(repuestosDelProveedor);
+        setRepuestos(repuestosRes.repuestos);
       } catch {
         // Non-critical if repuestos fails
       } finally {
@@ -135,6 +131,21 @@ export default function ProveedorDetallePage() {
       key: 'estado',
       header: 'Estado Stock',
       render: (r) => <Badge estado={r.estadoRepuesto} />,
+    },
+    {
+      key: 'acciones',
+      header: '',
+      className: 'text-right',
+      render: (r) => (
+        <Link
+          href={`/inventario/${r.id}`}
+          className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer inline-flex"
+          title="Ver en inventario"
+          aria-label={`Ver repuesto ${r.nombreArticulo}`}
+        >
+          <Eye className="w-4 h-4" strokeWidth={1.5} />
+        </Link>
+      ),
     },
   ];
 
@@ -263,9 +274,17 @@ export default function ProveedorDetallePage() {
             <Package className="w-5 h-5 text-gema-accent" />
             Repuestos que Suministra
           </h2>
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gema-primary/10 dark:bg-white/10 text-gema-primary dark:text-white">
-            {repuestos.length} repuestos
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gema-primary/10 dark:bg-white/10 text-gema-primary dark:text-white">
+              {repuestos.length} repuestos
+            </span>
+            <Link
+              href={`/inventario?proveedorId=${supplier.id}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-lg bg-gema-accent/10 hover:bg-gema-accent/20 text-gema-primary dark:text-white transition-colors"
+            >
+              Ver en Inventario
+            </Link>
+          </div>
         </div>
 
         <DataTable

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash, Package, AlertCircle, XCircle, DollarSign } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { getProveedor } from '@/services/proveedores';
+import { Plus, Eye, Pencil, Trash, Package, AlertCircle, XCircle, DollarSign, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useRepuestos } from '@/hooks/useRepuestos';
 import { getRepuestos } from '@/services/repuestos';
@@ -37,15 +39,39 @@ export function getEstadoRepuesto(stockActual: number, stockMinimo: number): Est
 }
 
 export default function InventarioPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const proveedorId = searchParams.get('proveedorId') || undefined;
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoRepuesto | ''>('');
   const [page, setPage] = useState(1);
+  const [proveedorNombre, setProveedorNombre] = useState<string | null>(null);
 
   const { repuestos, meta, loading, error, empty, eliminarRepuesto } = useRepuestos({
     page,
     perPage: PER_PAGE,
+    proveedorId,
   });
+
+  useEffect(() => {
+    if (!proveedorId) {
+      setProveedorNombre(null);
+      return;
+    }
+    let cancelled = false;
+    getProveedor(proveedorId)
+      .then((p) => {
+        if (!cancelled) setProveedorNombre(p.name);
+      })
+      .catch(() => {
+        if (!cancelled) setProveedorNombre(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [proveedorId]);
 
   const [articuloMap, setArticuloMap] = useState<Record<string, ArticuloCatalogo>>({});
   const [categoriaMap, setCategoriaMap] = useState<Record<string, string>>({});
@@ -311,6 +337,19 @@ export default function InventarioPage() {
       </div>
 
       <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+        {proveedorId && (
+          <div className="flex items-center gap-2 mb-4 p-2.5 rounded-xl bg-gema-accent/10 border border-gema-accent/20 text-xs font-medium text-gema-primary dark:text-white w-fit">
+            <span>Filtrado por proveedor: <strong>{proveedorNombre || proveedorId}</strong></span>
+            <button
+              type="button"
+              onClick={() => router.push('/inventario')}
+              className="p-1 rounded-full hover:bg-gema-accent/20 transition-colors cursor-pointer"
+              title="Quitar filtro"
+            >
+              <X className="w-3.5 h-3.5 text-gema-primary dark:text-white" />
+            </button>
+          </div>
+        )}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
           <input
             type="search"

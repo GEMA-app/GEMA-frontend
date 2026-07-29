@@ -35,6 +35,7 @@ export interface MovimientosResponse {
 export interface RepuestosQuery {
   page?: number;
   perPage?: number;
+  proveedorId?: string;
 }
 
 export interface RepuestosResponse {

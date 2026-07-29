@@ -27,7 +27,12 @@ export async function getRepuestos(params: RepuestosQuery = {}): Promise<Repuest
   const url = await baseUrl();
   const page = params.page ?? 1;
   const perPage = Math.min(params.perPage ?? 15, 100);
-  const payload = await fetchWithAuth<unknown>(`${url}${buildOffsetQuery({ page, perPage })}`);
+  const query = buildOffsetQuery({
+    page,
+    perPage,
+    proveedor_id: params.proveedorId,
+  });
+  const payload = await fetchWithAuth<unknown>(`${url}${query}`);
   return {
     repuestos: extractRepuestosFromResponse(payload),
     meta: extractRepuestosMeta(payload, page, perPage),

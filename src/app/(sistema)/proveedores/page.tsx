@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, AlertCircle, Package } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useProveedores } from '@/hooks/useProveedores';
 import { StatCard } from '@/components/ui/StatCard';
@@ -98,6 +98,14 @@ export default function ProveedoresPage() {
       className: 'text-right',
       render: (p) => (
         <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/inventario?proveedorId=${p.id}`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            title="Ver repuestos en inventario"
+            aria-label={`Ver repuestos de ${p.name}`}
+          >
+            <Package className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
           <Link
             href={`/proveedores/${p.id}`}
             className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"

@@ -17,6 +17,8 @@ export default function EditarProveedorPage() {
     phone: '',
     email: '',
     contact: '',
+    activo: true,
+    direccion: '',
     version: 1,
   });
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,8 @@ export default function EditarProveedorPage() {
             phone: s.phone || '',
             email: s.email || '',
             contact: s.contact || '',
+            activo: s.activo ?? true,
+            direccion: s.direccion || '',
             version: s.version || 1,
           });
         }
@@ -89,6 +93,8 @@ export default function EditarProveedorPage() {
         phone: formData.phone.trim() || undefined,
         email: formData.email.trim() || undefined,
         contact: formData.contact.trim() || undefined,
+        activo: formData.activo,
+        direccion: formData.direccion.trim() || undefined,
         version: formData.version,
       });
       setSubmitStatus('Proveedor actualizado correctamente.');
@@ -213,6 +219,42 @@ export default function EditarProveedorPage() {
                 className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
               />
             </div>
+
+            <div>
+              <label htmlFor="direccion" className="block text-xs font-semibold text-gema-primary/70 dark:text-white/70 mb-1.5">
+                Dirección
+              </label>
+              <input
+                id="direccion"
+                name="direccion"
+                type="text"
+                value={formData.direccion}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label htmlFor="activo" className="text-sm font-semibold text-gema-primary/70 dark:text-white/70">
+              Proveedor Activo
+            </label>
+            <button
+              type="button"
+              id="activo"
+              role="switch"
+              aria-checked={formData.activo}
+              onClick={() => setFormData((prev) => ({ ...prev, activo: !prev.activo }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                formData.activo ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-white/20'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  formData.activo ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
 
           {submitStatus && (

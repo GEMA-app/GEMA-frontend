@@ -5,6 +5,8 @@ export interface Proveedor {
   phone: string | null;
   email: string | null;
   contact: string | null;
+  activo: boolean;
+  direccion: string | null;
   version: number;
 }
 
@@ -28,6 +30,7 @@ export interface CreateProveedorForm {
   phone?: string;
   email?: string;
   contact?: string;
+  direccion?: string;
 }
 
 export interface UpdateProveedorForm {
@@ -36,5 +39,7 @@ export interface UpdateProveedorForm {
   phone?: string;
   email?: string;
   contact?: string;
+  activo?: boolean;
+  direccion?: string;
   version: number;
 }
