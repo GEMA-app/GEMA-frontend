@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { NuevoReporteInput, ReportePrioridad, ReporteTipo } from '@/types/reporte';
+import { getActivos } from '@/services/activos';
+import { getUserName } from '@/lib/auth';
+import type { Activo } from '@/types/activo';
+import type { NuevoReporteInput, ReportePrioridad } from '@/types/reporte';
 
 interface CrearReporteModalProps {
   isOpen: boolean;
@@ -11,162 +14,182 @@ interface CrearReporteModalProps {
   saving?: boolean;
 }
 
-const TIPOS: { value: ReporteTipo; label: string }[] = [
-  { value: 'correctivo', label: 'Correctivo' },
-  { value: 'preventivo', label: 'Preventivo' },
-];
-
-const PRIORIDADES: { value: ReportePrioridad; label: string }[] = [
+const PRIORIDAD_OPTIONS: { value: ReportePrioridad; label: string }[] = [
   { value: 'alta', label: 'Alta' },
   { value: 'media', label: 'Media' },
   { value: 'baja', label: 'Baja' },
+  { value: 'critica', label: 'Crítica' },
 ];
 
-export function CrearReporteModal({ isOpen, onClose, onSave, saving = false }: CrearReporteModalProps) {
-  const [titulo, setTitulo] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [tipo, setTipo] = useState<ReporteTipo>('correctivo');
-  const [prioridad, setPrioridad] = useState<ReportePrioridad>('media');
-  const [asignado, setAsignado] = useState('');
+export function CrearReporteModal({
+  isOpen,
+  onClose,
+  onSave,
+  saving = false,
+}: CrearReporteModalProps) {
+  const [activoId, setActivoId] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<ReportePrioridad>('media');
+  const [activos, setActivos] = useState<Activo[]>([]);
+  const [loadingActivos, setLoadingActivos] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-    setTitulo('');
-    setDescripcion('');
-    setTipo('correctivo');
-    setPrioridad('media');
-    setAsignado('');
+    if (!isOpen) return;
+
+    setActivoId('');
+    setDescription('');
+    setPriority('media');
+    let cancelled = false;
+    setLoadingActivos(true);
+    getActivos({ perPage: 200 })
+      .then((res) => {
+        if (cancelled) return;
+        setActivos(res.activos);
+      })
+      .catch(() => {
+        // non-critical
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingActivos(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    await onSave({ titulo, descripcion, tipo, prioridad, asignado });
+    const selectedActivo = activos.find((a) => a.id === activoId);
+    const location = selectedActivo ? selectedActivo.ubicacion || selectedActivo.nombre : 'General';
+    const title = selectedActivo
+      ? `Falla en ${selectedActivo.nombre}`
+      : description.length > 40
+        ? `${description.slice(0, 40)}...`
+        : description;
+
+    await onSave({
+      title,
+      description,
+      location,
+      priority,
+      reported_by: getUserName() || 'Usuario Sistema',
+      activo_id: activoId || undefined,
+    });
     onClose();
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="crear-reporte-title"
     >
-      <div className="w-full max-w-md rounded-3xl border border-[#DED4C7] bg-[#F7F4EF] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[#EBE2D5] px-6 py-4">
-          <h2 id="crear-reporte-title" className="text-xl font-bold text-gray-800">
-            Crear reporte
-          </h2>
+      <div className="relative w-full max-w-lg rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark shadow-xl p-6">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2
+              id="crear-reporte-title"
+              className="font-heading font-bold text-xl text-gema-primary dark:text-white"
+            >
+              Nuevo reporte de falla
+            </h2>
+            <p className="text-sm text-gema-primary/60 dark:text-white/50 mt-1">
+              Complete la información de la incidencia detectada
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-gray-500 hover:bg-white/70 transition-colors cursor-pointer"
+            className="p-2 rounded-lg text-gema-primary/50 hover:bg-gema-primary/5 dark:text-white/50 dark:hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Cerrar"
           >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="reporte-titulo" className="mb-1 block text-sm font-semibold text-gray-700">
-              Título
+            <label
+              htmlFor="reporte-activo"
+              className="block text-sm font-semibold text-gema-primary dark:text-white mb-1.5"
+            >
+              Activo
             </label>
-            <input
-              id="reporte-titulo"
-              type="text"
-              value={titulo}
-              onChange={(event) => setTitulo(event.target.value)}
-              required
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-            />
+            <select
+              id="reporte-activo"
+              value={activoId}
+              onChange={(e) => setActivoId(e.target.value)}
+              disabled={loadingActivos}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+            >
+              <option value="">
+                {loadingActivos ? 'Cargando activos...' : 'Seleccionar activo (opcional)'}
+              </option>
+              {activos.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.serial} — {a.nombre}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
-            <label htmlFor="reporte-descripcion" className="mb-1 block text-sm font-semibold text-gray-700">
-              Descripción
+            <label
+              htmlFor="reporte-description"
+              className="block text-sm font-semibold text-gema-primary dark:text-white mb-1.5"
+            >
+              Descripción de falla <span className="text-red-500">*</span>
             </label>
             <textarea
-              id="reporte-descripcion"
-              value={descripcion}
-              onChange={(event) => setDescripcion(event.target.value)}
+              id="reporte-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               required
               rows={3}
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C] resize-none"
+              placeholder="Describa detalladamente el problema o falla presentada..."
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent resize-none"
             />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="reporte-tipo" className="mb-1 block text-sm font-semibold text-gray-700">
-                Tipo
-              </label>
-              <select
-                id="reporte-tipo"
-                value={tipo}
-                onChange={(event) => setTipo(event.target.value as ReporteTipo)}
-                className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              >
-                {TIPOS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="reporte-prioridad" className="mb-1 block text-sm font-semibold text-gray-700">
-                Prioridad
-              </label>
-              <select
-                id="reporte-prioridad"
-                value={prioridad}
-                onChange={(event) => setPrioridad(event.target.value as ReportePrioridad)}
-                className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-              >
-                {PRIORIDADES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           <div>
-            <label htmlFor="reporte-asignado" className="mb-1 block text-sm font-semibold text-gray-700">
-              Asignado a
+            <label
+              htmlFor="reporte-priority"
+              className="block text-sm font-semibold text-gema-primary dark:text-white mb-1.5"
+            >
+              Prioridad
             </label>
-            <input
-              id="reporte-asignado"
-              type="text"
-              value={asignado}
-              onChange={(event) => setAsignado(event.target.value)}
-              required
-              className="w-full rounded-xl border border-[#DED4C7] bg-white px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#ECA03C]"
-            />
+            <select
+              id="reporte-priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as ReportePrioridad)}
+              className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
+            >
+              {PRIORIDAD_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-3 border-t border-gray-100 dark:border-white/10 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-[#DED4C7] bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-[#E5A93D] px-4 py-2 text-sm font-semibold text-black hover:bg-[#d19730] disabled:opacity-60 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 disabled:opacity-60 text-gray-900 text-sm font-semibold transition-colors cursor-pointer"
             >
-              {saving ? 'Guardando…' : 'Guardar'}
+              {saving ? 'Guardando...' : 'Crear reporte'}
             </button>
           </div>
         </form>

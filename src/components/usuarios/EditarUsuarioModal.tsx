@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { rolSlugFromLabel } from '@/lib/permisos';
-import type { ActualizarUsuarioInput, UsuarioDetalle, UsuarioEstado } from '@/types/usuario';
+import type { LegacyActualizarUsuarioInput as ActualizarUsuarioInput, UsuarioDetalle, UsuarioEstado } from '@/types/usuario';
 
 interface EditarUsuarioModalProps {
   isOpen: boolean;

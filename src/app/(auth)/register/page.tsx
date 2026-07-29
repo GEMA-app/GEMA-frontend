@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { User, Mail, KeyRound, ArrowRight, ShieldCheck, Zap, Building2, Eye, EyeOff } from 'lucide-react';
-import Image from 'next/image';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { User, Mail, KeyRound, ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import Swal from 'sweetalert2';
+import { register } from '@/services/auth';
+import { ApiError } from '@/lib/api';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: '',
     companyName: '',
@@ -14,8 +16,8 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
@@ -23,436 +25,217 @@ export default function RegisterPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setError('');
-    if (name === 'confirmPassword') {
-      setPasswordMismatch(value !== formData.password);
-    }
-    if (name === 'password') {
-      setPasswordMismatch(formData.confirmPassword !== '' && formData.confirmPassword !== value);
-    }
+    setError(null);
+    if (name === 'confirmPassword') setPasswordMismatch(value !== formData.password);
+    if (name === 'password') setPasswordMismatch(formData.confirmPassword !== '' && formData.confirmPassword !== value);
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const validarPassword = (pass: string): string | null => {
+    if (pass.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+    if (!/[A-Z]/.test(pass)) return 'La contraseña debe contener al menos una letra mayúscula';
+    if (!/[0-9]/.test(pass)) return 'La contraseña debe contener al menos un número';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) return 'La contraseña debe contener al menos un carácter especial';
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (formData.password !== formData.confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
     }
-    if (formData.password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    const passwordError = validarPassword(formData.password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
-    if (!/[A-Z]/.test(formData.password)) {
-      setError('La contraseña debe contener al menos una letra mayúscula');
-      return;
-    }
-    if (!/[0-9]/.test(formData.password)) {
-      setError('La contraseña debe contener al menos un número');
-      return;
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
-      setError('La contraseña debe contener al menos un carácter especial (!@#$%^&*...)');
-      return;
-    }
-    setIsLoading(true);
+
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/autenticacion/registrar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/vnd.api+json', Accept: 'application/json' },
-        body: JSON.stringify({
-          data: {
-            type: "tokens",
-            attributes: {
-              email: formData.email,
-              password: formData.password,
-              nombre: formData.fullName,
-              company_name: formData.companyName,
-              telefono: ""
-            }
-          }
-        }),
+      await register({
+        nombre: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        companyName: formData.companyName,
       });
-      const result = await response.json();
-      if (response.ok) {
-        await Swal.fire({
-          icon: 'success',
-          title: '¡Cuenta creada!',
-          text: 'Tu empresa y usuario fueron registrados exitosamente.',
-          confirmButtonText: 'Ir al login',
-          confirmButtonColor: '#1F4E79'
-        });
-        window.location.href = '/login';
-      } else {
-        const errorMsg = result.errors?.[0]?.detail || 'Error al registrarse';
-        setError(errorMsg);
-      }
-    } catch {
-      setError('No se pudo conectar con el servidor');
+      router.push('/login');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    paddingLeft: '42px',
-    paddingRight: '16px',
-    paddingTop: '12px',
-    paddingBottom: '12px',
-    borderRadius: '12px',
-    border: 'none',
-    outline: 'none',
-    backgroundColor: '#F5F0E8',
-    fontSize: '14px',
-    color: '#374151',
-    boxSizing: 'border-box',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#1f2937',
-    marginBottom: '6px',
-  };
+  const inputClass =
+    'w-full pl-[42px] pr-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none box-border focus:ring-2 focus:ring-gema-accent/40';
+  const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ECEAE6',
-        padding: '16px',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          width: '100%',
-          maxWidth: '920px',
-          borderRadius: '20px',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.14)',
-          overflow: 'hidden',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        {/* ═══════════ Panel izquierdo azul marino ═══════════ */}
-        <div
-          style={{
-            width: '300px',
-            minWidth: '300px',
-            backgroundColor: '#1E3A5F',
-            borderRadius: '20px 0 0 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            padding: '36px',
-          }}
-        >
-          {/* Logo GEMA */}
-          <div style={{ marginBottom: '32px' }}>
-            <Image
-              src="/gema-logo.png"
-              alt="GEMA Logo"
-              width={110}
-              height={110}
-              style={{
-                objectFit: 'contain',
-                filter: 'brightness(0) invert(1)',
-                opacity: 0.92,
-              }}
-            />
-          </div>
+    <div className="flex flex-col items-center justify-center w-full px-4 py-12 bg-gema-bg-light dark:bg-gema-bg-dark">
+      <div className="mb-8 flex justify-center">
+        <Link href="/" className="flex items-center gap-2 group">
+          <img
+            src="/GEMA Logo Perlado.png"
+            alt="GEMA"
+            className="h-8 sm:h-10 w-auto"
+          />
+        </Link>
+      </div>
 
-          {/* Título */}
-          <div style={{ flex: 1 }}>
-            <h1
-              style={{
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '26px',
-                lineHeight: 1.28,
-                marginBottom: '40px',
-              }}
-            >
-              Gestión
-              <br />
-              Estratégica de
-              <br />
-              Mantenimiento
-              <br />
-              de Activos
-            </h1>
-          </div>
-
-          {/* Feature cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.10)',
-                borderRadius: '16px',
-                padding: '16px 8px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <ShieldCheck color="rgba(255,255,255,0.80)" size={26} strokeWidth={1.6} />
-              <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                Seguridad
-              </span>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.18)',
-                border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: '16px',
-                padding: '16px 8px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-                position: 'relative',
-              }}
-            >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: '#A78BFA',
-                }}
-              />
-              <Zap color="#ffffff" size={26} strokeWidth={1.6} fill="rgba(255,255,255,0.15)" />
-              <span style={{ color: '#ffffff', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                Eficiencia
-              </span>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.10)',
-                borderRadius: '16px',
-                padding: '16px 8px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <Building2 color="rgba(255,255,255,0.80)" size={26} strokeWidth={1.6} />
-              <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                Control
-              </span>
-            </div>
-          </div>
+      <div className="w-full max-w-md bg-white dark:bg-gema-surface-dark rounded-none sm:rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-200 dark:border-white/10">
+        <div className="mb-7">
+          <h2 className="font-heading font-bold text-2xl text-gray-900 dark:text-white mb-1.5">
+            Regístrate
+          </h2>
+          <p className="text-gray-500 dark:text-white/60 text-sm">
+            Ingresa tus datos para vivir la experiencia en GEMA
+          </p>
         </div>
 
-        {/* ═══════════ Panel derecho blanco ═══════════ */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            padding: '48px 40px',
-          }}
-        >
-          <div style={{ marginBottom: '28px' }}>
-            <h2 style={{ fontWeight: 800, fontSize: '28px', color: '#111827', marginBottom: '6px' }}>
-              Regístrate
-            </h2>
-            <p style={{ color: '#6B7280', fontSize: '14px' }}>
-              Ingresa tus datos para que vivas la experiencia en GEMA
-            </p>
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className={labelClass}>Nombre y Apellido*</label>
+            <div className="relative">
+              <User
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder="Pedro Perez"
+                required
+                className={inputClass}
+              />
+            </div>
           </div>
 
-          {error && (
-            <div
-              style={{
-                marginBottom: '16px',
-                padding: '12px 16px',
-                backgroundColor: '#FEF2F2',
-                border: '1px solid #FECACA',
-                borderRadius: '12px',
-                color: '#B91C1C',
-                fontSize: '14px',
-              }}
-            >
-              {error}
+          <div>
+            <label className={labelClass}>Nombre de la empresa*</label>
+            <div className="relative">
+              <Building2
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type="text"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleInputChange}
+                placeholder="Mi Empresa S.A."
+                required
+                className={inputClass}
+              />
             </div>
-          )}
+          </div>
 
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Nombre y Apellido */}
-            <div>
-              <label style={labelStyle}>Nombre y Apellido*</label>
-              <div style={{ position: 'relative' }}>
-                <User
-                  size={18} color="#9CA3AF"
-                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <input
-                  id="register-fullname" type="text" name="fullName"
-                  value={formData.fullName} onChange={handleInputChange}
-                  placeholder="Pedro Perez" required style={inputStyle}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
+          <div>
+            <label className={labelClass}>Correo electrónico*</label>
+            <div className="relative">
+              <Mail
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="pedroperez@gmail.com"
+                required
+                className={inputClass}
+              />
             </div>
+          </div>
 
-            {/* Nombre de la empresa */}
-            <div>
-              <label style={labelStyle}>Nombre de la empresa*</label>
-              <div style={{ position: 'relative' }}>
-                <Building2
-                  size={18} color="#9CA3AF"
-                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <input
-                  id="register-company" type="text" name="companyName"
-                  value={formData.companyName} onChange={handleInputChange}
-                  placeholder="Mi Empresa S.A." required style={inputStyle}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
-            </div>
-
-            {/* Correo electrónico */}
-            <div>
-              <label style={labelStyle}>Correo electrónico*</label>
-              <div style={{ position: 'relative' }}>
-                <Mail
-                  size={18} color="#9CA3AF"
-                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <input
-                  id="register-email" type="email" name="email"
-                  value={formData.email} onChange={handleInputChange}
-                  placeholder="pedroperez@gmail.com" required style={inputStyle}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                />
-              </div>
-            </div>
-
-            {/* Contraseña */}
-            <div>
-              <label style={labelStyle}>Crea una contraseña*</label>
-              <div style={{ position: 'relative' }}>
-                <KeyRound
-                  size={18} color="#9CA3AF"
-                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <input
-                  id="register-password" type={showPassword ? 'text' : 'password'} name="password"
-                  value={formData.password} onChange={handleInputChange}
-                  placeholder="Pedro123" required style={{ ...inputStyle, paddingRight: '44px' }}
-                  onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                  style={{
-                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    color: '#9CA3AF', display: 'flex', alignItems: 'center'
-                  }}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Verificar contraseña */}
-            <div>
-              <label style={labelStyle}>Verifique la contraseña*</label>
-              <div style={{ position: 'relative' }}>
-                <KeyRound
-                  size={18} color="#9CA3AF"
-                  style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                />
-                <input
-                  id="register-confirm-password" type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword"
-                  value={formData.confirmPassword} onChange={handleInputChange}
-                  placeholder="Pedro123" required
-                  style={{
-                    ...inputStyle,
-                    paddingRight: '44px',
-                    border: passwordMismatch ? '1.5px solid #EF4444' : 'none',
-                  }}
-                  onFocus={(e) => { e.target.style.boxShadow = passwordMismatch ? '0 0 0 3px rgba(239,68,68,0.2)' : '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                  onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  tabIndex={-1}
-                  style={{
-                    position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
-                    background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                    color: '#9CA3AF', display: 'flex', alignItems: 'center'
-                  }}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {passwordMismatch && (
-                <p style={{ color: '#EF4444', fontSize: '13px', marginTop: '6px' }}>Las contraseñas no coinciden</p>
-              )}
-            </div>
-
-            {/* Fila inferior */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: '8px',
-              }}
-            >
-              <Link
-                href="/login"
-                style={{ fontSize: '13px', fontWeight: 600, color: '#D4820A', textDecoration: 'none' }}
-              >
-                Tienes una cuenta?
-              </Link>
-
+          <div>
+            <label className={labelClass}>Crea una contraseña*</label>
+            <div className="relative">
+              <KeyRound
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Pedro123"
+                required
+                className={`${inputClass} pr-11`}
+              />
               <button
-                id="register-submit" type="submit" disabled={isLoading}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '12px 24px',
-                  borderRadius: '999px',
-                  border: 'none',
-                  backgroundColor: '#E09825',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '14px',
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  opacity: isLoading ? 0.6 : 1,
-                  transition: 'opacity 0.2s',
-                }}
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 flex items-center cursor-pointer bg-transparent border-none p-0"
               >
-                Accede al sistema
-                <ArrowRight size={16} />
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Verifique la contraseña*</label>
+            <div className="relative">
+              <KeyRound
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                placeholder="Pedro123"
+                required
+                className={`${inputClass} pr-11 ${passwordMismatch ? 'border-red-500 dark:border-red-500 focus:ring-red-500/20' : ''}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                tabIndex={-1}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 flex items-center cursor-pointer bg-transparent border-none p-0"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {passwordMismatch && (
+              <p className="text-red-500 dark:text-red-400 text-[13px] mt-1.5">
+                Las contraseñas no coinciden
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+            <Link
+              href="/login"
+              className="text-[13px] font-semibold text-gema-accent-dark dark:text-gema-accent no-underline"
+            >
+              ¿Tienes una cuenta?
+            </Link>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer border-none"
+            >
+              Accede al sistema
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

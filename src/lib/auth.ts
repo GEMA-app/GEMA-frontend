@@ -1,13 +1,12 @@
+import { asRecord } from '@/lib/jsonapi';
+
+type SessionPayload = Record<string, unknown>;
+
 const TOKEN_KEY = 'token';
 const EMPRESA_ID_KEY = 'empresaId';
 const ROLES_KEY = 'roles';
 const USER_NAME_KEY = 'userName';
-
-type SessionPayload = Record<string, unknown>;
-
-function asRecord(value: unknown): SessionPayload | null {
-  return value && typeof value === 'object' ? (value as SessionPayload) : null;
-}
+const REFRESH_TOKEN_KEY = 'refreshToken';
 
 function pickString(...values: unknown[]): string | null {
   for (const value of values) {
@@ -21,7 +20,7 @@ function pickString(...values: unknown[]): string | null {
   return null;
 }
 
-function normalizeRoles(value: unknown): string[] {
+export function normalizeRoles(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -47,6 +46,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
 
   const record = payload as Record<string, unknown>;
   const data = asRecord(record.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(record.usuario) ?? asRecord(data?.usuario);
 
   return normalizeRoles(
@@ -54,6 +54,7 @@ export function extractRolesFromPayload(payload: unknown): string[] {
       record.roles_asignados ??
       data?.roles ??
       data?.roles_asignados ??
+      attributes?.roles ??
       usuario?.roles ??
       usuario?.roles_asignados,
   );
@@ -116,12 +117,14 @@ export function setSession(loginResponse: SessionPayload): void {
   }
 
   const data = asRecord(loginResponse.data);
+  const attributes = asRecord(data?.attributes);
   const usuario = asRecord(loginResponse.usuario) ?? asRecord(data?.usuario);
   const token = pickString(
     loginResponse.token,
     loginResponse.access_token,
     data?.token,
     data?.access_token,
+    attributes?.access_token,
     usuario?.token,
   );
 
@@ -130,12 +133,23 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.empresaId,
     data?.empresa_id,
     data?.empresaId,
+    attributes?.empresa_id,
+    attributes?.empresaId,
     usuario?.empresa_id,
     usuario?.empresaId,
   );
 
   if (token) {
     localStorage.setItem(TOKEN_KEY, token);
+  }
+
+  const refreshToken = pickString(
+    loginResponse.refresh_token,
+    data?.refresh_token,
+    attributes?.refresh_token,
+  );
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   }
 
   if (empresaId) {
@@ -152,6 +166,7 @@ export function setSession(loginResponse: SessionPayload): void {
     loginResponse.usuario,
     usuario?.name,
     usuario?.nombre,
+    attributes?.nombre,
   );
   if (userName) {
     localStorage.setItem(USER_NAME_KEY, userName);
@@ -166,6 +181,7 @@ export function clearSession(): void {
   localStorage.removeItem(EMPRESA_ID_KEY);
   localStorage.removeItem(ROLES_KEY);
   localStorage.removeItem(USER_NAME_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export async function ensureSessionRoles(): Promise<string[]> {
@@ -179,7 +195,7 @@ export async function ensureSessionRoles(): Promise<string[]> {
   }
 
   const { fetchWithAuth } = await import('@/lib/api');
-  const profile = await fetchWithAuth<unknown>('/autenticacion/perfil');
+  const profile = await fetchWithAuth<unknown>('/v1/auth/yo');
   const roles = extractRolesFromPayload(profile);
 
   if (roles.length > 0) {
@@ -191,4 +207,24 @@ export async function ensureSessionRoles(): Promise<string[]> {
 
 export function isAuthenticated(): boolean {
   return Boolean(getToken());
+}
+
+export function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export async function refreshSession(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) throw new Error('No hay refresh token.');
+  const { fetchWithAuth } = await import('@/lib/api');
+  const payload = await fetchWithAuth<Record<string, unknown>>('/v1/auth/refrescar', {
+    method: 'POST',
+    auth: false,
+    contentType: 'json-api',
+    json: { data: { type: 'tokens', attributes: { refresh_token: refreshToken } } },
+  });
+  setSession(payload);
 }

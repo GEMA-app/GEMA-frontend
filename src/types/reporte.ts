@@ -1,50 +1,60 @@
-export type ReporteTipo = 'correctivo' | 'preventivo';
-export type ReportePrioridad = 'alta' | 'media' | 'baja';
-export type ReporteEstado = 'completado' | 'en_proceso' | 'programado';
+import type { PaginationMeta } from '@/types/common';
+
+export type ReportePrioridad = 'critica' | 'alta' | 'media' | 'baja';
+export type ReporteEstado = 'pendiente' | 'en_proceso' | 'atendido' | 'descartado';
 
 export interface Reporte {
   id: string;
-  codigo: string;
-  titulo: string;
-  descripcion: string;
-  tipo: ReporteTipo;
-  prioridad: ReportePrioridad;
-  estado: ReporteEstado;
-  asignado: string;
-}
-
-export type ReporteFiltroTipo = 'todos' | ReporteTipo;
-
-export interface ReportesResumen {
-  alertasCriticas: number;
-  enProceso: number;
-  completados: number;
-}
-
-export interface ReportesMeta {
-  page: number;
-  perPage: number;
-  total: number;
-  lastPage: number;
+  title: string;
+  description: string;
+  location: string;
+  priority: ReportePrioridad;
+  reported_by: string;
+  status: ReporteEstado;
+  activo_id: string | null;
+  orden_trabajo_id: string | null;
+  created_at: string;
+  version: number;
+  codigo?: string;
+  tecnico?: string;
 }
 
 export interface ReportesQuery {
   page?: number;
   perPage?: number;
+  status?: ReporteEstado;
+  priority?: ReportePrioridad;
   search?: string;
-  tipo?: ReporteFiltroTipo;
-  estado?: ReporteEstado;
 }
 
 export interface ReportesResponse {
   reportes: Reporte[];
-  meta: ReportesMeta;
+  meta: PaginationMeta;
 }
 
 export interface NuevoReporteInput {
-  titulo: string;
-  descripcion: string;
-  tipo: ReporteTipo;
-  prioridad: ReportePrioridad;
-  asignado: string;
+  title: string;
+  description: string;
+  location?: string;
+  priority: ReportePrioridad;
+  reported_by?: string;
+  activo_id?: string;
 }
+
+export interface ActualizarReporteInput {
+  title?: string;
+  description?: string;
+  location?: string;
+  priority?: ReportePrioridad;
+  reported_by?: string;
+  status?: ReporteEstado;
+  activo_id?: string;
+  version: number;
+}
+
+export const TRANSICIONES_REPORTE: Record<ReporteEstado, ReporteEstado[]> = {
+  pendiente: ['en_proceso', 'descartado'],
+  en_proceso: ['atendido'],
+  atendido: [],
+  descartado: [],
+};

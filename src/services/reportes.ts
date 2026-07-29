@@ -1,104 +1,90 @@
-import { fetchWithAuth } from '@/lib/api';
-import {
-  buildReporteFromInput,
-  mapReporteResponse,
-  mapReportesFromResponse,
-  mapReportesResumenFromResponse,
-} from '@/lib/reportes';
-import {
-  mockCreateReporte,
-  mockFetchReportes,
-  mockFetchReportesResumen,
-} from '@/data/mockReportesApi';
+import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
+import { buildOffsetQuery } from '@/lib/pagination';
+import { extractReportesFromResponse, extractReportesMeta, mapEstadoToBackend, mapReporteFromResponse } from '@/lib/reportes';
 import type {
+  ActualizarReporteInput,
   NuevoReporteInput,
   Reporte,
   ReportesQuery,
-  ReportesResumen,
   ReportesResponse,
 } from '@/types/reporte';
 
-const USE_MOCK = process.env.NEXT_PUBLIC_MOCK_REPORTES !== 'false';
-
-function buildReportesQuery(params: ReportesQuery): string {
-  const searchParams = new URLSearchParams();
-  const page = params.page ?? 1;
-  const perPage = params.perPage ?? 15;
-
-  searchParams.set('page', String(page));
-  searchParams.set('per_page', String(perPage));
-
-  if (params.search?.trim()) {
-    searchParams.set('search', params.search.trim());
-  }
-
-  if (params.tipo && params.tipo !== 'todos') {
-    searchParams.set('tipo', params.tipo);
-  }
-
-  if (params.estado) {
-    searchParams.set('estado', params.estado);
-  }
-
-  return `?${searchParams.toString()}`;
+async function baseUrl(): Promise<string> {
+  const empresaId = await requireEmpresaId();
+  return `/v1/empresas/${empresaId}/reportes-fallas`;
 }
 
 export async function getReportes(params: ReportesQuery = {}): Promise<ReportesResponse> {
-  if (USE_MOCK) {
-    return mockFetchReportes(params);
-  }
-
+  const url = await baseUrl();
   const page = params.page ?? 1;
   const perPage = params.perPage ?? 15;
-  const query = buildReportesQuery({ ...params, page, perPage });
-
-  const payload = await fetchWithAuth<unknown>(`/mantenimiento/reportes${query}`);
-  return mapReportesFromResponse(payload, page, perPage);
+  const query = buildOffsetQuery({
+    page,
+    perPage,
+    status: params.status,
+    priority: params.priority,
+    search: params.search,
+  });
+  const payload = await fetchWithAuth<unknown>(`${url}${query}`);
+  return {
+    reportes: extractReportesFromResponse(payload),
+    meta: extractReportesMeta(payload, page, perPage),
+  };
 }
 
-export async function getReportesResumen(): Promise<ReportesResumen> {
-  if (USE_MOCK) {
-    return mockFetchReportesResumen();
-  }
-
-  const payload = await fetchWithAuth<unknown>('/mantenimiento/reportes/resumen');
-  const resumen = mapReportesResumenFromResponse(payload);
-
-  if (!resumen) {
-    throw new Error('No se pudo interpretar el resumen de reportes.');
-  }
-
-  return resumen;
+export async function getReporteById(id: string): Promise<Reporte> {
+  const url = await baseUrl();
+  const payload = await fetchWithAuth<unknown>(`${url}/${id}`);
+  const reporte = mapReporteFromResponse(payload);
+  if (!reporte) throw new Error('No se pudo interpretar el reporte.');
+  return reporte;
 }
 
-export async function createReporte(
-  input: NuevoReporteInput,
-  index: number,
-): Promise<Reporte> {
-  if (USE_MOCK) {
-    return mockCreateReporte(input);
-  }
-
-  const payload = await fetchWithAuth<unknown>('/mantenimiento/reportes', {
+export async function createReporte(input: NuevoReporteInput): Promise<Reporte> {
+  const url = await baseUrl();
+  const payload = await fetchWithAuth<unknown>(url, {
     method: 'POST',
+    contentType: 'json-api',
     json: {
-      titulo: input.titulo,
-      descripcion: input.descripcion,
-      tipo: input.tipo,
-      tipo_mantenimiento: input.tipo,
-      prioridad: input.prioridad,
-      asignado: input.asignado,
-      responsable: input.asignado,
-      estado: 'programado',
+      data: {
+        type: 'failure-reports',
+        attributes: {
+          title: input.title,
+          description: input.description,
+          location: input.location,
+          priority: input.priority,
+          reported_by: input.reported_by,
+          activo_id: input.activo_id ?? null,
+        },
+      },
     },
   });
-
-  const reporte = mapReporteResponse(payload);
-  if (reporte) {
-    return reporte;
-  }
-
-  return buildReporteFromInput(input, index);
+  const reporte = mapReporteFromResponse(payload);
+  if (!reporte) throw new Error('No se pudo interpretar el reporte creado.');
+  return reporte;
 }
 
-export { USE_MOCK as isReportesMockMode };
+export async function updateReporte(id: string, input: ActualizarReporteInput): Promise<Reporte> {
+  const url = await baseUrl();
+  const { version, ...rest } = input;
+  const attributes: Record<string, unknown> = { version };
+  for (const [key, value] of Object.entries(rest)) {
+    if (value !== undefined) attributes[key] = value;
+  }
+  if (attributes.status) {
+    attributes.status = mapEstadoToBackend(attributes.status as string);
+  }
+  const payload = await fetchWithAuth<unknown>(`${url}/${id}`, {
+    method: 'PATCH',
+    contentType: 'json-api',
+    json: { data: { type: 'failure-reports', attributes } },
+  });
+  const reporte = mapReporteFromResponse(payload);
+  if (!reporte) throw new Error('No se pudo interpretar el reporte actualizado.');
+  return reporte;
+}
+
+export async function deleteReporte(id: string): Promise<void> {
+  const url = await baseUrl();
+  await fetchWithAuth(`${url}/${id}`, { method: 'DELETE' });
+}

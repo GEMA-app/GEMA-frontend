@@ -27,6 +27,7 @@ const API_BASE = '/v1';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/vnd.api+json',
+  'Accept': 'application/vnd.api+json',
   Authorization: `Bearer ${token}`,
 });
 
@@ -54,7 +55,7 @@ export default function MantenimientoEditForm({
       setError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/empresas/${empresaId}/mantenimientos/${mantenimientoId}`, {
+        const res = await fetch(`${API_BASE}/empresas/${empresaId}/ordenes-trabajo/${mantenimientoId}`, {
           headers: getHeaders(token),
           method: 'GET',
         });

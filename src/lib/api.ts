@@ -1,6 +1,9 @@
-import { getEmpresaId, getToken } from '@/lib/auth';
+import { clearSession, getEmpresaId, getToken, refreshSession } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
 
 export class ApiError extends Error {
   status: number;
@@ -34,7 +37,7 @@ function getContentTypeHeader(contentType: ContentType): string {
   return contentType === 'json-api' ? 'application/vnd.api+json' : 'application/json';
 }
 
-async function parseErrorMessage(response: Response): Promise<string> {
+async function parseErrorMessage(response: Response): Promise<{ message: string; payload?: unknown }> {
   try {
     const payload = await response.json();
 
@@ -42,31 +45,31 @@ async function parseErrorMessage(response: Response): Promise<string> {
       const record = payload as Record<string, unknown>;
 
       if (typeof record.mensaje === 'string') {
-        return record.mensaje;
+        return { message: record.mensaje, payload };
       }
 
       const errors = record.errors;
       if (Array.isArray(errors) && errors.length > 0) {
         const first = errors[0] as Record<string, unknown>;
         if (typeof first.detail === 'string') {
-          return first.detail;
+          return { message: first.detail, payload };
         }
       }
 
       if (typeof record.message === 'string') {
-        return record.message;
+        return { message: record.message, payload };
       }
     }
   } catch {
     // ignore parse errors
   }
 
-  return `Error ${response.status}: ${response.statusText || 'Solicitud fallida'}`;
+  return { message: `Error ${response.status}: ${response.statusText || 'Solicitud fallida'}` };
 }
 
-export async function fetchWithAuth<T>(
+async function executeFetch<T>(
   path: string,
-  options: FetchWithAuthOptions = {},
+  options: FetchWithAuthOptions,
 ): Promise<T> {
   const {
     json,
@@ -100,8 +103,8 @@ export async function fetchWithAuth<T>(
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(response);
-    throw new ApiError(message, response.status);
+    const { message, payload } = await parseErrorMessage(response);
+    throw new ApiError(message, response.status, payload);
   }
 
   if (response.status === 204) {
@@ -111,6 +114,47 @@ export async function fetchWithAuth<T>(
   return response.json() as Promise<T>;
 }
 
+export async function fetchWithAuth<T>(
+  path: string,
+  options: FetchWithAuthOptions = {},
+): Promise<T> {
+  const { auth = true } = options;
+
+  try {
+    return await executeFetch<T>(path, options);
+  } catch (err) {
+    if (auth && err instanceof ApiError && err.status === 401) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = refreshSession()
+          .catch(() => {
+            clearSession();
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
+            throw new ApiError('Sesión expirada. Inicie sesión nuevamente.', 401);
+          })
+          .finally(() => {
+            isRefreshing = false;
+            refreshPromise = null;
+          });
+      }
+
+      try {
+        await refreshPromise;
+        return await executeFetch<T>(path, options);
+      } catch (retryErr) {
+        clearSession();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw retryErr;
+      }
+    }
+    throw err;
+  }
+}
+
 export async function requireEmpresaId(): Promise<string> {
   const empresaId = getEmpresaId();
 
@@ -118,14 +162,17 @@ export async function requireEmpresaId(): Promise<string> {
     return empresaId;
   }
 
-  const profile = await fetchWithAuth<Record<string, unknown>>('/autenticacion/perfil');
+  const profile = await fetchWithAuth<Record<string, unknown>>('/v1/auth/yo');
   const data = profile.data as Record<string, unknown> | undefined;
+  const attributes = data?.attributes as Record<string, unknown> | undefined;
   const usuario = profile.usuario as Record<string, unknown> | undefined;
   const resolved =
     (typeof profile.empresa_id === 'string' && profile.empresa_id) ||
     (typeof profile.empresaId === 'string' && profile.empresaId) ||
     (typeof data?.empresa_id === 'string' && data.empresa_id) ||
     (typeof data?.empresaId === 'string' && data.empresaId) ||
+    (typeof attributes?.empresa_id === 'string' && attributes.empresa_id) ||
+    (typeof attributes?.empresaId === 'string' && attributes.empresaId) ||
     (typeof usuario?.empresa_id === 'string' && usuario.empresa_id) ||
     (typeof usuario?.empresaId === 'string' && usuario.empresaId) ||
     null;

@@ -62,7 +62,7 @@ export function useUbicaciones() {
   );
 
   const updateUbicacion = useCallback(
-    async (id: string, data: Partial<NuevaUbicacionForm>) => {
+    async (id: string, data: Partial<NuevaUbicacionForm> & { version?: number }) => {
       setIsMutating(true);
       setError(null);
 

@@ -1,22 +1,18 @@
-export type ProcesoUbicacion = 'alta' | 'media' | 'baja';
-export type EstadoUbicacion = 'completado' | 'en_progreso' | 'pendiente';
+export type TipoUbicacion = 'sede' | 'planta' | 'area' | 'seccion';
 
 export interface Ubicacion {
   id: string;
   nombre: string;
-  jerarquia: string;
-  tipo: string;
-  proceso: ProcesoUbicacion;
-  estado: EstadoUbicacion;
-  parentId?: string;
+  tipo: TipoUbicacion;
+  descripcion: string | null;
+  parentId?: string | null;
   hijos?: Ubicacion[];
+  version?: number;
 }
 
 export interface NuevaUbicacionForm {
   nombre: string;
-  jerarquia: string;
-  tipo: string;
-  proceso: ProcesoUbicacion;
-  estado: EstadoUbicacion;
-  parentId?: string;
+  tipo: TipoUbicacion;
+  parentId?: string | null;
+  descripcion?: string | null;
 }

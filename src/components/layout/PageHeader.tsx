@@ -1,9 +1,10 @@
 'use client';
 
 import { useId } from 'react';
+import Link from 'next/link';
 import { Search, Bell, User } from 'lucide-react';
 
-type PageHeaderVariant = 'configuracion' | 'activos';
+type PageHeaderVariant = 'configuracion' | 'activos' | 'proveedores';
 
 interface PageHeaderProps {
   title: string;
@@ -28,6 +29,11 @@ const VARIANT_STYLES: Record<
     iconColor: 'text-[#8B5E3C]',
   },
   activos: {
+    input: 'bg-white border border-gray-200 text-gray-700',
+    iconButton: 'border border-gray-200 bg-white',
+    iconColor: 'text-gray-600',
+  },
+  proveedores: {
     input: 'bg-white border border-gray-200 text-gray-700',
     iconButton: 'border border-gray-200 bg-white',
     iconColor: 'text-gray-600',
@@ -91,13 +97,13 @@ export function PageHeader({
         >
           <Bell className={`w-6 h-6 ${styles.iconColor}`} strokeWidth={1.5} />
         </button>
-        <button
-          type="button"
+        <Link
+          href="/configuracion/perfil"
           className={`p-2.5 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer ${styles.iconButton}`}
           aria-label="Perfil de usuario"
         >
           <User className={`w-6 h-6 ${styles.iconColor}`} strokeWidth={1.5} />
-        </button>
+        </Link>
       </div>
     </header>
   );

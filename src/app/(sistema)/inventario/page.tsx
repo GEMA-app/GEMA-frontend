@@ -1,0 +1,421 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { getProveedor } from '@/services/proveedores';
+import { Plus, Eye, Pencil, Trash, Package, AlertCircle, XCircle, DollarSign, X } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { useRepuestos } from '@/hooks/useRepuestos';
+import { getRepuestos } from '@/services/repuestos';
+import { getArticulos as getArticulosCatalogo, getCategorias, type ArticuloCatalogo } from '@/services/catalogo';
+import { StatCard } from '@/components/ui/StatCard';
+import { Select } from '@/components/ui/Select';
+import { Badge, type EstadoRepuesto } from '@/components/ui/Badge';
+import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import type { Repuesto } from '@/types/repuesto';
+
+const PER_PAGE = 15;
+
+const ESTADO_FILTER_OPTIONS: { value: EstadoRepuesto | ''; label: string }[] = [
+  { value: '', label: 'Todos los estados' },
+  { value: 'disponible', label: 'Disponible' },
+  { value: 'bajo_minimo', label: 'Bajo mínimo' },
+  { value: 'sin_stock', label: 'Sin stock' },
+];
+
+interface Summary {
+  total: number;
+  bajoMinimo: number;
+  sinStock: number;
+  valorTotal: number;
+}
+
+export function getEstadoRepuesto(stockActual: number, stockMinimo: number): EstadoRepuesto {
+  if (stockActual === 0) return 'sin_stock';
+  if (stockActual <= stockMinimo) return 'bajo_minimo';
+  return 'disponible';
+}
+
+export default function InventarioPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const proveedorId = searchParams.get('proveedorId') || undefined;
+
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState<EstadoRepuesto | ''>('');
+  const [page, setPage] = useState(1);
+  const [proveedorNombre, setProveedorNombre] = useState<string | null>(null);
+
+  const { repuestos, meta, loading, error, empty, eliminarRepuesto } = useRepuestos({
+    page,
+    perPage: PER_PAGE,
+    proveedorId,
+  });
+
+  useEffect(() => {
+    if (!proveedorId) {
+      setProveedorNombre(null);
+      return;
+    }
+    let cancelled = false;
+    getProveedor(proveedorId)
+      .then((p) => {
+        if (!cancelled) setProveedorNombre(p.name);
+      })
+      .catch(() => {
+        if (!cancelled) setProveedorNombre(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [proveedorId]);
+
+  const [articuloMap, setArticuloMap] = useState<Record<string, ArticuloCatalogo>>({});
+  const [categoriaMap, setCategoriaMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      getArticulosCatalogo({ perPage: 100 }).catch(() => []),
+      getCategorias().catch(() => []),
+    ]).then(([articulos, categorias]) => {
+      if (cancelled) return;
+      setArticuloMap(Object.fromEntries(articulos.map((a) => [a.id, a])));
+      setCategoriaMap(Object.fromEntries(categorias.map((c) => [c.id, c.name])));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [summary, setSummary] = useState<Summary>({
+    total: 0,
+    bajoMinimo: 0,
+    sinStock: 0,
+    valorTotal: 0,
+  });
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSummary() {
+      try {
+        const res = await getRepuestos({ page: 1, perPage: 100 });
+        if (cancelled) return;
+        const allRepuestos = res.repuestos;
+        let bajoMin = 0;
+        let sinStk = 0;
+        let valTot = 0;
+
+        for (const r of allRepuestos) {
+          if (r.stock_actual === 0) {
+            sinStk++;
+          } else if (r.stock_actual <= r.stock_minimo) {
+            bajoMin++;
+          }
+          valTot += (r.stock_actual || 0) * (r.precio_unitario || 0);
+        }
+
+        setSummary({
+          total: res.meta?.total ?? allRepuestos.length,
+          bajoMinimo: bajoMin,
+          sinStock: sinStk,
+          valorTotal: valTot,
+        });
+      } catch {
+        // non-critical, show 0
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    }
+    fetchSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [meta?.total]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const handleDelete = useCallback(
+    async (id: string, nombre: string) => {
+      const { value } = await Swal.fire({
+        title: '¿Eliminar repuesto?',
+        text: 'Escribe el código o nombre del repuesto para confirmar',
+        input: 'text',
+        inputPlaceholder: 'Código o nombre del repuesto',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonText: 'Cancelar',
+      });
+      if (value === undefined) return;
+      if (value !== nombre) {
+        Swal.fire('Error', 'El código o nombre no coincide', 'error');
+        return;
+      }
+      try {
+        await eliminarRepuesto(id);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'Error al eliminar el repuesto');
+      }
+    },
+    [eliminarRepuesto],
+  );
+
+  const repuestosFiltrados = useMemo(() => {
+    return repuestos.filter((r) => {
+      const art = articuloMap[r.articulo_id];
+      const nombre = r.articulo_nombre || art?.name || r.articulo_id.slice(0, 8);
+      const searchMatch =
+        !debouncedSearch ||
+        nombre.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        r.articulo_id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        (r.ubicacion_almacen && r.ubicacion_almacen.toLowerCase().includes(debouncedSearch.toLowerCase()));
+
+      const est = getEstadoRepuesto(r.stock_actual, r.stock_minimo);
+      const estadoMatch = !estadoFiltro || est === estadoFiltro;
+
+      return searchMatch && estadoMatch;
+    });
+  }, [repuestos, articuloMap, debouncedSearch, estadoFiltro]);
+
+  const emptyMessage = debouncedSearch
+    ? `No se encontraron ítems para "${debouncedSearch}".`
+    : estadoFiltro
+      ? `No hay ítems con estado "${estadoFiltro}".`
+      : 'No hay ítems registrados en inventario. Crea el primero con el botón "Nuevo repuesto".';
+
+  const columns: DataTableColumn<Repuesto>[] = [
+    {
+      key: 'codigo',
+      header: 'Código',
+      render: (repuesto) => (
+        <span className="font-semibold text-gema-primary dark:text-white">
+          {articuloMap[repuesto.articulo_id]?.model || repuesto.id.slice(0, 8)}
+        </span>
+      ),
+    },
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      render: (repuesto) => {
+        const art = articuloMap[repuesto.articulo_id];
+        const nombre = repuesto.articulo_nombre || art?.name || repuesto.articulo_id;
+        return (
+          <div>
+            <p className="font-semibold text-gema-primary dark:text-white">
+              {nombre}
+            </p>
+            <p className="text-xs text-gema-primary/50 dark:text-white/40">
+              {repuesto.ubicacion_almacen ? `Almacén: ${repuesto.ubicacion_almacen}` : 'Sin ubicación'}
+            </p>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'categoria',
+      header: 'Categoría',
+      render: (repuesto) => {
+        const art = articuloMap[repuesto.articulo_id];
+        const catNombre = art?.category_id ? (categoriaMap[art.category_id] || art.category_id) : null;
+        return (
+          <span className="text-gema-primary/80 dark:text-white/80">
+            {catNombre || art?.manufacturer || 'General'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'stock_actual',
+      header: 'Stock actual',
+      render: (repuesto) => (
+        <span className="font-semibold text-gema-primary dark:text-white">
+          {repuesto.stock_actual}
+        </span>
+      ),
+    },
+    {
+      key: 'stock_minimo',
+      header: 'Stock mínimo',
+      render: (repuesto) => (
+        <span className="text-gema-primary/70 dark:text-white/60">
+          {repuesto.stock_minimo}
+        </span>
+      ),
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      render: (repuesto) => {
+        const est = getEstadoRepuesto(repuesto.stock_actual, repuesto.stock_minimo);
+        return <Badge estado={est} />;
+      },
+    },
+    {
+      key: 'acciones',
+      header: '',
+      className: 'text-right',
+      render: (repuesto) => {
+        const art = articuloMap[repuesto.articulo_id];
+        const nombre = repuesto.articulo_nombre || art?.name || repuesto.articulo_id.slice(0, 8);
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Link
+              href={`/inventario/${repuesto.id}`}
+              className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={`Ver ${nombre}`}
+            >
+              <Eye className="w-4 h-4" strokeWidth={1.5} />
+            </Link>
+            <PermissionGuard module="inventario" action="edit">
+              <Link
+                href={`/inventario/${repuesto.id}/editar`}
+                className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+                aria-label={`Editar ${nombre}`}
+              >
+                <Pencil className="w-4 h-4" strokeWidth={1.5} />
+              </Link>
+            </PermissionGuard>
+            <PermissionGuard module="inventario" action="delete">
+              <button
+                type="button"
+                onClick={() => handleDelete(repuesto.id, nombre)}
+                className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+                aria-label={`Eliminar ${nombre}`}
+              >
+                <Trash className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </PermissionGuard>
+          </div>
+        );
+      },
+    },
+  ];
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+        <div>
+          <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white">
+            Inventario
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50">
+            Control de stock, partes y repuestos
+          </p>
+        </div>
+        <PermissionGuard module="inventario" action="create">
+          <Link
+            href="/inventario/nuevo"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm transition-colors cursor-pointer w-fit"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            Nuevo repuesto
+          </Link>
+        </PermissionGuard>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <StatCard icon={Package} value={summary.total} label="Total repuestos" loading={summaryLoading} tone="default" />
+        <StatCard icon={AlertCircle} value={summary.bajoMinimo} label="Stock bajo mínimo" loading={summaryLoading} tone="accent" />
+        <StatCard icon={XCircle} value={summary.sinStock} label="Sin stock" loading={summaryLoading} tone="danger" />
+        <StatCard
+          icon={DollarSign}
+          value={`$ ${summary.valorTotal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label="Valor total inventario"
+          loading={summaryLoading}
+          tone="accent"
+        />
+      </div>
+
+      <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6">
+        {proveedorId && (
+          <div className="flex items-center gap-2 mb-4 p-2.5 rounded-xl bg-gema-accent/10 border border-gema-accent/20 text-xs font-medium text-gema-primary dark:text-white w-fit">
+            <span>Filtrado por proveedor: <strong>{proveedorNombre || proveedorId}</strong></span>
+            <button
+              type="button"
+              onClick={() => router.push('/inventario')}
+              className="p-1 rounded-full hover:bg-gema-accent/20 transition-colors cursor-pointer"
+              title="Quitar filtro"
+            >
+              <X className="w-3.5 h-3.5 text-gema-primary dark:text-white" />
+            </button>
+          </div>
+        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center mb-5">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por código, nombre o almacén..."
+            aria-label="Buscar en inventario"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
+          />
+          <Select
+            value={estadoFiltro}
+            onChange={(value) => {
+              setEstadoFiltro(value as EstadoRepuesto | '');
+              setPage(1);
+            }}
+            options={ESTADO_FILTER_OPTIONS}
+            aria-label="Filtrar por estado"
+            className="sm:w-56"
+          />
+        </div>
+
+        {error && empty ? (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            {error}
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={repuestosFiltrados}
+            keyExtractor={(repuesto) => repuesto.id}
+            loading={loading}
+            emptyMessage={emptyMessage}
+          />
+        )}
+
+        {!loading && !empty && meta.lastPage > 1 && (
+          <nav
+            className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-gema-primary/70 dark:text-white/60"
+            aria-label="Paginación de inventario"
+          >
+            <p>
+              Página {meta.page} de {meta.lastPage} — {meta.total} repuestos
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={meta.page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                disabled={meta.page >= meta.lastPage}
+                onClick={() => setPage((current) => current + 1)}
+                className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gema-surface-dark-2 px-4 py-2 font-semibold disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+          </nav>
+        )}
+      </div>
+    </div>
+  );
+}

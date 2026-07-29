@@ -1,390 +1,182 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, KeyRound, Eye, EyeOff, ArrowRight, ShieldCheck, Zap, Building2 } from 'lucide-react';
-import Image from 'next/image';
+import { Mail, KeyRound, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { setSession } from '@/lib/auth';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/autenticacion/iniciar-sesion`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/vnd.api+json',
-                        'Accept': 'application/vnd.api+json'
-                    },
-                    body: JSON.stringify({
-                        data: {
-                            type: "tokens",
-                            attributes: {
-                                email: email,
-                                password: password
-                            }
-                        }
-                    }),
-                }
-            );
-            const result = await response.json();
-            if (response.ok) {
-                const token = result.data?.attributes?.access_token;
-                const empresaId = result.data?.attributes?.empresa_id;
-                if (token) localStorage.setItem('token', token);
-                if (empresaId) localStorage.setItem('empresa_id', empresaId);
-                window.location.href = '/dashboard';
-            } else {
-                alert(result.mensaje || 'Error al iniciar sesión');
-            }
-        } catch (error) {
-            console.error('Error de conexión:', error);
-            alert('No se pudo conectar con el servidor');
-        } finally {
-            setIsLoading(false);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      // Paso 1: Obtener token
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/ingresar`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/vnd.api+json',
+            'Accept': 'application/vnd.api+json',
+          },
+          body: JSON.stringify({
+            data: {
+              type: 'login',
+              attributes: { email, password },
+            },
+          }),
         }
-    };
+      );
 
-    return (
-        <div
-            style={{
-                minHeight: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ECEAE6',
-                padding: '16px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-            }}
-        >
-            <div
-                style={{
-                    display: 'flex',
-                    width: '100%',
-                    maxWidth: '920px',
-                    borderRadius: '20px',
-                    boxShadow: '0 12px 48px rgba(0,0,0,0.14)',
-                    overflow: 'hidden',
-                    backgroundColor: '#ffffff',
-                }}
-            >
-                {/* ═══════════ Panel izquierdo azul marino ═══════════ */}
-                <div
-                    style={{
-                        width: '300px',
-                        minWidth: '300px',
-                        backgroundColor: '#1E3A5F',
-                        borderRadius: '20px 0 0 20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        padding: '36px',
-                    }}
-                    className="hidden lg:flex"
-                >
-                    {/* Logo GEMA */}
-                    <div style={{ marginBottom: '32px' }}>
-                        <Image
-                            src="/gema-logo.png"
-                            alt="GEMA Logo"
-                            width={110}
-                            height={110}
-                            style={{
-                                objectFit: 'contain',
-                                filter: 'brightness(0) invert(1)',
-                                opacity: 0.92,
-                            }}
-                        />
-                    </div>
+      const result = await response.json();
 
-                    {/* Título */}
-                    <div style={{ flex: 1 }}>
-                        <h1
-                            style={{
-                                color: '#ffffff',
-                                fontWeight: 800,
-                                fontSize: '26px',
-                                lineHeight: 1.28,
-                                marginBottom: '40px',
-                            }}
-                        >
-                            Gestión
-                            <br />
-                            Estratégica de
-                            <br />
-                            Mantenimiento
-                            <br />
-                            de Activos
-                        </h1>
-                    </div>
+      if (!response.ok) {
+        const detail = result?.errors?.[0]?.detail ?? result?.mensaje ?? 'Credenciales inválidas';
+        setError(detail);
+        return;
+      }
 
-                    {/* Feature cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                        {/* Seguridad */}
-                        <div
-                            style={{
-                                backgroundColor: 'rgba(255,255,255,0.10)',
-                                borderRadius: '16px',
-                                padding: '16px 8px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '10px',
-                            }}
-                        >
-                            <ShieldCheck color="rgba(255,255,255,0.80)" size={26} strokeWidth={1.6} />
-                            <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                                Seguridad
-                            </span>
-                        </div>
+      setSession(result);
 
-                        {/* Eficiencia — resaltado */}
-                        <div
-                            style={{
-                                backgroundColor: 'rgba(255,255,255,0.18)',
-                                border: '1px solid rgba(255,255,255,0.22)',
-                                borderRadius: '16px',
-                                padding: '16px 8px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '10px',
-                                position: 'relative',
-                            }}
-                        >
-                            <span
-                                style={{
-                                    position: 'absolute',
-                                    top: '8px',
-                                    right: '8px',
-                                    width: '8px',
-                                    height: '8px',
-                                    borderRadius: '50%',
-                                    backgroundColor: '#A78BFA',
-                                }}
-                            />
-                            <Zap color="#ffffff" size={26} strokeWidth={1.6} fill="rgba(255,255,255,0.15)" />
-                            <span style={{ color: '#ffffff', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                                Eficiencia
-                            </span>
-                        </div>
+      const token = result.data?.attributes?.access_token;
+      if (token) {
+        // Paso 2: Obtener perfil, empresa_id y roles
+        const perfilResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/yo`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/vnd.api+json',
+            },
+          }
+        );
+        if (perfilResponse.ok) {
+          const perfil = await perfilResponse.json();
+          setSession(perfil);
+        }
+      }
 
-                        {/* Control */}
-                        <div
-                            style={{
-                                backgroundColor: 'rgba(255,255,255,0.10)',
-                                borderRadius: '16px',
-                                padding: '16px 8px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                gap: '10px',
-                            }}
-                        >
-                            <Building2 color="rgba(255,255,255,0.80)" size={26} strokeWidth={1.6} />
-                            <span style={{ color: 'rgba(255,255,255,0.80)', fontSize: '11px', fontWeight: 500, textAlign: 'center' }}>
-                                Control
-                            </span>
-                        </div>
-                    </div>
-                </div>
+      window.location.href = '/dashboard';
+    } catch (err) {
+      setError('No se pudo conectar con el servidor.');
+      console.error('Error en login:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                {/* ═══════════ Panel derecho blanco ═══════════ */}
-                <div
-                    style={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        padding: '48px 40px',
-                    }}
-                >
-                    {/* Encabezado */}
-                    <div style={{ marginBottom: '28px' }}>
-                        <h2
-                            style={{
-                                fontWeight: 800,
-                                fontSize: '28px',
-                                color: '#111827',
-                                marginBottom: '6px',
-                            }}
-                        >
-                            Bienvenido
-                        </h2>
-                        <p style={{ color: '#6B7280', fontSize: '14px' }}>
-                            Ingresa tus credenciales para acceder a tu cuenta en GEMA
-                        </p>
-                    </div>
+  const inputClass =
+    'w-full pl-[42px] pr-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none box-border focus:ring-2 focus:ring-gema-accent/40';
+  const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
 
-                    {/* Formulario */}
-                    <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* Correo electrónico */}
-                        <div>
-                            <label
-                                style={{
-                                    display: 'block',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    color: '#1f2937',
-                                    marginBottom: '6px',
-                                }}
-                            >
-                                Correo electrónico*
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                                <Mail
-                                    size={18}
-                                    color="#9CA3AF"
-                                    style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                                />
-                                <input
-                                    id="login-email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="pedroperez@gmail.com"
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        paddingLeft: '42px',
-                                        paddingRight: '16px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        borderRadius: '12px',
-                                        border: 'none',
-                                        outline: 'none',
-                                        backgroundColor: '#F5F0E8',
-                                        fontSize: '14px',
-                                        color: '#374151',
-                                        boxSizing: 'border-box',
-                                    }}
-                                    onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                                    onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                                />
-                            </div>
-                        </div>
+  return (
+    <div className="flex flex-col items-center justify-center w-full px-4 py-12 bg-gema-bg-light dark:bg-gema-bg-dark">
+      <div className="mb-8 flex justify-center">
+        <Link href="/" className="flex items-center gap-2 group">
+          <img
+            src="/GEMA Logo Perlado.png"
+            alt="GEMA"
+            className="h-8 sm:h-10 w-auto"
+          />
+        </Link>
+      </div>
 
-                        {/* Contraseña */}
-                        <div>
-                            <label
-                                style={{
-                                    display: 'block',
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    color: '#1f2937',
-                                    marginBottom: '6px',
-                                }}
-                            >
-                                Contraseña*
-                            </label>
-                            <div style={{ position: 'relative' }}>
-                                <KeyRound
-                                    size={18}
-                                    color="#9CA3AF"
-                                    style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
-                                />
-                                <input
-                                    id="login-password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Pedro123"
-                                    required
-                                    style={{
-                                        width: '100%',
-                                        paddingLeft: '42px',
-                                        paddingRight: '44px',
-                                        paddingTop: '12px',
-                                        paddingBottom: '12px',
-                                        borderRadius: '12px',
-                                        border: 'none',
-                                        outline: 'none',
-                                        backgroundColor: '#F5F0E8',
-                                        fontSize: '14px',
-                                        color: '#374151',
-                                        boxSizing: 'border-box',
-                                    }}
-                                    onFocus={(e) => { e.target.style.boxShadow = '0 0 0 3px rgba(30,58,95,0.2)'; }}
-                                    onBlur={(e) => { e.target.style.boxShadow = 'none'; }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    tabIndex={-1}
-                                    style={{
-                                        position: 'absolute',
-                                        right: '14px',
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        padding: 0,
-                                        color: '#9CA3AF',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Fila inferior */}
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                paddingTop: '8px',
-                            }}
-                        >
-                            <Link
-                                href="/register"
-                                style={{
-                                    fontSize: '13px',
-                                    fontWeight: 600,
-                                    color: '#D4820A',
-                                    textDecoration: 'none',
-                                }}
-                            >
-                                ¿No tienes cuenta?
-                            </Link>
-
-                            <button
-                                id="login-submit"
-                                type="submit"
-                                disabled={isLoading}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '12px 24px',
-                                    borderRadius: '999px',
-                                    border: 'none',
-                                    backgroundColor: '#E09825',
-                                    color: '#ffffff',
-                                    fontWeight: 600,
-                                    fontSize: '14px',
-                                    cursor: isLoading ? 'not-allowed' : 'pointer',
-                                    opacity: isLoading ? 0.6 : 1,
-                                    transition: 'opacity 0.2s',
-                                }}
-                            >
-                                Accede al sistema
-                                <ArrowRight size={16} />
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+      <div className="w-full max-w-md bg-white dark:bg-gema-surface-dark rounded-none sm:rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-200 dark:border-white/10">
+        <div className="mb-7">
+          <h2 className="font-heading font-bold text-2xl text-gray-900 dark:text-white mb-1.5">
+            Bienvenido
+          </h2>
+          <p className="text-gray-500 dark:text-white/60 text-sm">
+            Ingresa tus credenciales para acceder a tu cuenta en GEMA
+          </p>
         </div>
-    );
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl text-red-700 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+          <div>
+            <label className={labelClass}>Correo electrónico*</label>
+            <div className="relative">
+              <Mail
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="pedroperez@gmail.com"
+                required
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelClass}>Contraseña*</label>
+            <div className="relative">
+              <KeyRound
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40"
+              />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Pedro123"
+                required
+                className={`${inputClass} pr-11`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40 flex items-center cursor-pointer bg-transparent border-none p-0"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2">
+            <div className="flex items-center gap-3">
+              <Link
+                href="/olvide-contrasena"
+                className="text-[13px] font-semibold text-gema-accent-dark dark:text-gema-accent no-underline"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+              <Link
+                href="/register"
+                className="text-[13px] font-semibold text-gema-accent-dark dark:text-gema-accent no-underline"
+              >
+                ¿No tienes cuenta?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer border-none"
+            >
+              Accede al sistema
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }

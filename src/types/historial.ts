@@ -1,16 +1,16 @@
-export type RolUsuario = 'Administrador' | 'Supervisor' | 'Técnico';
+export type RolUsuario = string;
 
 export interface HistorialEntry {
   id: string;
   usuario: {
     nombre: string;
-    rol: RolUsuario;
+    email?: string;
+    roles?: string[];
   };
   accion: string;
-  descripcion: string;
+  modulo?: string;
+  descripcion?: string;
+  detalles: Record<string, unknown>;
   fecha: string;
-  metadata?: {
-    ip?: string;
-    terminal?: string;
-  };
+  ip?: string;
 }
