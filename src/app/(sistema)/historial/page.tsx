@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Eye, History, Clock, Users, ShieldAlert, AlertCircle, RotateCcw } from 'lucide-react';
 import { useHistorial } from '@/hooks/useHistorial';
 import { StatCard } from '@/components/ui/StatCard';
+import { Select } from '@/components/ui/Select';
 import { Badge, type EstadoBadgeType } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
@@ -269,21 +270,15 @@ export default function HistorialPage() {
               aria-label="Buscar eventos"
               className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
             />
-            <select
+            <Select
               value={moduloFiltro}
-              onChange={(e) => {
-                setModuloFiltro(e.target.value);
+              onChange={(value) => {
+                setModuloFiltro(value);
                 setPage(1);
               }}
+              options={MODULO_FILTER_OPTIONS}
               aria-label="Filtrar por módulo"
-              className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
-            >
-              {MODULO_FILTER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
             <input
               type="text"
               value={usuarioFiltro}

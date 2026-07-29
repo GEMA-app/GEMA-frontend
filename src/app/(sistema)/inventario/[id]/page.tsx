@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/repuestos';
 import { Badge } from '@/components/ui/Badge';
+import { Select } from '@/components/ui/Select';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { getEstadoRepuesto } from '../page';
 import type { PaginationMeta } from '@/types/common';
@@ -228,14 +229,14 @@ export default function InventarioDetallePage() {
             <form onSubmit={handleMovimiento} className="flex flex-wrap items-end gap-4">
               <div>
                 <label className={labelClass}>Tipo</label>
-                <select
+                <Select
                   value={tipoMov}
-                  onChange={(e) => setTipoMov(e.target.value as TipoMovimiento)}
-                  className={inputClass}
-                >
-                  <option value="entrada">Entrada (+)</option>
-                  <option value="salida">Salida (-)</option>
-                </select>
+                  onChange={(value) => setTipoMov(value as TipoMovimiento)}
+                  options={[
+                    { value: 'entrada', label: 'Entrada (+)' },
+                    { value: 'salida', label: 'Salida (-)' },
+                  ]}
+                />
               </div>
 
               <div>

@@ -12,6 +12,7 @@ import { formatEstadoActivo } from '@/lib/activos';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoActivo } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { Select } from '@/components/ui/Select';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import type { Activo, ActivoEstado } from '@/types/activo';
 
@@ -276,37 +277,29 @@ export default function ActivosPage() {
             aria-label="Buscar activos"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
+          <Select
             value={ubicacionFiltro}
-            onChange={(e) => {
-              setUbicacionFiltro(e.target.value);
+            onChange={(value) => {
+              setUbicacionFiltro(value);
               setPage(1);
             }}
+            options={[
+              { value: '', label: 'Todas las ubicaciones' },
+              ...Object.entries(ubicacionMap).map(([id, nombre]) => ({ value: id, label: nombre })),
+            ]}
             aria-label="Filtrar por ubicación"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-48"
-          >
-            <option value="">Todas las ubicaciones</option>
-            {Object.entries(ubicacionMap).map(([id, nombre]) => (
-              <option key={id} value={id}>
-                {nombre}
-              </option>
-            ))}
-          </select>
-          <select
+            className="sm:w-48"
+          />
+          <Select
             value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value as ActivoEstado | '');
+            onChange={(value) => {
+              setEstadoFiltro(value as ActivoEstado | '');
               setPage(1);
             }}
+            options={ESTADO_FILTER_OPTIONS}
             aria-label="Filtrar por estado"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-48"
-          >
-            {ESTADO_FILTER_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            className="sm:w-48"
+          />
         </div>
 
         {error && empty ? (

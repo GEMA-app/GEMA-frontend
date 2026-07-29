@@ -10,6 +10,7 @@ import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { useEjecucionesPlan } from '@/hooks/useEjecucionesPlan';
+import { Select } from '@/components/ui/Select';
 import type { PlanMantenimiento } from '@/types/plan-mantenimiento';
 
 const TIPOS = [
@@ -136,18 +137,12 @@ export default function EditarPlanPage() {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="md:col-span-2">
                 <label className={labelClass}>Activo*</label>
-                <select
+                <Select
                   value={activoId}
-                  onChange={(e) => setActivoId(e.target.value)}
-                  required
-                  className={inputClass}
-                >
-                  {activos.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nombre}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setActivoId(value)}
+                  options={activos.map((a) => ({ value: a.id, label: a.nombre }))}
+                  className="w-full"
+                />
               </div>
 
               <div>
@@ -163,13 +158,7 @@ export default function EditarPlanPage() {
 
               <div>
                 <label className={labelClass}>Tipo*</label>
-                <select value={tipo} onChange={(e) => setTipo(e.target.value)} className={inputClass}>
-                  {TIPOS.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={tipo} onChange={(value) => setTipo(value)} options={TIPOS} className="w-full" />
               </div>
 
               <div>
@@ -197,14 +186,12 @@ export default function EditarPlanPage() {
 
               <div className="md:col-span-2">
                 <label className={labelClass}>Técnico responsable</label>
-                <select value={tecnicoId} onChange={(e) => setTecnicoId(e.target.value)} className={inputClass}>
-                  <option value="">Sin técnico asignado</option>
-                  {tecnicos.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.nombre} ({u.email})
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={tecnicoId}
+                  onChange={(value) => setTecnicoId(value)}
+                  options={[{ value: '', label: 'Sin técnico asignado' }, ...tecnicos.map((u) => ({ value: u.id, label: `${u.nombre} (${u.email})` }))]}
+                  className="w-full"
+                />
               </div>
 
               <div className="md:col-span-2">

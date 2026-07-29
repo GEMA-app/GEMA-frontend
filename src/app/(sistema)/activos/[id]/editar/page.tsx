@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { getActivo, getCatalogArticle, updateActivo } from '@/services/activos';
+import { Select } from '@/components/ui/Select';
 
 export default function EditarActivoPage() {
   const params = useParams();
@@ -82,6 +83,12 @@ export default function EditarActivoPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
+    setSubmitStatus('');
+  };
+
+  const handleSelectFieldChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     setSubmitStatus('');
@@ -211,19 +218,16 @@ export default function EditarActivoPage() {
                       </Link>
                     )}
                   </label>
-                  <select
+                  <Select
                     id="ubicacion" name="ubicacion"
-                    value={formData.ubicacion} onChange={handleInputChange}
+                    value={formData.ubicacion}
+                    onChange={(value) => handleSelectFieldChange('ubicacion', value)}
                     disabled={loadingUbicaciones}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  >
-                    <option value="">
-                      {loadingUbicaciones ? 'Cargando ubicaciones...' : 'Seleccione una ubicación'}
-                    </option>
-                    {ubicacionOptions.map((o) => (
-                      <option key={o.id} value={o.id}>{o.label}</option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: '', label: loadingUbicaciones ? 'Cargando ubicaciones...' : 'Seleccione una ubicación' },
+                      ...ubicacionOptions.map((o) => ({ value: o.id, label: o.label })),
+                    ]}
+                  />
                   {ubicacionesError && <p className="text-xs text-amber-700 mt-1">{ubicacionesError}</p>}
                 </div>
               </div>
@@ -255,15 +259,16 @@ export default function EditarActivoPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1" htmlFor="moneda">Moneda</label>
-                  <select
+                  <Select
                     id="moneda" name="moneda"
-                    value={formData.moneda} onChange={handleInputChange}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="VES">VES</option>
-                    <option value="EUR">EUR</option>
-                  </select>
+                    value={formData.moneda}
+                    onChange={(value) => handleSelectFieldChange('moneda', value)}
+                    options={[
+                      { value: 'USD', label: 'USD' },
+                      { value: 'VES', label: 'VES' },
+                      { value: 'EUR', label: 'EUR' },
+                    ]}
+                  />
                 </div>
               </div>
             </div>

@@ -7,6 +7,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { ApiError } from '@/lib/api';
+import { Select } from '@/components/ui/Select';
 import type { TipoUbicacion, Ubicacion } from '@/types/ubicacion';
 
 const labelClass = 'block text-[13px] font-semibold text-gema-primary dark:text-white/80 mb-1.5';
@@ -134,46 +135,54 @@ export default function NuevaUbicacionPage() {
             <label className={labelClass} htmlFor="tipo">
               Tipo de ubicación*
             </label>
-            <select
+            <Select
               id="tipo"
               name="tipo"
               value={formData.tipo}
-              onChange={handleInputChange}
-              className={inputClass}
-            >
-              <option value="sede">Sede</option>
-              <option value="planta">Planta</option>
-              <option value="area">Área</option>
-              <option value="seccion">Sección</option>
-            </select>
+              onChange={(value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  tipo: value as TipoUbicacion,
+                  ...(value === 'sede' ? { parentId: '' } : {}),
+                }));
+                setError(null);
+              }}
+              options={[
+                { value: 'sede', label: 'Sede' },
+                { value: 'planta', label: 'Planta' },
+                { value: 'area', label: 'Área' },
+                { value: 'seccion', label: 'Sección' },
+              ]}
+            />
           </div>
 
           <div>
             <label className={labelClass} htmlFor="parentId">
               Ubicación padre
             </label>
-            <select
+            <Select
               id="parentId"
               name="parentId"
               value={formData.parentId}
-              onChange={handleInputChange}
+              onChange={(value) => {
+                setFormData((prev) => ({ ...prev, parentId: value }));
+                setError(null);
+              }}
               disabled={loadingUbicaciones || isSede}
-              className={inputClass}
-            >
-              <option value="">
-                {isSede
-                  ? 'Una sede no tiene ubicación padre'
-                  : formData.tipo === 'planta'
-                    ? 'Selecciona una sede'
-                    : 'Ninguna (Nivel raíz)'}
-              </option>
-              {!isSede &&
-                parentOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
-                ))}
-            </select>
+              options={[
+                {
+                  value: '',
+                  label: isSede
+                    ? 'Una sede no tiene ubicación padre'
+                    : formData.tipo === 'planta'
+                      ? 'Selecciona una sede'
+                      : 'Ninguna (Nivel raíz)',
+                },
+                ...(!isSede
+                  ? parentOptions.map((opt) => ({ value: opt.id, label: opt.label }))
+                  : []),
+              ]}
+            />
             {isSede && (
               <p className="text-xs text-gema-primary/60 dark:text-white/50 mt-1">
                 Las sedes son el nivel raíz y no requieren ubicación padre.

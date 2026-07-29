@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
 import { createUsuario } from '@/services/usuarios';
 import { getRoles, asignarRol } from '@/services/roles';
+import { Select } from '@/components/ui/Select';
 import type { Rol } from '@/types/rol';
 
 const initialForm = { nombre: '', email: '', password: '', telefono: '' };
@@ -233,19 +234,16 @@ export default function NuevoUsuarioPage() {
               >
                 Rol del sistema
               </label>
-              <select
+              <Select
                 id="rol"
                 value={selectedRol}
-                onChange={(e) => setSelectedRol(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent"
-              >
-                <option value="">Seleccione un rol...</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.nombre}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setSelectedRol(value)}
+                options={[
+                  { value: '', label: 'Seleccione un rol...' },
+                  ...roles.map((r) => ({ value: r.id, label: r.nombre })),
+                ]}
+                className="w-full"
+              />
             </div>
           </div>
         </form>

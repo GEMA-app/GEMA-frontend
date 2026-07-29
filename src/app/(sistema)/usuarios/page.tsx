@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/services/auth';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, RolBadge } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { Select } from '@/components/ui/Select';
 import type { Usuario } from '@/types/usuario';
 
 const PER_PAGE = 15;
@@ -267,19 +268,20 @@ export default function UsuariosPage() {
             aria-label="Buscar usuarios"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
-          <select
+          <Select
             value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value as 'activo' | 'inactivo' | '');
+            onChange={(value) => {
+              setEstadoFiltro(value as 'activo' | 'inactivo' | '');
               setPage(1);
             }}
+            options={[
+              { value: '', label: 'Todos los estados' },
+              { value: 'activo', label: 'Activo' },
+              { value: 'inactivo', label: 'Inactivo' },
+            ]}
             aria-label="Filtrar por estado"
-            className="px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gema-accent sm:w-56"
-          >
-            <option value="">Todos los estados</option>
-            <option value="activo">Activo</option>
-            <option value="inactivo">Inactivo</option>
-          </select>
+            className="sm:w-56"
+          />
         </div>
 
         {error && empty ? (
