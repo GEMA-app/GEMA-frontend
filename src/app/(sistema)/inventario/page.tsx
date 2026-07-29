@@ -174,7 +174,7 @@ export default function InventarioPage() {
   const repuestosFiltrados = useMemo(() => {
     return repuestos.filter((r) => {
       const art = articuloMap[r.articulo_id];
-      const nombre = art?.name || r.articulo_id;
+      const nombre = r.articulo_nombre || art?.name || r.articulo_id.slice(0, 8);
       const searchMatch =
         !debouncedSearch ||
         nombre.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -209,10 +209,11 @@ export default function InventarioPage() {
       header: 'Nombre',
       render: (repuesto) => {
         const art = articuloMap[repuesto.articulo_id];
+        const nombre = repuesto.articulo_nombre || art?.name || repuesto.articulo_id;
         return (
           <div>
             <p className="font-semibold text-gema-primary dark:text-white">
-              {art?.name || repuesto.articulo_id}
+              {nombre}
             </p>
             <p className="text-xs text-gema-primary/50 dark:text-white/40">
               {repuesto.ubicacion_almacen ? `Almacén: ${repuesto.ubicacion_almacen}` : 'Sin ubicación'}
@@ -266,7 +267,7 @@ export default function InventarioPage() {
       className: 'text-right',
       render: (repuesto) => {
         const art = articuloMap[repuesto.articulo_id];
-        const nombre = art?.name || repuesto.articulo_id;
+        const nombre = repuesto.articulo_nombre || art?.name || repuesto.articulo_id.slice(0, 8);
         return (
           <div className="flex items-center justify-end gap-2">
             <Link

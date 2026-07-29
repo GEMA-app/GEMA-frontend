@@ -10,6 +10,8 @@ export interface Repuesto {
   precio_unitario: number;
   moneda: string;
   version: number;
+  articulo_nombre?: string;
+  proveedor_nombre?: string;
 }
 
 export type TipoMovimiento = 'entrada' | 'salida';

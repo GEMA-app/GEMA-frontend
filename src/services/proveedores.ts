@@ -12,6 +12,9 @@ export async function getProveedores(params: ProveedoresQuery = {}): Promise<Pro
   const empresaId = await requireEmpresaId();
   const queryParts: string[] = [];
   if (params.search) queryParts.push(`search=${encodeURIComponent(params.search)}`);
+  if (params.incluir_inactivos !== undefined) {
+    queryParts.push(`incluir_inactivos=${params.incluir_inactivos}`);
+  }
   const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
 
   const payload = await fetchWithAuth<unknown>(
@@ -26,7 +29,7 @@ export async function getProveedor(id: string): Promise<ProveedorDetalle> {
     `/v1/empresas/${empresaId}/proveedores/${id}`,
   );
   const mapped = mapProveedorFromApi(res.data as unknown as Parameters<typeof mapProveedorFromApi>[0]);
-    const a = res.data.attributes;
+  const a = res.data.attributes;
 
   return {
     ...mapped,

@@ -10,7 +10,7 @@ import {
 } from '@/services/proveedores';
 import type { CreateProveedorForm, Proveedor, ProveedoresQuery, UpdateProveedorForm } from '@/types/proveedor';
 
-export function useProveedores({ search = '' }: ProveedoresQuery = {}) {
+export function useProveedores({ search = '', incluir_inactivos }: ProveedoresQuery = {}) {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,7 @@ export function useProveedores({ search = '' }: ProveedoresQuery = {}) {
     try {
       const response = await getProveedores({
         search: search || undefined,
+        incluir_inactivos,
       });
       setProveedores(response.proveedores);
     } catch (err) {
@@ -30,7 +31,7 @@ export function useProveedores({ search = '' }: ProveedoresQuery = {}) {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, incluir_inactivos]);
 
   useEffect(() => {
     void fetchProveedores();

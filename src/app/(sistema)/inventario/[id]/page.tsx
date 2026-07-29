@@ -178,7 +178,7 @@ export default function InventarioDetallePage() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="font-heading font-bold text-xl sm:text-2xl text-gema-primary dark:text-white">
-                  Repuesto: {repuesto.articulo_id}
+                  Repuesto: {repuesto.articulo_nombre || repuesto.articulo_id}
                 </h1>
                 <Badge estado={estadoRep} />
               </div>
@@ -211,8 +211,8 @@ export default function InventarioDetallePage() {
               <span className="font-semibold">{repuesto.ubicacion_almacen}</span>
             </div>
             <div>
-              <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Proveedor ID</span>
-              <span className="font-semibold">{repuesto.proveedor_id || 'Sin proveedor'}</span>
+              <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Proveedor</span>
+              <span className="font-semibold">{repuesto.proveedor_nombre || repuesto.proveedor_id || 'Sin proveedor'}</span>
             </div>
             <div>
               <span className="text-xs text-gema-primary/50 dark:text-white/40 block">Moneda</span>

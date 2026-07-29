@@ -18,6 +18,7 @@ export interface ProveedorDetalle extends Proveedor {
 
 export interface ProveedoresQuery {
   search?: string;
+  incluir_inactivos?: boolean;
 }
 
 export interface ProveedoresResponse {
