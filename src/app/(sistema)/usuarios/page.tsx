@@ -93,13 +93,13 @@ export default function UsuariosPage() {
       );
       if (confirmEmail === null) return;
       if (confirmEmail.trim().toLowerCase() !== usuario.email.trim().toLowerCase()) {
-        alert('El correo electrónico no coincide. Operación cancelada.');
+        Swal.fire('Error', 'El correo electrónico no coincide. Operación cancelada.', 'error');
         return;
       }
       try {
         await actualizarUsuario(usuario.id, { activo: !usuario.activo });
       } catch (err) {
-        alert(err instanceof Error ? err.message : `Error al ${accion} el usuario`);
+        Swal.fire('Error', err instanceof Error ? err.message : `Error al ${accion} el usuario`, 'error');
       }
     },
     [actualizarUsuario],
@@ -125,7 +125,7 @@ export default function UsuariosPage() {
       try {
         await eliminarUsuario(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el usuario');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar el usuario', 'error');
       }
     },
     [eliminarUsuario],

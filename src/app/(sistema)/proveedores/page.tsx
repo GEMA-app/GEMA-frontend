@@ -69,7 +69,7 @@ export default function ProveedoresPage() {
       try {
         await eliminarProveedor(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el proveedor');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar el proveedor', 'error');
       }
     },
     [eliminarProveedor],

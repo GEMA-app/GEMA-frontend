@@ -142,28 +142,40 @@ export default function Sidebar() {
         isCollapsed ? 'w-16' : 'w-16 md:w-64'
       }`}
     >
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsCollapsed((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') setIsCollapsed((v) => !v);
+        }}
         aria-label={isCollapsed ? 'Expandir menú' : 'Contraer menú'}
         className="hidden cursor-pointer items-center justify-start gap-3 px-4 py-6 md:flex"
       >
-        <img
-          src="/GEMA%20Logo%20Perlado.png"
-          alt="GEMA"
-          className="h-9 w-auto shrink-0 object-contain"
-        />
-        <span className={`font-heading text-lg font-bold text-white ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
-          GEMA
-        </span>
-      </button>
+        <Link
+          href="/"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-3"
+        >
+          <img
+            src="/GEMA%20Logo%20Perlado.png"
+            alt="GEMA"
+            className="h-9 w-auto shrink-0 object-contain"
+          />
+          <span className={`font-heading text-lg font-bold text-white ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
+            GEMA
+          </span>
+        </Link>
+      </div>
 
       <div className="flex items-center justify-center py-4 md:hidden">
-        <img
-          src="/GEMA%20Logo%20Perlado.png"
-          alt="GEMA"
-          className="h-8 w-auto shrink-0 object-contain"
-        />
+        <Link href="/">
+          <img
+            src="/GEMA%20Logo%20Perlado.png"
+            alt="GEMA"
+            className="h-8 w-auto shrink-0 object-contain"
+          />
+        </Link>
       </div>
 
       <nav

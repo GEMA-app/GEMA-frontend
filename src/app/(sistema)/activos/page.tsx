@@ -153,7 +153,7 @@ export default function ActivosPage() {
       try {
         await eliminarActivo(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el activo');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar el activo', 'error');
       }
     },
     [eliminarActivo],

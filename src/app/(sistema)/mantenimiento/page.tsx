@@ -292,11 +292,21 @@ function PlanesTabContent() {
 
   const handleDelete = useCallback(
     async (id: string, nombre: string) => {
-      if (!window.confirm(`¿Eliminar el plan "${nombre}"? Esta acción no se puede deshacer.`)) return;
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Estás seguro?',
+        text: `¿Eliminar el plan "${nombre}"? Esta acción no se puede deshacer.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+      });
+      if (!result.isConfirmed) return;
       try {
         await eliminarPlan(id);
       } catch {
-        alert('Error al eliminar el plan.');
+        Swal.fire('Error', 'Error al eliminar el plan.', 'error');
       }
     },
     [eliminarPlan]

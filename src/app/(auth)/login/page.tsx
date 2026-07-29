@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, KeyRound, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, KeyRound, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { setSession } from '@/lib/auth';
 
@@ -105,7 +105,10 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        <form
+          onSubmit={handleLogin}
+          className={`flex flex-col gap-5 transition-opacity ${loading ? 'opacity-50 pointer-events-none' : ''}`}
+        >
           <div>
             <label className={labelClass}>Correo electrónico*</label>
             <div className="relative">
@@ -171,8 +174,17 @@ export default function LoginPage() {
               disabled={loading}
               className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer border-none"
             >
-              Accede al sistema
-              <ArrowRight size={16} />
+              {loading ? (
+                <>
+                  Iniciando sesión...
+                  <Loader2 size={16} className="animate-spin" />
+                </>
+              ) : (
+                <>
+                  Accede al sistema
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -165,7 +165,7 @@ export default function InventarioPage() {
       try {
         await eliminarRepuesto(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el repuesto');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar el repuesto', 'error');
       }
     },
     [eliminarRepuesto],

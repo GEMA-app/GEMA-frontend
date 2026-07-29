@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { User, Mail, KeyRound, ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, KeyRound, ArrowRight, Building2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 import { register } from '@/services/auth';
 import { ApiError } from '@/lib/api';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState({
     fullName: '',
     companyName: '',
@@ -61,7 +60,14 @@ export default function RegisterPage() {
         password: formData.password,
         companyName: formData.companyName,
       });
-      router.push('/login');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Cuenta creada!',
+        text: 'Tu empresa y usuario fueron registrados exitosamente.',
+        confirmButtonText: 'Ir al login',
+        confirmButtonColor: '#ECA03C',
+      });
+      window.location.href = '/login';
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo conectar con el servidor.');
     } finally {
@@ -231,8 +237,17 @@ export default function RegisterPage() {
               disabled={loading}
               className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer border-none"
             >
-              Accede al sistema
-              <ArrowRight size={16} />
+              {loading ? (
+                <>
+                  Creando cuenta...
+                  <Loader2 size={16} className="animate-spin" />
+                </>
+              ) : (
+                <>
+                  Accede al sistema
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </div>
         </form>

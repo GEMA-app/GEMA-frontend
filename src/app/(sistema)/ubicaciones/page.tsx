@@ -175,7 +175,7 @@ export default function UbicacionesPage() {
       try {
         await deleteUbicacion(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar la ubicación');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar la ubicación', 'error');
       }
     },
     [deleteUbicacion],

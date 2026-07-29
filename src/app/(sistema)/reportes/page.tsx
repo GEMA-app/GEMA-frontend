@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useReportes } from '@/hooks/useReportes';
 import { getActivos } from '@/services/activos';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
@@ -182,7 +183,7 @@ export default function ReportesPage() {
         setModalEstadoOpen(false);
         setSelectedReporte(null);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al actualizar estado del reporte');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al actualizar estado del reporte', 'error');
       } finally {
         setCambiandoEstado(false);
       }
@@ -192,12 +193,21 @@ export default function ReportesPage() {
 
   const handleDelete = useCallback(
     async (id: string, codigo: string) => {
-      if (!window.confirm(`¿Eliminar el reporte "${codigo}"? Esta acción no se puede deshacer.`))
-        return;
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Estás seguro?',
+        text: `¿Eliminar el reporte "${codigo}"? Esta acción no se puede deshacer.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, continuar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+      });
+      if (!result.isConfirmed) return;
       try {
         await eliminarReporte(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el reporte');
+        Swal.fire('Error', err instanceof Error ? err.message : 'Error al eliminar el reporte', 'error');
       }
     },
     [eliminarReporte],
