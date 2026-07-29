@@ -39,8 +39,14 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
   else if (moduloLower.includes('usuario') || moduloLower.includes('auth') || moduloLower.includes('sesion')) modulo = 'usuarios';
 
   const detallesObj = asRecordValue(attributes.detalles) ?? {};
-  const detallesSummary = Object.keys(detallesObj).length > 0
-    ? Object.entries(detallesObj).map(([k, v]) => `${k}: ${v}`).join(', ')
+
+  const TOP_LEVEL_KEYS = new Set(['modulo', 'descripcion', 'accion', 'usuario_nombre', 'usuario_email', 'ip_address', 'ocurrido_en', 'resource_type']);
+  const detallesFiltrados = Object.fromEntries(
+    Object.entries(detallesObj).filter(([k]) => !TOP_LEVEL_KEYS.has(k))
+  );
+
+  const detallesSummary = Object.keys(detallesFiltrados).length > 0
+    ? Object.entries(detallesFiltrados).map(([k, v]) => `${k}: ${v}`).join(', ')
     : '';
 
   const descripcion =
@@ -63,7 +69,7 @@ export function mapApiHistorialToUi(raw: unknown): HistorialEntry | null {
     accion: asString(attributes.accion, '—'),
     modulo,
     descripcion,
-    detalles: detallesObj,
+    detalles: detallesFiltrados,
     fecha,
     ip: asString(attributes.ip_address) || asString(attributes.ip, undefined) || undefined,
   };
