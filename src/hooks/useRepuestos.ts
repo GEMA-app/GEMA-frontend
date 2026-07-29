@@ -8,7 +8,15 @@ import type { PaginationMeta } from '@/types/common';
 
 const DEFAULT_META: PaginationMeta = { page: 1, perPage: 15, total: 0, lastPage: 1 };
 
-export function useRepuestos({ page = 1, perPage = 15 }: { page?: number; perPage?: number } = {}) {
+export function useRepuestos({
+  page = 1,
+  perPage = 15,
+  proveedorId,
+}: {
+  page?: number;
+  perPage?: number;
+  proveedorId?: string;
+} = {}) {
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(DEFAULT_META);
   const [loading, setLoading] = useState(true);
@@ -18,7 +26,7 @@ export function useRepuestos({ page = 1, perPage = 15 }: { page?: number; perPag
     setLoading(true);
     setError(null);
     try {
-      const res = await getRepuestos({ page, perPage });
+      const res = await getRepuestos({ page, perPage, proveedorId });
       setRepuestos(res.repuestos);
       setMeta(res.meta);
     } catch (err) {
@@ -26,7 +34,7 @@ export function useRepuestos({ page = 1, perPage = 15 }: { page?: number; perPag
     } finally {
       setLoading(false);
     }
-  }, [page, perPage]);
+  }, [page, perPage, proveedorId]);
 
   useEffect(() => { void fetchRepuestos(); }, [fetchRepuestos]);
 

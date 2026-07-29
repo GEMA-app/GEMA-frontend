@@ -2,19 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash, Truck, CheckCircle2, AlertCircle, Package } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useProveedores } from '@/hooks/useProveedores';
 import { StatCard } from '@/components/ui/StatCard';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
+import { Select } from '@/components/ui/Select';
+import { Badge } from '@/components/ui/Badge';
 import type { Proveedor } from '@/types/proveedor';
+
+const ESTADO_FILTER_OPTIONS = [
+  { value: '', label: 'Todos los estados' },
+  { value: 'activos', label: 'Activos' },
+  { value: 'inactivos', label: 'Inactivos' },
+];
 
 export default function ProveedoresPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState('');
 
   const { proveedores, loading, error, empty, eliminarProveedor } = useProveedores({
     search: debouncedSearch,
+    incluir_inactivos: true,
   });
 
   useEffect(() => {
@@ -26,8 +36,18 @@ export default function ProveedoresPage() {
 
   const summary = useMemo(() => {
     const total = proveedores.length;
-    return { total };
+    const activos = proveedores.filter((p) => p.activo).length;
+    const inactivos = total - activos;
+    return { total, activos, inactivos };
   }, [proveedores]);
+
+  const proveedoresFiltrados = useMemo(() => {
+    return proveedores.filter((p) => {
+      if (estadoFiltro === 'activos' && !p.activo) return false;
+      if (estadoFiltro === 'inactivos' && p.activo) return false;
+      return true;
+    });
+  }, [proveedores, estadoFiltro]);
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
@@ -57,7 +77,9 @@ export default function ProveedoresPage() {
 
   const emptyMessage = debouncedSearch
     ? `No se encontraron proveedores para "${debouncedSearch}".`
-    : 'No hay proveedores registrados. Crea el primero con el botón "Nuevo proveedor".';
+    : estadoFiltro
+      ? `No hay proveedores con estado "${estadoFiltro}".`
+      : 'No hay proveedores registrados. Crea el primero con el botón "Nuevo proveedor".';
 
   const columns: DataTableColumn<Proveedor>[] = [
     {
@@ -93,11 +115,28 @@ export default function ProveedoresPage() {
       render: (p) => p.phone || '—',
     },
     {
+      key: 'estado',
+      header: 'Estado',
+      render: (p) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${p.activo ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'}`}>
+          {p.activo ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
+    {
       key: 'acciones',
       header: '',
       className: 'text-right',
       render: (p) => (
         <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/inventario?proveedorId=${p.id}`}
+            className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
+            title="Ver repuestos en inventario"
+            aria-label={`Ver repuestos de ${p.name}`}
+          >
+            <Package className="w-4 h-4" strokeWidth={1.5} />
+          </Link>
           <Link
             href={`/proveedores/${p.id}`}
             className="p-2 rounded-lg text-gema-primary/60 hover:text-gema-primary hover:bg-gema-primary/5 dark:text-white/50 dark:hover:text-white dark:hover:bg-white/10 transition-colors cursor-pointer"
@@ -145,7 +184,7 @@ export default function ProveedoresPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           icon={Truck}
           value={summary.total}
@@ -155,10 +194,17 @@ export default function ProveedoresPage() {
         />
         <StatCard
           icon={CheckCircle2}
-          value={summary.total}
-          label="Proveedores registrados"
+          value={summary.activos}
+          label="Proveedores activos"
           loading={loading}
           tone="accent"
+        />
+        <StatCard
+          icon={AlertCircle}
+          value={summary.inactivos}
+          label="Proveedores inactivos"
+          loading={loading}
+          tone="danger"
         />
       </div>
 
@@ -172,6 +218,13 @@ export default function ProveedoresPage() {
             aria-label="Buscar proveedores"
             className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 outline-none focus:ring-2 focus:ring-gema-accent"
           />
+          <Select
+            value={estadoFiltro}
+            onChange={setEstadoFiltro}
+            options={ESTADO_FILTER_OPTIONS}
+            aria-label="Filtrar por estado"
+            className="sm:w-56"
+          />
         </div>
 
         {error && empty ? (
@@ -182,7 +235,7 @@ export default function ProveedoresPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={proveedores}
+            data={proveedoresFiltrados}
             keyExtractor={(p) => p.id}
             loading={loading}
             emptyMessage={emptyMessage}

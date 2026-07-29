@@ -10,6 +10,8 @@ export function mapProveedorFromApi(resource: JsonApiResource): Proveedor {
     phone: (a.phone as string) || null,
     email: (a.email as string) || null,
     contact: (a.contact as string) || null,
+    activo: (a.activo as boolean) ?? true,
+    direccion: (a.direccion as string) || null,
     version: (a.version as number) || 1,
   };
 }

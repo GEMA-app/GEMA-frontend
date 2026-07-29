@@ -14,6 +14,8 @@ export function mapRepuestoFromApi(resource: JsonApiResource): Repuesto {
     precio_unitario: getAttrNumber(resource, 'precio_unitario'),
     moneda: getAttr(resource, 'moneda', 'USD'),
     version: getAttrNumber(resource, 'version', 1),
+    articulo_nombre: resource.attributes.articulo_nombre as string | undefined,
+    proveedor_nombre: resource.attributes.proveedor_nombre as string | undefined,
   };
 }
 

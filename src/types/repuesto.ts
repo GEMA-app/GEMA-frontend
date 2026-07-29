@@ -10,6 +10,8 @@ export interface Repuesto {
   precio_unitario: number;
   moneda: string;
   version: number;
+  articulo_nombre?: string;
+  proveedor_nombre?: string;
 }
 
 export type TipoMovimiento = 'entrada' | 'salida';
@@ -35,6 +37,7 @@ export interface MovimientosResponse {
 export interface RepuestosQuery {
   page?: number;
   perPage?: number;
+  proveedorId?: string;
 }
 
 export interface RepuestosResponse {
