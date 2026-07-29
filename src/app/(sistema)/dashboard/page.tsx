@@ -47,15 +47,27 @@ export default function DashboardPage() {
     async function fetchDashboard() {
       try {
         const empresaId = await requireEmpresaId();
-        const base = `/v1/empresas/${empresaId}/activos`;
-
-        const [totalRes, opRes, mantRes, fueraRes, bajaRes] = await Promise.all([
-          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1`),
-          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=operativo`),
-          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=en_mantenimiento`),
-          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=fuera_de_servicio`),
-          fetchWithAuth<{ meta: { total: number } }>(`${base}?limit=1&estado=dado_de_baja`),
-        ]);
+        let resumenAttrs = {
+          total_activos: 0,
+          activos_operativos: 0,
+          activos_en_mantenimiento: 0,
+          activos_fuera_de_servicio: 0,
+          activos_dados_de_baja: 0,
+          ots_abiertas: 0,
+          ots_en_proceso: 0,
+          costo_real_acumulado: 0,
+          repuestos_bajo_minimo: 0,
+        };
+        try {
+          const resumenRes = await fetchWithAuth<{
+            data: { attributes: typeof resumenAttrs };
+          }>(`/v1/empresas/${empresaId}/dashboard/resumen`);
+          if (resumenRes.data?.attributes) {
+            resumenAttrs = resumenRes.data.attributes;
+          }
+        } catch {
+          // fallback a 0 si falla el resumen
+        }
 
         let planes: PlanRow[] = [];
         try {
@@ -75,49 +87,8 @@ export default function DashboardPage() {
               nombre: p.attributes.nombre,
               proximaEjecucion: p.attributes.proxima_ejecucion!,
             }));
-          // ponytail: no asset name resolution, show plan name only. Add when users ask.
         } catch {
-          // ponytail: planes are non-critical, silently skip
-        }
-
-        let costoEjecutado = 0;
-        let moneda = 'USD';
-        try {
-          const ordsRes = await fetchWithAuth<{
-            data: Array<{ attributes: { costo_real: number | null; moneda: string } }>;
-          }>(`/v1/empresas/${empresaId}/ordenes-trabajo?limit=100`);
-          for (const ot of ordsRes.data ?? []) {
-            if (ot.attributes.costo_real) {
-              costoEjecutado += ot.attributes.costo_real;
-              moneda = ot.attributes.moneda || moneda;
-            }
-          }
-          // ponytail: sums only from first 100 work orders. Add pagination when >100 OTs exist.
-        } catch {
-          // ponytail: non-critical, show 0
-        }
-
-        let otsAbiertas = 0;
-        try {
-          const otBase = `/v1/empresas/${empresaId}/ordenes-trabajo`;
-          const [abiertaRes, enProcesoRes] = await Promise.all([
-            fetchWithAuth<{ meta: { total: number } }>(`${otBase}?limit=1&estado=abierta`),
-            fetchWithAuth<{ meta: { total: number } }>(`${otBase}?limit=1&estado=en_proceso`),
-          ]);
-          otsAbiertas = (abiertaRes.meta?.total ?? 0) + (enProcesoRes.meta?.total ?? 0);
-        } catch {
-          // ponytail: non-critical, show 0
-        }
-
-        let repuestosBajoMinimo = 0;
-        try {
-          // ponytail: backend module for repuestos not confirmed yet; falls back to 0 if the endpoint doesn't exist.
-          const repRes = await fetchWithAuth<{ meta: { total: number } }>(
-            `/v1/empresas/${empresaId}/repuestos?limit=1&bajo_minimo=true`,
-          );
-          repuestosBajoMinimo = repRes.meta?.total ?? 0;
-        } catch {
-          // ponytail: non-critical, show 0
+          // planes are non-critical, silently skip
         }
 
         let reportesPendientes = 0;
@@ -125,20 +96,20 @@ export default function DashboardPage() {
           const { meta: reportesMeta } = await getReportes({ status: 'pendiente', perPage: 1 });
           reportesPendientes = reportesMeta.total;
         } catch {
-          // ponytail: non-critical, show 0
+          // non-critical, show 0
         }
 
         if (!cancelled) {
           setData({
-            totalActivos: totalRes.meta?.total ?? 0,
-            enMantenimiento: mantRes.meta?.total ?? 0,
-            operativo: opRes.meta?.total ?? 0,
-            fueraDeServicio: fueraRes.meta?.total ?? 0,
-            dadoDeBaja: bajaRes.meta?.total ?? 0,
-            costoEjecutado: Math.round(costoEjecutado * 100) / 100,
-            moneda,
-            otsAbiertas,
-            repuestosBajoMinimo,
+            totalActivos: resumenAttrs.total_activos,
+            enMantenimiento: resumenAttrs.activos_en_mantenimiento,
+            operativo: resumenAttrs.activos_operativos,
+            fueraDeServicio: resumenAttrs.activos_fuera_de_servicio,
+            dadoDeBaja: resumenAttrs.activos_dados_de_baja,
+            costoEjecutado: resumenAttrs.costo_real_acumulado,
+            moneda: 'USD',
+            otsAbiertas: resumenAttrs.ots_abiertas + resumenAttrs.ots_en_proceso,
+            repuestosBajoMinimo: resumenAttrs.repuestos_bajo_minimo,
             reportesPendientes,
             planes,
           });

@@ -6,7 +6,7 @@ import { Plus, Eye, Pencil, Trash, Package, AlertCircle, XCircle, DollarSign } f
 import Swal from 'sweetalert2';
 import { useRepuestos } from '@/hooks/useRepuestos';
 import { getRepuestos } from '@/services/repuestos';
-import { getArticulos as getArticulosCatalogo, type ArticuloCatalogo } from '@/services/catalogo';
+import { getArticulos as getArticulosCatalogo, getCategorias, type ArticuloCatalogo } from '@/services/catalogo';
 import { StatCard } from '@/components/ui/StatCard';
 import { Badge, type EstadoRepuesto } from '@/components/ui/Badge';
 import { DataTable, type DataTableColumn } from '@/components/ui/DataTable';
@@ -47,16 +47,18 @@ export default function InventarioPage() {
   });
 
   const [articuloMap, setArticuloMap] = useState<Record<string, ArticuloCatalogo>>({});
+  const [categoriaMap, setCategoriaMap] = useState<Record<string, string>>({});
+
   useEffect(() => {
     let cancelled = false;
-    getArticulosCatalogo({ perPage: 100 })
-      .then((articulos) => {
-        if (cancelled) return;
-        setArticuloMap(Object.fromEntries(articulos.map((a) => [a.id, a])));
-      })
-      .catch(() => {
-        // non-critical fallback
-      });
+    Promise.all([
+      getArticulosCatalogo({ perPage: 100 }).catch(() => []),
+      getCategorias().catch(() => []),
+    ]).then(([articulos, categorias]) => {
+      if (cancelled) return;
+      setArticuloMap(Object.fromEntries(articulos.map((a) => [a.id, a])));
+      setCategoriaMap(Object.fromEntries(categorias.map((c) => [c.id, c.name])));
+    });
     return () => {
       cancelled = true;
     };
@@ -197,9 +199,10 @@ export default function InventarioPage() {
       header: 'Categoría',
       render: (repuesto) => {
         const art = articuloMap[repuesto.articulo_id];
+        const catNombre = art?.category_id ? (categoriaMap[art.category_id] || art.category_id) : null;
         return (
           <span className="text-gema-primary/80 dark:text-white/80">
-            {art?.category_id || art?.manufacturer || 'General'}
+            {catNombre || art?.manufacturer || 'General'}
           </span>
         );
       },
