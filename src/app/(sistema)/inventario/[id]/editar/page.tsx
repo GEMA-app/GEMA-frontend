@@ -91,7 +91,14 @@ export default function EditarInventarioPage() {
 
       router.push(`/inventario/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar los cambios');
+      const msg = err instanceof Error ? err.message : 'Error al guardar los cambios';
+      setError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setIsSubmitting(false);
     }

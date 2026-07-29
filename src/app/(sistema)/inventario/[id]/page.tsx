@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import Swal from 'sweetalert2';
 import { ArrowLeft, Pencil, AlertCircle } from 'lucide-react';
 import { getRepuestoById, getMovimientos, createMovimiento } from '@/services/repuestos';
 import { Badge } from '@/components/ui/Badge';
@@ -92,8 +93,23 @@ export default function InventarioDetallePage() {
       setCantidad('1');
       setReason('');
       await fetchData();
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'Movimiento registrado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
     } catch (err) {
-      setMovError(err instanceof Error ? err.message : 'Error al registrar movimiento');
+      const msg = err instanceof Error ? err.message : 'Error al registrar movimiento';
+      setMovError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSubmittingMov(false);
     }

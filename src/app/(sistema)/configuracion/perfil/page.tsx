@@ -70,7 +70,14 @@ export default function PerfilPage() {
         confirmButtonColor: '#ECA03C',
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar el perfil');
+      const msg = err instanceof Error ? err.message : 'Error al actualizar el perfil';
+      setError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSubmitting(false);
     }

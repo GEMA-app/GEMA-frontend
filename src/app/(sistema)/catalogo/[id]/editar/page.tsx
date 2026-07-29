@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { getArticulo, getCategorias, updateArticulo, type CategoriaCatalogo } from '@/services/catalogo';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
@@ -68,9 +69,24 @@ export default function EditarArticuloPage() {
         description: form.description.trim() || null,
         unit_of_measure: form.unit_of_measure.trim() || null,
       });
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
       router.push(`/catalogo/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar.');
+      const msg = err instanceof Error ? err.message : 'Error al actualizar.';
+      setError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSaving(false);
     }

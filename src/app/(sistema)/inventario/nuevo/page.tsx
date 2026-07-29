@@ -98,7 +98,14 @@ export default function NuevoInventarioPage() {
       });
       router.push('/inventario');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar el repuesto.');
+      const msg = err instanceof Error ? err.message : 'No se pudo registrar el repuesto.';
+      setError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setIsSubmitting(false);
     }

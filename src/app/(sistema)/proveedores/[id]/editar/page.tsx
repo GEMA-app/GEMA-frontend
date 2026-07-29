@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Truck, AlertCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { getProveedor, updateProveedor } from '@/services/proveedores';
 
 export default function EditarProveedorPage() {
@@ -92,10 +93,24 @@ export default function EditarProveedorPage() {
         version: formData.version,
       });
       setSubmitStatus('Proveedor actualizado correctamente.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
       setTimeout(() => router.push(`/proveedores/${proveedorId}`), 800);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al actualizar el proveedor';
       setSubmitStatus(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      })
     } finally {
       setIsSubmitting(false);
     }

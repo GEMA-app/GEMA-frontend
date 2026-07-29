@@ -175,7 +175,12 @@ export default function UbicacionesPage() {
       try {
         await deleteUbicacion(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar la ubicación');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar la ubicación',
+          confirmButtonColor: '#ECA03C',
+        });
       }
     },
     [deleteUbicacion],

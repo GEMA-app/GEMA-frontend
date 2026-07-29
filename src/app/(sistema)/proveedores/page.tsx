@@ -49,7 +49,12 @@ export default function ProveedoresPage() {
       try {
         await eliminarProveedor(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el proveedor');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar el proveedor',
+          confirmButtonColor: '#ECA03C',
+        })
       }
     },
     [eliminarProveedor],

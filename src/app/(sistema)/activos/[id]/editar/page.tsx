@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, FileText, MapPin, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
+import Swal from 'sweetalert2';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
@@ -114,14 +115,27 @@ export default function EditarActivoPage() {
     try {
       await updateActivo(activoId, formData);
       setSubmitStatus('Activo actualizado correctamente.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
       setTimeout(() => router.push(`/activos/${activoId}`), 800);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      setSubmitStatus(
-        /no se puede transicionar/i.test(msg)
-          ? 'Los activos dados de baja no pueden cambiar de estado. Si necesitas registrar este activo de nuevo, crea uno desde cero.'
-          : msg || 'Error al actualizar el activo',
-      );
+      const friendlyMsg = /no se puede transicionar/i.test(msg)
+        ? 'Los activos dados de baja no pueden cambiar de estado. Si necesitas registrar este activo de nuevo, crea uno desde cero.'
+        : msg || 'Error al actualizar el activo';
+      setSubmitStatus(friendlyMsg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: friendlyMsg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setIsSubmitting(false);
     }

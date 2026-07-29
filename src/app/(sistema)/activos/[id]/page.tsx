@@ -210,6 +210,14 @@ export default function FichaDeActivoPage() {
     try {
       await updateActivo(asset.id, { estadoInicial: nuevoEstado, version: asset.version });
       setModalOpen(false);
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
     } catch (err) {
       await Swal.fire({
         icon: 'error',

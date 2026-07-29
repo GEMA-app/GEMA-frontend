@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { ApiError } from '@/lib/api';
@@ -83,9 +84,24 @@ export default function NuevaUbicacionPage() {
         parentId: formData.parentId || null,
         descripcion: formData.descripcion.trim() || null,
       });
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'El registro fue creado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
       router.push('/ubicaciones');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error al guardar la ubicación.');
+      const message = err instanceof ApiError ? err.message : 'Error al guardar la ubicación.';
+      setError(message);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: message,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -83,7 +83,14 @@ export default function NuevoArticuloPage() {
       });
       router.push('/catalogo');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo crear el artículo.');
+      const msg = err instanceof ApiError ? err.message : 'No se pudo crear el artículo.';
+      setError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setLoading(false);
     }

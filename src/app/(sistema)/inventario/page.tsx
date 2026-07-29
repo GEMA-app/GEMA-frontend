@@ -139,7 +139,12 @@ export default function InventarioPage() {
       try {
         await eliminarRepuesto(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el repuesto');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar el repuesto',
+          confirmButtonColor: '#ECA03C',
+        });
       }
     },
     [eliminarRepuesto],

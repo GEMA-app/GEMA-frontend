@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useReportes } from '@/hooks/useReportes';
 import { getActivos } from '@/services/activos';
 import { fetchWithAuth, requireEmpresaId } from '@/lib/api';
@@ -163,6 +164,14 @@ export default function ReportesPage() {
       setSaving(true);
       try {
         await crearReporte(input);
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Creado exitosamente!',
+          text: 'El registro fue creado correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        })
       } finally {
         setSaving(false);
       }
@@ -181,8 +190,21 @@ export default function ReportesPage() {
         });
         setModalEstadoOpen(false);
         setSelectedReporte(null);
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Actualizado!',
+          text: 'Los cambios fueron guardados correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        })
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al actualizar estado del reporte');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al actualizar estado del reporte',
+          confirmButtonColor: '#ECA03C',
+        })
       } finally {
         setCambiandoEstado(false);
       }
@@ -192,12 +214,34 @@ export default function ReportesPage() {
 
   const handleDelete = useCallback(
     async (id: string, codigo: string) => {
-      if (!window.confirm(`¿Eliminar el reporte "${codigo}"? Esta acción no se puede deshacer.`))
-        return;
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: '¿Estás seguro?',
+        text: `¿Eliminar el reporte "${codigo}"? Esta acción no se puede deshacer.`,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+      })
+      if (!result.isConfirmed) return
       try {
         await eliminarReporte(id);
+        await Swal.fire({
+          icon: 'success',
+          title: 'Eliminado',
+          text: 'El registro fue eliminado correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        })
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el reporte');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar el reporte',
+          confirmButtonColor: '#ECA03C',
+        })
       }
     },
     [eliminarReporte],

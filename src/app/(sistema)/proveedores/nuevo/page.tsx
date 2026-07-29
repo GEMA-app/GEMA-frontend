@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, Truck, AlertCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { createProveedor } from '@/services/proveedores';
 
 const initialFormState = {
@@ -58,10 +59,24 @@ export default function RegistrarProveedorPage() {
         contact: formData.contact.trim() || undefined,
       });
       setSubmitStatus('Proveedor creado exitosamente.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'El registro fue creado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
       setTimeout(() => router.push('/proveedores'), 800);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error al guardar el proveedor.';
       setSubmitStatus(message);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: message,
+        confirmButtonColor: '#ECA03C',
+      })
     } finally {
       setIsSubmitting(false);
     }

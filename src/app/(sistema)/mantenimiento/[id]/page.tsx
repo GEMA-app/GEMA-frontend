@@ -71,8 +71,22 @@ export default function OrdenDetallePage() {
       });
       setSaveStatus('Cambios guardados.');
       setTimeout(() => setSaveStatus(''), 2000);
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
     } catch (err) {
       setSaveStatus(err instanceof Error ? err.message : 'Error al guardar');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+        confirmButtonColor: '#ECA03C',
+      })
     } finally {
       setSaving(false);
     }
@@ -111,7 +125,23 @@ export default function OrdenDetallePage() {
     try {
       await crearIntervencion({ technician_id: techId, tareas_realizadas: tareas, fecha_inicio: fechaInicio, horas_hombre: Number(horasHombre) });
       setShowForm(false); setTechId(''); setTareas(''); setFechaInicio(''); setHorasHombre('');
-    } catch (err) { setSaveErrorInt(err instanceof Error ? err.message : 'Error al crear intervención.'); }
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'El registro fue creado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
+    } catch (err) {
+      setSaveErrorInt(err instanceof Error ? err.message : 'Error al crear intervención.');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+        confirmButtonColor: '#ECA03C',
+      })
+    }
     finally { setSavingInt(false); }
   };
 

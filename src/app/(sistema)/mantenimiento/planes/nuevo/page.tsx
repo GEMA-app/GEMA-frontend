@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
@@ -64,9 +65,23 @@ export default function NuevoPlanPage() {
           tecnico_responsable_id: tecnicoId || undefined,
           descripcion_tareas: descripcion || undefined,
         });
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Creado exitosamente!',
+          text: 'El registro fue creado correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        })
         router.push('/mantenimiento/planes');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear el plan.');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+          confirmButtonColor: '#ECA03C',
+        })
       } finally {
         setSaving(false);
       }

@@ -63,7 +63,14 @@ export default function ContrasenaPage() {
       });
       router.push('/dashboard');
     } catch (err) {
-      setApiError(err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.');
+      const msg = err instanceof ApiError ? err.message : 'No se pudo cambiar la contraseña.';
+      setApiError(msg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: msg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSubmitting(false);
     }

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Clock, Save, CheckCircle2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { RequestState } from '@/components/ui/RequestState';
 import { getPlanById } from '@/services/planes-mantenimiento';
 import { usePlanesMantenimiento } from '@/hooks/usePlanesMantenimiento';
@@ -92,9 +93,23 @@ export default function EditarPlanPage() {
           descripcion_tareas: descripcion || undefined,
           activo,
         });
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Actualizado!',
+          text: 'Los cambios fueron guardados correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        })
         router.push('/mantenimiento/planes');
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'Error al guardar.');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+          confirmButtonColor: '#ECA03C',
+        })
       } finally {
         setSaving(false);
       }

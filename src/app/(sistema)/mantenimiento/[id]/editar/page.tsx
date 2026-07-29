@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
+import Swal from 'sweetalert2';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { getOrdenById, updateOrden, asignarTecnico } from '@/services/ordenes-trabajo';
@@ -91,9 +92,23 @@ export default function EditarOrdenPage() {
         await asignarTecnico(id!, form.tecnico_id);
       }
       setStatus('Orden actualizada.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
       setTimeout(() => router.push(`/mantenimiento/${id}`), 800);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Error al actualizar');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+        confirmButtonColor: '#ECA03C',
+      })
     } finally {
       setSubmitting(false);
     }

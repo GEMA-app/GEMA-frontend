@@ -153,7 +153,12 @@ export default function ActivosPage() {
       try {
         await eliminarActivo(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el activo');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar el activo',
+          confirmButtonColor: '#ECA03C',
+        });
       }
     },
     [eliminarActivo],

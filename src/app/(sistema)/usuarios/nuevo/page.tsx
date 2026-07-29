@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { createUsuario } from '@/services/usuarios';
 import { getRoles, asignarRol } from '@/services/roles';
 import { Select } from '@/components/ui/Select';
@@ -72,10 +73,25 @@ export default function NuevoUsuarioPage() {
       }
 
       setStatus('Usuario creado correctamente.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'El registro fue creado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
       setTimeout(() => router.push('/usuarios'), 600);
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : 'Error al crear el usuario');
+      const message = err instanceof Error ? err.message : 'Error al crear el usuario';
+      setStatus(message);
       setSubmitting(false);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: message,
+        confirmButtonColor: '#ECA03C',
+      });
     }
   };
 

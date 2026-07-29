@@ -5,6 +5,7 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, FileText, Calendar, Users, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Swal from 'sweetalert2';
 import { useActivos } from '@/hooks/useActivos';
 import { useUsuarios } from '@/hooks/useUsuarios';
 import { createOrden, asignarTecnico } from '@/services/ordenes-trabajo';
@@ -108,9 +109,23 @@ function NuevaOrdenContent() {
       }
 
       setSubmitStatus('Orden creada correctamente.');
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Creado exitosamente!',
+        text: 'El registro fue creado correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      })
       setTimeout(() => router.push('/mantenimiento'), 800);
     } catch (err) {
       setSubmitStatus(err instanceof Error ? err.message : 'Error al crear la orden');
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: err instanceof Error ? err.message : 'Ocurrió un error inesperado.',
+        confirmButtonColor: '#ECA03C',
+      })
     } finally {
       setIsSubmitting(false);
     }

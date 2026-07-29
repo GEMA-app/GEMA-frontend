@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { getUbicacion } from '@/services/ubicaciones';
@@ -120,9 +121,24 @@ export default function EditarUbicacionPage() {
         descripcion: formData.descripcion.trim() || null,
         version: formData.version,
       });
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
       router.push(`/ubicaciones/${ubicacionId}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error al actualizar la ubicación.');
+      const message = err instanceof ApiError ? err.message : 'Error al actualizar la ubicación.';
+      setError(message);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: message,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setIsSubmitting(false);
     }

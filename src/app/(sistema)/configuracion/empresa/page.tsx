@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowLeft, Save, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Swal from 'sweetalert2';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { RequestState } from '@/components/ui/RequestState';
 import { getEmpresa, updateEmpresa } from '@/services/empresa';
@@ -53,13 +54,26 @@ export default function EmpresaPage() {
       setEmail(updated.email_contacto ?? '');
       setSaveOk(true);
       setTimeout(() => setSaveOk(false), 4000);
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar';
-      if (msg.includes('ERR_STALE_DATA') || msg.includes('409')) {
-        setSaveError('Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página para ver los cambios actualizados.');
-      } else {
-        setSaveError(msg);
-      }
+      const finalMsg = (msg.includes('ERR_STALE_DATA') || msg.includes('409'))
+        ? 'Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página para ver los cambios actualizados.'
+        : msg;
+      setSaveError(finalMsg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: finalMsg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSaving(false);
     }

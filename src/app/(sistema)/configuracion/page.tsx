@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 import { Building2, Shield, Sparkles, Pencil, Save, X, Loader2, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { useRoles } from '@/hooks/useRoles';
@@ -116,13 +117,26 @@ export default function ConfiguracionPage() {
       setEmpresa(updated);
       setForm({ nombre: updated.nombre, rif: updated.rif ?? '', email_contacto: updated.email_contacto ?? '' });
       setEditing(false);
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Actualizado!',
+        text: 'Los cambios fueron guardados correctamente.',
+        confirmButtonColor: '#ECA03C',
+        timer: 2000,
+        timerProgressBar: true,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al guardar los cambios';
-      if (msg.includes('ERR_STALE_DATA') || msg.includes('409')) {
-        setErrorEmpresa('Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página.');
-      } else {
-        setErrorEmpresa(msg);
-      }
+      const finalMsg = (msg.includes('ERR_STALE_DATA') || msg.includes('409'))
+        ? 'Los datos de la empresa fueron modificados por otro usuario. Por favor recarga la página.'
+        : msg;
+      setErrorEmpresa(finalMsg);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: finalMsg,
+        confirmButtonColor: '#ECA03C',
+      });
     } finally {
       setSaving(false);
     }

@@ -88,18 +88,34 @@ export default function UsuariosPage() {
   const handleToggleActivo = useCallback(
     async (usuario: Usuario) => {
       const accion = usuario.activo ? 'desactivar' : 'activar';
-      const confirmEmail = window.prompt(
-        `Para ${accion} al usuario "${usuario.nombre}", ingresa su correo electrónico para confirmar:\n${usuario.email}`,
-      );
-      if (confirmEmail === null) return;
-      if (confirmEmail.trim().toLowerCase() !== usuario.email.trim().toLowerCase()) {
-        alert('El correo electrónico no coincide. Operación cancelada.');
-        return;
-      }
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: `¿${usuario.activo ? 'Desactivar' : 'Activar'} este usuario?`,
+        text: `Esta acción cambiará el estado de "${usuario.nombre}" a ${usuario.activo ? 'inactivo' : 'activo'}.`,
+        showCancelButton: true,
+        confirmButtonText: usuario.activo ? 'Sí, desactivar' : 'Sí, activar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: usuario.activo ? '#EF4444' : '#ECA03C',
+        cancelButtonColor: '#6B7280',
+      });
+      if (!result.isConfirmed) return;
       try {
         await actualizarUsuario(usuario.id, { activo: !usuario.activo });
+        await Swal.fire({
+          icon: 'success',
+          title: '¡Actualizado!',
+          text: 'El estado del usuario fue actualizado correctamente.',
+          confirmButtonColor: '#ECA03C',
+          timer: 2000,
+          timerProgressBar: true,
+        });
       } catch (err) {
-        alert(err instanceof Error ? err.message : `Error al ${accion} el usuario`);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : `Error al ${accion} el usuario`,
+          confirmButtonColor: '#ECA03C',
+        });
       }
     },
     [actualizarUsuario],
@@ -125,7 +141,12 @@ export default function UsuariosPage() {
       try {
         await eliminarUsuario(id);
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Error al eliminar el usuario');
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err instanceof Error ? err.message : 'Error al eliminar el usuario',
+          confirmButtonColor: '#ECA03C',
+        });
       }
     },
     [eliminarUsuario],
