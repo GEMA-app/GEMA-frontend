@@ -74,7 +74,7 @@ export default function ConfiguracionPage() {
     setMounted(true);
   }, []);
 
-  const isAdmin = mounted ? hasAnyRole(['admin']) : false;
+  const isAdmin = mounted ? hasAnyRole(['administrador']) : false;
 
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loadingEmpresa, setLoadingEmpresa] = useState(true);

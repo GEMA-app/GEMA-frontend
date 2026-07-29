@@ -20,23 +20,7 @@ function pickString(...values: unknown[]): string | null {
   return null;
 }
 
-const ROLE_SLUG_MAP: Record<string, string> = {
-  administrador: 'admin',
-  admin: 'admin',
-  'supervisor de activos': 'supervisor-activos',
-  'supervisor de operaciones': 'supervisor-operaciones',
-  supervisor: 'supervisor-operaciones',
-  'técnico de mantenimiento': 'tecnico',
-  'tecnico de mantenimiento': 'tecnico',
-  técnico: 'tecnico',
-  tecnico: 'tecnico',
-  almacenista: 'almacenista',
-  'consultor (solo lectura)': 'consultor',
-  consultor: 'consultor',
-  reporter: 'reporter',
-};
-
-function normalizeRoles(value: unknown): string[] {
+export function normalizeRoles(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -52,8 +36,7 @@ function normalizeRoles(value: unknown): string[] {
       }
       return '';
     })
-    .filter(Boolean)
-    .map((r) => ROLE_SLUG_MAP[r] || r);
+    .filter(Boolean);
 }
 
 export function extractRolesFromPayload(payload: unknown): string[] {
