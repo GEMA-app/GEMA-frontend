@@ -3,62 +3,63 @@
 import { Check, X, Loader2, Shield } from 'lucide-react';
 import { useRoles } from '@/hooks/useRoles';
 import { buildPermisosMatrix } from '@/lib/roles';
-import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC } from '@/lib/permisos';
-import { RolBadge } from '@/components/ui/Badge';
+import { MODULOS_RBAC, ACCIONES_RBAC, hasPermisoAccion, rolSlugFromLabel, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos-rbac';
 import type { Rol } from '@/types/rol';
 
-const COLUMNAS: ModuloRBAC[] = [
-  MODULOS_RBAC.ACTIVOS,
-  MODULOS_RBAC.MANTENIMIENTO,
-  MODULOS_RBAC.INVENTARIO,
-  MODULOS_RBAC.REPORTES,
-  MODULOS_RBAC.ADMINISTRACION,
-  MODULOS_RBAC.PREFERENCIAS,
-];
+const ROLES_COLUMNAS = [
+  'Administrador',
+  'Supervisor de Activos',
+  'Técnico de Mantenimiento',
+  'Almacenista',
+  'Supervisor de Operaciones',
+  'Consultor (Solo Lectura)',
+] as const;
 
-const MODULOS_LABELS: Record<ModuloRBAC, string> = {
-  activos: 'Activos',
-  mantenimiento: 'Mantenimiento',
-  inventario: 'Inventario',
-  reportes: 'Reportes',
-  administracion: 'Administración',
-  preferencias: 'Preferencias',
+const ACCION_LABELS: Record<AccionRBAC, string> = {
+  view: 'Ver',
+  create: 'Crear',
+  edit: 'Editar',
+  delete: 'Eliminar',
 };
 
-function tienePermiso(rol: Rol, modulo: ModuloRBAC): boolean {
-  const matrix = buildPermisosMatrix(rol.permisos);
-  return ACCIONES_RBAC.some((accion) => matrix[`${modulo}:${accion}`]);
+interface FilaModulo {
+  label: string;
+  modulo: ModuloRBAC | 'configuracion-ui';
+  acciones: AccionRBAC[];
 }
 
-function RolRow({ rol }: { rol: Rol }) {
-  return (
-    <tr className="transition-colors hover:bg-gema-bg-light/60 dark:hover:bg-white/5">
-      <td className="px-3 py-3 sm:px-4 sm:py-3.5">
-        <RolBadge rol={rol.nombre} />
-      </td>
-      {COLUMNAS.map((modulo) => {
-        const activo = tienePermiso(rol, modulo);
-        return (
-          <td key={modulo} className="px-2 py-3 text-center">
-            <span
-              title={MODULOS_LABELS[modulo]}
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${
-                activo
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-red-500/10 text-red-500 dark:text-red-400'
-              }`}
-            >
-              {activo ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <X className="h-3.5 w-3.5" strokeWidth={3} />}
-            </span>
-          </td>
-        );
-      })}
-    </tr>
-  );
+const FILAS: FilaModulo[] = [
+  { label: 'Activos', modulo: MODULOS_RBAC.ACTIVOS, acciones: ['view', 'create', 'edit', 'delete'] },
+  { label: 'Mantenimiento', modulo: MODULOS_RBAC.MANTENIMIENTO, acciones: ['view', 'create', 'edit', 'delete'] },
+  { label: 'Inventario', modulo: MODULOS_RBAC.INVENTARIO, acciones: ['view', 'create', 'edit', 'delete'] },
+  { label: 'Reportes', modulo: MODULOS_RBAC.REPORTES, acciones: ['view'] },
+  { label: 'Usuarios', modulo: MODULOS_RBAC.ADMINISTRACION, acciones: ['view', 'create', 'edit'] },
+  { label: 'Configuración', modulo: 'configuracion-ui', acciones: ['view', 'edit'] },
+];
+
+function tienePermiso(
+  apiRol: Rol | undefined,
+  rolLabel: string,
+  modulo: FilaModulo['modulo'],
+  accion: AccionRBAC,
+): boolean {
+  if (modulo === 'configuracion-ui') {
+    return rolSlugFromLabel(rolLabel) === 'admin';
+  }
+  if (apiRol) {
+    const matrix = buildPermisosMatrix(apiRol.permisos);
+    return matrix[`${modulo}:${accion}`] ?? false;
+  }
+  return hasPermisoAccion(rolLabel, modulo, accion);
 }
 
 export default function RolesPage() {
   const { roles, loading, error, empty } = useRoles();
+
+  const rolesPorColumna = ROLES_COLUMNAS.map((label) => ({
+    label,
+    apiRol: roles.find((r) => rolSlugFromLabel(r.nombre) === rolSlugFromLabel(label)),
+  }));
 
   return (
     <div>
@@ -67,7 +68,7 @@ export default function RolesPage() {
           Roles y permisos
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-gema-primary/60 dark:text-white/50 font-body">
-          Vista de solo lectura de los permisos por rol
+          Matriz de permisos por módulo y rol
         </p>
       </div>
 
@@ -77,43 +78,61 @@ export default function RolesPage() {
             <Shield className="w-5 h-5 shrink-0" />
             {error}
           </div>
+        ) : loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-gema-primary/40 dark:text-white/40" />
+          </div>
         ) : (
-          <div className="overflow-x-auto rounded-2xl border border-gema-primary/10 dark:border-white/10">
-            <table className="w-full text-sm">
+          <div className="overflow-auto rounded-2xl border border-gema-primary/10 dark:border-white/10 max-h-[70vh]">
+            <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="bg-gema-bg-light dark:bg-gema-surface-dark-2 text-left">
-                  <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 font-body">
-                    Nombre del rol
+                <tr>
+                  <th
+                    scope="col"
+                    className="sticky top-0 left-0 z-20 bg-gema-bg-light dark:bg-gema-surface-dark-2 px-3 py-2.5 sm:px-4 sm:py-3 text-left text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 font-body whitespace-nowrap"
+                  >
+                    Módulo
                   </th>
-                  {COLUMNAS.map((modulo) => (
+                  {rolesPorColumna.map((col) => (
                     <th
-                      key={modulo}
-                      className="px-2 py-2.5 sm:py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 font-body"
+                      key={col.label}
+                      scope="col"
+                      className="sticky top-0 z-10 bg-gema-bg-light dark:bg-gema-surface-dark-2 px-3 py-2.5 sm:px-4 sm:py-3 text-center text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50 font-body whitespace-nowrap"
                     >
-                      {MODULOS_LABELS[modulo]}
+                      {col.label}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gema-primary/5 dark:divide-white/5 bg-white dark:bg-gema-surface-dark">
-                {loading ? (
-                  <tr aria-busy="true">
-                    <td colSpan={COLUMNAS.length + 1} className="px-4 py-10 text-center">
-                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-gema-primary/40 dark:text-white/40" />
+                {FILAS.map((fila) => (
+                  <tr key={fila.label} className="transition-colors hover:bg-gema-bg-light/60 dark:hover:bg-white/5">
+                    <td className="sticky left-0 z-10 bg-white dark:bg-gema-surface-dark px-3 py-3 sm:px-4 sm:py-3.5 font-semibold text-gema-primary dark:text-white whitespace-nowrap">
+                      {fila.label}
                     </td>
+                    {rolesPorColumna.map((col) => (
+                      <td key={col.label} className="px-3 py-3 sm:px-4 sm:py-3.5">
+                        <div className="flex flex-col items-start gap-1.5">
+                          {fila.acciones.map((accion) => {
+                            const activo = tienePermiso(col.apiRol, col.label, fila.modulo, accion);
+                            return (
+                              <div key={accion} className="flex items-center gap-1.5 whitespace-nowrap">
+                                {activo ? (
+                                  <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={3} aria-label="Permitido" />
+                                ) : (
+                                  <X className="h-3.5 w-3.5 text-red-500 shrink-0" strokeWidth={3} aria-label="Denegado" />
+                                )}
+                                <span className="text-[11px] text-gema-primary/60 dark:text-white/50">
+                                  {ACCION_LABELS[accion]}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    ))}
                   </tr>
-                ) : empty ? (
-                  <tr>
-                    <td
-                      colSpan={COLUMNAS.length + 1}
-                      className="px-4 py-10 text-center text-sm text-gema-primary/50 dark:text-white/40"
-                    >
-                      No hay roles definidos.
-                    </td>
-                  </tr>
-                ) : (
-                  roles.map((rol) => <RolRow key={rol.id} rol={rol} />)
-                )}
+                ))}
               </tbody>
             </table>
           </div>

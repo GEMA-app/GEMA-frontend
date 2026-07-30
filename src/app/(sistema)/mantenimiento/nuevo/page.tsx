@@ -10,6 +10,7 @@ import { useUsuarios } from '@/hooks/useUsuarios';
 import { createOrden, asignarTecnico } from '@/services/ordenes-trabajo';
 import type { TipoMantenimiento } from '@/types/orden-trabajo';
 import { Select } from '@/components/ui/Select';
+import { HelpTip } from '@/components/ui/HelpTip';
 
 type Prioridad = 'baja' | 'media' | 'alta';
 
@@ -143,7 +144,13 @@ function NuevaOrdenContent() {
                 <span className="text-gema-primary dark:text-white">Información del activo</span>
               </div>
               <div>
-                <label className={labelClass} htmlFor="activo_id">Activo*</label>
+                <label className={`${labelClass} flex items-center gap-1.5`} htmlFor="activo_id">
+                  Activo*
+                  <HelpTip
+                    title="¿No aparece el activo?"
+                    message="Solo se muestran activos registrados en el sistema. Ve a Activos → Nuevo activo para registrarlo primero."
+                  />
+                </label>
                 <Select
                   id="activo_id"
                   name="activo_id"
@@ -217,7 +224,13 @@ function NuevaOrdenContent() {
                   />
                 </div>
                 <div>
-                  <label className={labelClass} htmlFor="tecnico_id">Técnico</label>
+                  <label className={`${labelClass} flex items-center gap-1.5`} htmlFor="tecnico_id">
+                    Técnico
+                    <HelpTip
+                      title="¿No aparece el técnico?"
+                      message="Solo aparecen usuarios con rol Técnico de Mantenimiento. Ve a Usuarios → Nuevo usuario para agregarlo."
+                    />
+                  </label>
                   <Select
                     id="tecnico_id"
                     name="tecnico_id"
