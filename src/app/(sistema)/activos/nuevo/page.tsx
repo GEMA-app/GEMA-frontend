@@ -12,6 +12,7 @@ import { createActivoDirecto } from '@/services/activos';
 import { ApiError } from '@/lib/api';
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Select } from '@/components/ui/Select';
+import { HelpTip } from '@/components/ui/HelpTip';
 
 const MONEDAS = ['USD', 'VES', 'EUR'];
 
@@ -152,7 +153,13 @@ export default function NuevoActivoPage() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
-            <label className={labelClass}>Artículo*</label>
+            <label className={`${labelClass} flex items-center gap-1.5`}>
+              Artículo*
+              <HelpTip
+                title="¿No encuentras el artículo?"
+                message="Los artículos vienen del Catálogo. Si el equipo que buscas no aparece, primero regístralo en Catálogo → Nuevo artículo y luego vuelve aquí."
+              />
+            </label>
             <Select
               name="articuloId"
               value={form.articuloId}
@@ -166,7 +173,13 @@ export default function NuevoActivoPage() {
           </div>
 
           <div>
-            <label className={labelClass}>Ubicación</label>
+            <label className={`${labelClass} flex items-center gap-1.5`}>
+              Ubicación
+              <HelpTip
+                title="¿No hay ubicaciones disponibles?"
+                message="Las ubicaciones se configuran en el módulo Ubicaciones. Crea la sede, planta o área correspondiente antes de registrar el activo."
+              />
+            </label>
             <Select
               name="ubicacionId"
               value={form.ubicacionId}
