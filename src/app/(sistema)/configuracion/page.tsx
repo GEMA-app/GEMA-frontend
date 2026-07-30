@@ -1,16 +1,39 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Building2, Shield, Sparkles, Pencil, Save, X, Loader2, ArrowRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Building2,
+  Shield,
+  Sparkles,
+  Pencil,
+  Save,
+  X,
+  Loader2,
+  Check,
+  ChevronDown,
+  CheckCircle2,
+  MinusCircle,
+  XCircle,
+} from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { RolBadge } from '@/components/ui/Badge';
 import { useRoles } from '@/hooks/useRoles';
 import { buildPermisosMatrix } from '@/lib/roles';
-import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos';
+import { MODULOS_RBAC, ACCIONES_RBAC, type ModuloRBAC, type AccionRBAC } from '@/lib/permisos-rbac';
 import { hasAnyRole } from '@/lib/auth';
 import { getEmpresa, updateEmpresa } from '@/services/empresa';
 import type { Empresa } from '@/types/empresa';
 import type { Rol } from '@/types/rol';
+
+const MODULOS_ORDEN: ModuloRBAC[] = [
+  MODULOS_RBAC.ACTIVOS,
+  MODULOS_RBAC.MANTENIMIENTO,
+  MODULOS_RBAC.INVENTARIO,
+  MODULOS_RBAC.REPORTES,
+  MODULOS_RBAC.ADMINISTRACION,
+  MODULOS_RBAC.PREFERENCIAS,
+];
 
 const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   activos: 'Activos',
@@ -21,7 +44,7 @@ const MODULOS_LABELS: Record<ModuloRBAC, string> = {
   preferencias: 'Preferencias',
 };
 
-const ACCIONES_LABELS: Record<AccionRBAC, string> = {
+const ACCION_LABELS: Record<AccionRBAC, string> = {
   view: 'Ver',
   create: 'Crear',
   edit: 'Editar',
@@ -31,39 +54,143 @@ const ACCIONES_LABELS: Record<AccionRBAC, string> = {
 const inputClass =
   'w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none box-border focus:ring-2 focus:ring-gema-accent/40';
 
-function RolRow({ rol }: { rol: Rol }) {
-  const matrix = buildPermisosMatrix(rol.permisos);
-  const modulos = Object.values(MODULOS_RBAC);
-  const acciones = [...ACCIONES_RBAC];
+type NivelAcceso = 'full' | 'partial' | 'none';
+
+function nivelAcceso(valores: boolean[]): NivelAcceso {
+  if (valores.length === 0 || valores.every((v) => !v)) return 'none';
+  if (valores.every((v) => v)) return 'full';
+  return 'partial';
+}
+
+function AccesoIndicador({ nivel }: { nivel: NivelAcceso }) {
+  if (nivel === 'full') return <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" aria-label="Acceso completo" />;
+  if (nivel === 'none') return <XCircle className="h-5 w-5 text-red-500 shrink-0" aria-label="Sin acceso" />;
+  return <MinusCircle className="h-5 w-5 text-gray-400 shrink-0" aria-label="Acceso parcial" />;
+}
+
+function ModuloRow({ rolId, modulo, matrix, open, onToggle }: {
+  rolId: string;
+  modulo: ModuloRBAC;
+  matrix: Record<string, boolean>;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const valores = ACCIONES_RBAC.map((accion) => matrix[`${modulo}:${accion}`] ?? false);
+  const nivel = nivelAcceso(valores);
 
   return (
-    <tr className="transition-colors hover:bg-gema-bg-light/60 dark:hover:bg-white/5">
-      <td className="px-3 py-3 sm:px-4 sm:py-3.5 font-semibold text-gema-primary dark:text-white">
-        {rol.nombre}
-      </td>
-      {modulos.map((modulo) => (
-        <td key={modulo} className="px-2 py-3 text-center">
-          <div className="flex justify-center gap-1">
-            {acciones.map((accion) => {
-              const activo = !!matrix[`${modulo}:${accion}`];
+    <div className="border-t border-gray-100 dark:border-white/5">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-gema-bg-light/60 dark:hover:bg-white/5 transition-colors"
+      >
+        <span className="text-sm font-medium text-gema-primary dark:text-white/90">
+          {MODULOS_LABELS[modulo]}
+        </span>
+        <div className="flex items-center gap-3">
+          <AccesoIndicador nivel={nivel} />
+          <ChevronDown
+            className={`h-4 w-4 text-gema-primary/40 dark:text-white/40 transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key={`${rolId}-${modulo}`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 pb-4 pt-1">
+              {ACCIONES_RBAC.map((accion) => {
+                const activo = matrix[`${modulo}:${accion}`] ?? false;
+                return (
+                  <div
+                    key={accion}
+                    className="flex items-center gap-2 rounded-xl bg-gema-bg-light dark:bg-white/5 px-3 py-2"
+                  >
+                    {activo ? (
+                      <Check className="h-4 w-4 text-emerald-500 shrink-0" strokeWidth={3} />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500 shrink-0" strokeWidth={3} />
+                    )}
+                    <span className="text-xs font-medium text-gema-primary/70 dark:text-white/60">
+                      {ACCION_LABELS[accion]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function RolAccordionItem({ rol, openModulos, onToggleModulo }: {
+  rol: Rol;
+  openModulos: Set<string>;
+  onToggleModulo: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const matrix = buildPermisosMatrix(rol.permisos);
+
+  const valoresGlobales = MODULOS_ORDEN.flatMap((modulo) =>
+    ACCIONES_RBAC.map((accion) => matrix[`${modulo}:${accion}`] ?? false),
+  );
+  const nivelGlobal = nivelAcceso(valoresGlobales);
+
+  return (
+    <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 mb-3 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-4 sm:px-6 text-left cursor-pointer hover:bg-gema-bg-light/60 dark:hover:bg-white/5 transition-colors"
+      >
+        <RolBadge rol={rol.nombre} />
+        <div className="flex items-center gap-3">
+          <AccesoIndicador nivel={nivelGlobal} />
+          <ChevronDown
+            className={`h-5 w-5 text-gema-primary/40 dark:text-white/40 transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key={rol.id}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            {MODULOS_ORDEN.map((modulo) => {
+              const key = `${rol.id}:${modulo}`;
               return (
-                <span
-                  key={accion}
-                  title={`${MODULOS_LABELS[modulo]} — ${ACCIONES_LABELS[accion]}`}
-                  className={`flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold ${
-                    activo
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-white/30'
-                  }`}
-                >
-                  {ACCIONES_LABELS[accion][0]}
-                </span>
+                <ModuloRow
+                  key={key}
+                  rolId={rol.id}
+                  modulo={modulo}
+                  matrix={matrix}
+                  open={openModulos.has(key)}
+                  onToggle={() => onToggleModulo(key)}
+                />
               );
             })}
-          </div>
-        </td>
-      ))}
-    </tr>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -83,9 +210,17 @@ export default function ConfiguracionPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ nombre: '', rif: '', email_contacto: '' });
 
-  const { roles, loading: loadingRoles, empty: emptyRoles } = useRoles();
-  const modulos = Object.values(MODULOS_RBAC);
-  const acciones = [...ACCIONES_RBAC];
+  const { roles, loading: loadingRoles, error: errorRoles, empty: emptyRoles } = useRoles();
+  const [openModulos, setOpenModulos] = useState<Set<string>>(new Set());
+
+  const toggleModulo = (key: string) => {
+    setOpenModulos((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const loadEmpresa = useCallback(() => {
     setLoadingEmpresa(true);
@@ -292,60 +427,37 @@ export default function ConfiguracionPage() {
               <div>
                 <CardTitle>Roles y permisos</CardTitle>
                 <CardDescription>
-                  {isAdmin ? 'Vista de permisos por módulo' : 'Solo lectura — contacta a un administrador para editar'}
+                  {isAdmin ? 'Consulta los permisos de cada rol por módulo' : 'Solo lectura — contacta a un administrador para editar'}
                 </CardDescription>
               </div>
             </div>
-            {isAdmin && (
-              <Link
-                href="/configuracion/roles"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-gema-accent-dark dark:text-gema-accent hover:underline cursor-pointer"
-              >
-                Ver roles y permisos
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
           </CardHeader>
 
-          <div className="overflow-x-auto rounded-2xl border border-gema-primary/10 dark:border-white/10">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gema-bg-light dark:bg-gema-surface-dark-2 text-left">
-                  <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-xs font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50">
-                    Rol
-                  </th>
-                  {modulos.map((m) => (
-                    <th
-                      key={m}
-                      className="px-2 py-2.5 sm:py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-gema-primary/60 dark:text-white/50"
-                    >
-                      {MODULOS_LABELS[m]}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gema-primary/5 dark:divide-white/5 bg-white dark:bg-gema-surface-dark">
-                {loadingRoles ? (
-                  <tr aria-busy="true">
-                    <td colSpan={modulos.length + 1} className="px-4 py-10 text-center">
-                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-gema-primary/40 dark:text-white/40" />
-                    </td>
-                  </tr>
-                ) : emptyRoles ? (
-                  <tr>
-                    <td
-                      colSpan={modulos.length + 1}
-                      className="px-4 py-10 text-center text-sm text-gema-primary/50 dark:text-white/40"
-                    >
-                      No hay roles definidos.
-                    </td>
-                  </tr>
-                ) : (
-                  roles.map((rol) => <RolRow key={rol.id} rol={rol} />)
-                )}
-              </tbody>
-            </table>
-          </div>
+          {errorRoles && emptyRoles ? (
+            <div className="flex items-center gap-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+              <Shield className="w-5 h-5 shrink-0" />
+              {errorRoles}
+            </div>
+          ) : loadingRoles ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-5 w-5 animate-spin text-gema-primary/40 dark:text-white/40" />
+            </div>
+          ) : emptyRoles ? (
+            <div className="rounded-2xl border border-gray-200 dark:border-white/10 px-4 py-10 text-center text-sm text-gema-primary/50 dark:text-white/40">
+              No hay roles definidos.
+            </div>
+          ) : (
+            <div>
+              {roles.map((rol) => (
+                <RolAccordionItem
+                  key={rol.id}
+                  rol={rol}
+                  openModulos={openModulos}
+                  onToggleModulo={toggleModulo}
+                />
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

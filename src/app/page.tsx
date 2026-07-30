@@ -375,7 +375,7 @@ const TEAM_MEMBERS = [
   {
     name: "Sheen Albuquerque",
     role: "CEO y relaciones públicas",
-    photo: "/foto-sheen.png",
+    photo: "/foto-sheen.jpg",
     description:
       "Líder estratégico de GEMA. Construye puentes con la industria pesada y guía la visión a largo plazo del producto para satisfacer las necesidades del mercado.",
   },
