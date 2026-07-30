@@ -12,14 +12,11 @@ import {
   History,
   Users,
   Settings,
-  LogOut,
   Package,
   BookOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { clearSession, getToken } from '@/lib/auth';
-import { fetchWithAuth } from '@/lib/api';
 
 interface MenuItem {
   icon: typeof LayoutDashboard;
@@ -123,19 +120,6 @@ export default function Sidebar() {
     setMenuSections(getVisibleSections());
   }, []);
 
-
-  const handleLogout = async () => {
-    if (getToken()) {
-      try {
-        await fetchWithAuth('/v1/auth/cerrar-sesion', { method: 'POST' });
-      } catch {
-        // cerrar sesión igual aunque falle el request
-      }
-    }
-    clearSession();
-    window.location.href = '/login';
-  };
-
   return (
     <aside
       className={`flex h-screen shrink-0 flex-col border-r border-white/10 bg-gema-primary transition-all duration-300 dark:bg-gema-bg-dark ${
@@ -223,21 +207,6 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-
-      <div className="border-t border-white/10 p-2 md:p-4">
-        <button
-          type="button"
-          onClick={handleLogout}
-          aria-label="Cerrar sesión"
-          title="Cerrar sesión"
-          className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white md:justify-start"
-        >
-          <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
-          <span className={`text-sm ${isCollapsed ? 'hidden' : 'hidden md:inline'}`}>
-            Cerrar sesión
-          </span>
-        </button>
-      </div>
     </aside>
   );
 }

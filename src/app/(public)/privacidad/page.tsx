@@ -105,16 +105,6 @@ export default function PrivacidadPage() {
               </div>
             ))}
           </div>
-
-          <div className="mt-12">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 cursor-pointer"
-            >
-              <ArrowLeft size={16} />
-              Volver a la landing
-            </Link>
-          </div>
         </section>
 
         <footer className="border-t border-white/10 bg-gema-bg-dark text-white">
