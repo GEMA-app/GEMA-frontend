@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { getReporteById, updateReporte } from '@/services/reportes';
 import { getActivos } from '@/services/activos';
 import type { Reporte, ReporteEstado } from '@/types/reporte';
@@ -86,7 +87,7 @@ export default function FichaReportePage() {
       await loadReporte(reporte.id);
       setModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo cambiar el estado del reporte.');
+      Swal.fire('Error', err instanceof Error ? err.message : 'No se pudo cambiar el estado del reporte.', 'error');
     } finally {
       setCambiandoEstado(false);
     }

@@ -1,23 +1,34 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, FileText, MapPin, Save } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
 import { useRouter, useParams } from 'next/navigation';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { useUbicaciones } from '@/hooks/useUbicaciones';
 import { flattenUbicacionesForSelect } from '@/lib/ubicaciones';
 import { getActivo, getCatalogArticle, updateActivo } from '@/services/activos';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { Select } from '@/components/ui/Select';
+
+const MONEDAS = ['USD', 'VES', 'EUR'];
+
+const ESTADO_OPTIONS = [
+  { value: 'Operativo', label: 'Operativo' },
+  { value: 'En mantenimiento', label: 'En mantenimiento' },
+  { value: 'Fuera de servicio', label: 'Fuera de servicio' },
+  { value: 'Dado de baja', label: 'Dado de baja' },
+];
+
+const labelClass = 'block text-[13px] font-semibold text-gray-700 dark:text-white/80 mb-1.5';
+const inputClass =
+  'w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-sm text-gray-900 dark:text-white outline-none box-border focus:ring-2 focus:ring-gema-accent/40';
 
 export default function EditarActivoPage() {
   const params = useParams();
   const activoId = params.id as string;
   const { ubicaciones, loading: loadingUbicaciones, error: ubicacionesError } = useUbicaciones();
-  const ubicacionOptions = useMemo(
-    () => flattenUbicacionesForSelect(ubicaciones),
-    [ubicaciones],
-  );
+  const ubicacionOptions = useMemo(() => flattenUbicacionesForSelect(ubicaciones), [ubicaciones]);
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -35,7 +46,7 @@ export default function EditarActivoPage() {
   const [articuloNombre, setArticuloNombre] = useState<string>('');
   const [loadingAsset, setLoadingAsset] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitStatus, setSubmitStatus] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -52,10 +63,10 @@ export default function EditarActivoPage() {
           if (!cancelled) { marca = c.manufacturer || ''; catName = c.name; }
         } catch { /* ignore */ }
         const estadoMap: Record<string, string> = {
-          'operativo': 'Operativo',
-          'en_mantenimiento': 'En mantenimiento',
-          'fuera_de_servicio': 'Fuera de servicio',
-          'dado_de_baja': 'Dado de baja',
+          operativo: 'Operativo',
+          en_mantenimiento: 'En mantenimiento',
+          fuera_de_servicio: 'Fuera de servicio',
+          dado_de_baja: 'Dado de baja',
         };
         if (!cancelled) {
           setArticuloId(a.articulo_id);
@@ -73,7 +84,7 @@ export default function EditarActivoPage() {
           });
         }
       } catch (err) {
-        if (!cancelled) setSubmitStatus(err instanceof Error ? err.message : 'Error al cargar activo');
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar el activo.');
       } finally {
         if (!cancelled) setLoadingAsset(false);
       }
@@ -81,17 +92,17 @@ export default function EditarActivoPage() {
     return () => { cancelled = true; };
   }, [activoId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: '' }));
-    setSubmitStatus('');
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+    setError(null);
   };
 
-  const handleSelectFieldChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setErrors(prev => ({ ...prev, [name]: '' }));
-    setSubmitStatus('');
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+    setError(null);
   };
 
   const validateForm = () => {
@@ -101,23 +112,28 @@ export default function EditarActivoPage() {
     return next;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next = validateForm();
     setErrors(next);
     if (Object.keys(next).length > 0) {
-      setSubmitStatus('Por favor corrige los errores antes de guardar.');
+      setError('Por favor corrige los errores antes de guardar.');
       return;
     }
     setIsSubmitting(true);
-    setSubmitStatus('Guardando...');
+    setError(null);
     try {
       await updateActivo(activoId, formData);
-      setSubmitStatus('Activo actualizado correctamente.');
-      setTimeout(() => router.push(`/activos/${activoId}`), 800);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Activo actualizado',
+        text: 'Los cambios se guardaron correctamente.',
+        confirmButtonColor: '#ECA03C',
+      });
+      router.push(`/activos/${activoId}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      setSubmitStatus(
+      setError(
         /no se puede transicionar/i.test(msg)
           ? 'Los activos dados de baja no pueden cambiar de estado. Si necesitas registrar este activo de nuevo, crea uno desde cero.'
           : msg || 'Error al actualizar el activo',
@@ -129,180 +145,200 @@ export default function EditarActivoPage() {
 
   if (loadingAsset) {
     return (
-      <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-        <PageHeader title="Activos / Editar activo" variant="activos" />
-        <p className="text-gray-500 text-sm mt-8">Cargando datos del activo...</p>
+      <div className="flex items-center justify-center py-24">
+        <div className="w-6 h-6 rounded-full border-2 border-gema-primary/20 dark:border-white/20 border-t-gema-accent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 w-full font-sans">
-      <PageHeader title="Activos / Editar activo" variant="activos" />
-
-      <div className="mb-6">
-        <Link href={`/activos/${activoId}`} className="flex items-center text-gray-700 hover:text-black font-medium transition-colors gap-2 w-fit">
-          <ArrowLeft className="w-4 h-4" />
+    <PermissionGuard module="activos" action="edit" fallback={
+      <div className="text-center py-24">
+        <p className="text-gema-primary dark:text-white text-lg font-medium">No tienes permisos para editar activos.</p>
+        <Link href={`/activos/${activoId}`} className="mt-4 inline-block text-sm font-semibold text-gema-accent-dark dark:text-gema-accent hover:underline">
           Volver a la ficha
         </Link>
       </div>
-
-      <div className="rounded-3xl p-8 border border-gray-100 shadow-sm flex flex-col gap-8" style={{ backgroundColor: 'rgba(46, 70, 101, 0.05)' }}>
-        <div className="flex justify-between items-start border-b-2 border-[#2E4365]/20 pb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Editar Activo</h2>
-            <p className="text-gray-500 text-xs mt-1">Modifique los datos del equipo en el inventario.</p>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/activos" className="px-6 py-2.5 bg-[#F3D58D] text-gray-900 font-semibold rounded-full text-sm shadow-sm hover:brightness-95 transition-all">
-              Cancelar
-            </Link>
-            <button
-              type="submit"
-              form="editar-activo-form"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#E59D12] text-black font-bold rounded-full text-sm shadow-sm hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-            >
-              <Save className="w-4 h-4 text-black" strokeWidth={2.5} />
-              {isSubmitting ? 'Guardando...' : 'guardar cambios'}
-            </button>
-          </div>
+    }>
+      <div>
+        <div className="mb-6">
+          <Link
+            href={`/activos/${activoId}`}
+            className="inline-flex items-center gap-2 text-sm font-medium text-gema-primary/70 hover:text-gema-primary dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Volver a la ficha
+          </Link>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          <form id="editar-activo-form" onSubmit={handleSubmit} className="lg:col-span-2 space-y-8">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
-                <FileText className="w-5 h-5" />
-                <span className="text-gray-800">Información General</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="nombre">Nombre del Activo</label>
-                  <input
-                    id="nombre" name="nombre" type="text"
-                    value={formData.nombre} onChange={handleInputChange}
-                    className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.nombre ? 'border-red-500' : 'border-gray-400'}`}
-                  />
-                  {errors.nombre && <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Artículo (catálogo)</label>
-                  <p className="text-sm py-1.5 border-b border-gray-300">
-                    {articuloNombre ? <Link href={`/catalogo/${articuloId}`} className="text-[#E59D12] hover:underline">{articuloNombre}</Link> : '—'}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="codigo">Código Inventario</label>
-                  <input
-                    id="codigo" name="codigo" type="text"
-                    value={formData.codigo} onChange={handleInputChange}
-                    className={`w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm ${errors.codigo ? 'border-red-500' : 'border-gray-400'}`}
-                  />
-                  {errors.codigo && <p className="text-xs text-red-600 mt-1">{errors.codigo}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="marca">Marca / Fabricante</label>
-                  <input
-                    id="marca" name="marca" type="text"
-                    value={formData.marca} onChange={handleInputChange}
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  />
-                </div>
-                <div>
-                  <label className="flex items-center text-xs text-gray-500 mb-1" htmlFor="ubicacion">
-                    Ubicación Física
-                    {formData.ubicacion && (
-                      <Link href={`/ubicaciones/${formData.ubicacion}`} className="ml-2 text-[#E59D12] hover:underline">
-                        (Ver actual)
-                      </Link>
-                    )}
+        <h1 className="font-heading font-bold text-xl sm:text-2xl lg:text-3xl text-gema-primary dark:text-white mb-6 sm:mb-8">
+          Editar activo
+        </h1>
+
+        <div className="bg-white dark:bg-gema-surface-dark rounded-2xl border border-gray-200 dark:border-white/10 p-4 sm:p-6 lg:p-8 max-w-3xl">
+          {error && (
+            <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="md:col-span-2">
+              <label className={labelClass}>Artículo (catálogo)</label>
+              <p className="text-sm py-3 px-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white">
+                {articuloNombre ? (
+                  <Link href={`/catalogo/${articuloId}`} className="text-gema-accent-dark dark:text-gema-accent hover:underline">
+                    {articuloNombre}
+                  </Link>
+                ) : '—'}
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="nombre">Nombre del activo*</label>
+              <input
+                id="nombre"
+                name="nombre"
+                type="text"
+                value={formData.nombre}
+                onChange={handleChange}
+                required
+                className={inputClass}
+              />
+              {errors.nombre && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.nombre}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="codigo">Código inventario*</label>
+              <input
+                id="codigo"
+                name="codigo"
+                type="text"
+                value={formData.codigo}
+                onChange={handleChange}
+                required
+                className={inputClass}
+              />
+              {errors.codigo && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.codigo}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="marca">Marca / Fabricante</label>
+              <input
+                id="marca"
+                name="marca"
+                type="text"
+                value={formData.marca}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="ubicacion">
+                Ubicación física
+                {formData.ubicacion && (
+                  <Link href={`/ubicaciones/${formData.ubicacion}`} className="ml-2 font-normal text-gema-accent-dark dark:text-gema-accent hover:underline">
+                    (Ver actual)
+                  </Link>
+                )}
+              </label>
+              <Select
+                id="ubicacion"
+                name="ubicacion"
+                value={formData.ubicacion}
+                onChange={(value) => handleSelectChange('ubicacion', value)}
+                disabled={loadingUbicaciones}
+                options={[
+                  { value: '', label: loadingUbicaciones ? 'Cargando ubicaciones...' : 'Seleccione una ubicación' },
+                  ...ubicacionOptions.map((o) => ({ value: o.id, label: o.label })),
+                ]}
+              />
+              {ubicacionesError && <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{ubicacionesError}</p>}
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="fechaCompra">Fecha de compra</label>
+              <input
+                id="fechaCompra"
+                name="fechaCompra"
+                type="date"
+                value={formData.fechaCompra}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="valorMonetario">Valor monetario</label>
+              <input
+                id="valorMonetario"
+                name="valorMonetario"
+                type="text"
+                inputMode="decimal"
+                value={formData.valorMonetario}
+                onChange={handleChange}
+                placeholder="0.00"
+                className={inputClass}
+              />
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="moneda">Moneda</label>
+              <Select
+                id="moneda"
+                name="moneda"
+                value={formData.moneda}
+                onChange={(value) => handleSelectChange('moneda', value)}
+                options={MONEDAS.map((moneda) => ({ value: moneda, label: moneda }))}
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className={labelClass}>Estado</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {ESTADO_OPTIONS.map((estado) => (
+                  <label
+                    key={estado.value}
+                    className={`flex items-center gap-2 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${
+                      formData.estadoInicial === estado.value
+                        ? 'border-gema-accent bg-gema-accent/10'
+                        : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="estadoInicial"
+                      value={estado.value}
+                      checked={formData.estadoInicial === estado.value}
+                      onChange={handleChange}
+                      className="accent-gema-accent w-4 h-4"
+                    />
+                    <span className="text-sm font-medium text-gema-primary dark:text-white">{estado.label}</span>
                   </label>
-                  <Select
-                    id="ubicacion" name="ubicacion"
-                    value={formData.ubicacion}
-                    onChange={(value) => handleSelectFieldChange('ubicacion', value)}
-                    disabled={loadingUbicaciones}
-                    options={[
-                      { value: '', label: loadingUbicaciones ? 'Cargando ubicaciones...' : 'Seleccione una ubicación' },
-                      ...ubicacionOptions.map((o) => ({ value: o.id, label: o.label })),
-                    ]}
-                  />
-                  {ubicacionesError && <p className="text-xs text-amber-700 mt-1">{ubicacionesError}</p>}
-                </div>
+                ))}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#E59D12] font-semibold text-base">
-                <MapPin className="w-5 h-5" />
-                <span className="text-gray-800">Adquisición</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="fechaCompra">Fecha de Compra</label>
-                  <input
-                    id="fechaCompra" name="fechaCompra" type="date"
-                    value={formData.fechaCompra} onChange={handleInputChange}
-                    style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-                    className="date-input w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="valorMonetario">Valor Monetario</label>
-                  <input
-                    id="valorMonetario" name="valorMonetario" type="text" inputMode="decimal"
-                    value={formData.valorMonetario} onChange={handleInputChange}
-                    placeholder="0.00"
-                    className="w-full bg-transparent border-b py-1.5 outline-none focus:border-[#E59D12] transition-colors text-sm border-gray-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1" htmlFor="moneda">Moneda</label>
-                  <Select
-                    id="moneda" name="moneda"
-                    value={formData.moneda}
-                    onChange={(value) => handleSelectFieldChange('moneda', value)}
-                    options={[
-                      { value: 'USD', label: 'USD' },
-                      { value: 'VES', label: 'VES' },
-                      { value: 'EUR', label: 'EUR' },
-                    ]}
-                  />
-                </div>
-              </div>
+            <div className="md:col-span-2 flex items-center justify-end gap-3 pt-2">
+              <Link
+                href={`/activos/${activoId}`}
+                className="px-6 py-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-sm font-semibold text-gema-primary dark:text-white hover:bg-gema-primary/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                Cancelar
+              </Link>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gema-accent hover:bg-gema-accent/90 text-gray-900 font-semibold text-sm disabled:opacity-60 transition-colors cursor-pointer"
+              >
+                <Save className="w-4 h-4" strokeWidth={2.5} />
+                {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+              </button>
             </div>
-
-            {submitStatus && (
-              <p className={`text-sm ${submitStatus.includes('Error') || submitStatus.includes('error') ? 'text-red-600' : 'text-emerald-700'}`}>{submitStatus}</p>
-            )}
           </form>
-
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-md flex flex-col items-center">
-            <h3 className="text-gray-800 font-bold text-center mb-6 text-base">Estado</h3>
-            <div className="w-full space-y-3">
-              {['Operativo', 'En mantenimiento', 'Fuera de servicio', 'Dado de baja'].map((estado) => (
-                <label key={estado} className="flex items-center px-4 py-3 border border-gray-200 rounded-xl cursor-pointer transition-all bg-white">
-                  <input
-                    type="radio" name="estadoInicial"
-                    value={estado}
-                    checked={formData.estadoInicial === estado}
-                    onChange={handleInputChange}
-                    className="accent-[#8B4513] w-4 h-4 mr-3"
-                  />
-                  <span className="text-xs font-semibold text-gray-700">{estado}</span>
-                </label>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
-      <style jsx global>{`
-        input.date-input::-webkit-calendar-picker-indicator { display: none; }
-        input.date-input::-webkit-inner-spin-button,
-        input.date-input::-webkit-clear-button { display: none; }
-        input.date-input::-moz-focus-inner { border: 0; }
-      `}</style>
-    </div>
+    </PermissionGuard>
   );
 }
